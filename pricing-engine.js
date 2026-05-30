@@ -16,9 +16,9 @@ export const D_VAR_TIER = { regional:0, especialidad:40, exotico:250 };
 
 // --- Config: tiers calibrados al catálogo real ---
 export const TIER = {
-  regional:     { pvpRef:13.30, refScore:83, comm:0.07, slope:0.30, sens:0.65 },
-  especialidad: { pvpRef:21.00, refScore:86, comm:0.11, slope:0.55, sens:0.40 },
-  exotico:      { pvpRef:24.50, refScore:88, comm:0.16, slope:1.20, sens:0.15 },
+  regional:     { pvpRef:13.30, refScore:83, comm:0.05, slope:0.30, sens:0.65 },
+  especialidad: { pvpRef:21.00, refScore:86, comm:0.09, slope:0.55, sens:0.40 },
+  exotico:      { pvpRef:24.50, refScore:88, comm:0.14, slope:1.20, sens:0.15 },
 };
 
 // --- Config: costos, finanzas, reparto ---
@@ -35,6 +35,23 @@ export const ETAPA = {
   pre:[0.55,0.035,0.45], cosecha:[0.45,0.030,0.55], post:[0.35,0.025,0.65],
   bl:[0.20,0.020,0.80], zf:[0.10,0.015,0.90]
 };
+
+// === NUEVO (mayo 2026): capa financiera dinámica ===
+// Prima por mantener el café (hold) para venderlo mes a mes a tostaderos.
+// Cuanto más se aguanta, más caro se coloca → la torta crece con la espera.
+export const HOLD = {
+  premRateMes: 0.010,   // prima por mes de hold, sobre el precio efectivo (1%/mes)
+  premCapMes:  12,      // tope de meses que acumulan prima
+};
+// Reparto de la PRIMA de espera (distinto del spread spot 50/25/25):
+//   Finkap fijo 20%. Del 80% restante, el productor (dueño) toma prodBase=40% siempre,
+//   y el 60% "del que espera" va a quien banca la maduración (phi→productor, 1-phi→inversor).
+export const PRIMA_SPLIT = { finkap:0.20, prodBase:0.40 };
+
+// Anticipo en tramos (cobro rápido): el productor puede cobrar antes con descuento.
+export const PAGO_TRAMOS = { preembarque:0.30, bl:0.35, arribo:0.35 }; // suma 1.00
+export const TRAMO_MESES = { preembarque:0, bl:2, arribo:4 };          // arribo = arribo + 30d
+export const DISCOUNT    = { rateMesMax:0.030 };                        // descuento del cash adelantado (/mes)
 
 const dScore = s => 12*(s-82) + 6*Math.max(0, s-86)**2;     // convexo
 const nySens = (cw, kc) => cw*(kc/KC_REF) + (1-cw);          // (para % de movimiento; informativo)
@@ -82,13 +99,15 @@ export function calcular(lot, feeds, cfg = {}){
   const comm = commRate * efectivo;
   const spread = efectivo - F - landing - carry - comm;
   const sp = Math.max(0, spread);
+  // Prima por hold: se vende mes a mes a tostaderos → precio promedio más alto.
+  const prima = primaHold(efectivo, lot.T);
   const waterfall = {
     productor: F + sp*split.productor,
     inversor:  carry + sp*split.inversor,
     finkap:    comm + sp*split.finkap,
   };
   return { fob:F, pvp, efectivo, iva, conIva, ars, landing, carry,
-           commRate, comm, spread, waterfall,
+           commRate, comm, spread, prima, waterfall,
            upliftProductor: waterfall.productor/F - 1,
            markup: efectivo/(F+landing+carry) - 1 };
 }
@@ -110,11 +129,60 @@ export function adelanto(F, etapa, conf){
 // Recibe el objeto que devuelve calcular() como `base`.
 export function repartoProductor(base, phi = 1){
   phi = Math.max(0, Math.min(1, phi));
-  const sp  = Math.max(0, base.spread);
-  const finSlice  = base.carry + sp * SPLIT.inversor;     // slice de financiación/espera
-  const productor = base.fob + sp * SPLIT.productor + phi * finSlice;
-  const inversor  = (1 - phi) * finSlice;
-  const finkap    = base.comm + sp * SPLIT.finkap;
-  return { productor, inversor, finkap, finSlice, phi,
+  const sp   = Math.max(0, base.spread);
+  const prm  = Math.max(0, base.prima || 0);
+  const finSlice  = base.carry + sp * SPLIT.inversor;     // slice de financiación/espera (spot)
+
+  // --- Reparto de la PRIMA de espera (split dinámico) ---
+  // Finkap fijo. Del resto, el productor toma prodBase siempre (dueño) y
+  // el tramo "del que espera" lo capta quien banca la maduración (phi).
+  const prmFinkap = PRIMA_SPLIT.finkap * prm;
+  const prmRest   = prm - prmFinkap;                       // 80%
+  const prmWait   = prmRest * (1 - PRIMA_SPLIT.prodBase);  // 60% → al que espera
+  const prmProd   = prmRest * PRIMA_SPLIT.prodBase + prmWait * phi;
+  const prmInv    = prmWait * (1 - phi);
+
+  const productor = base.fob + sp * SPLIT.productor + phi * finSlice + prmProd;
+  const inversor  = (1 - phi) * finSlice + prmInv;
+  const finkap    = base.comm + sp * SPLIT.finkap + prmFinkap;
+  return { productor, inversor, finkap, finSlice, prima:prm, phi,
            upliftProductor: base.fob>0 ? productor/base.fob - 1 : 0 };
+}
+
+// === Piso de precio: NY-C puro + mitad del diferencial = (FOB + NY·C)/2 ===
+export function piso(lot, kc){
+  const bare = kc * CONV;                 // commodity pelado de NY
+  return (fob(lot, kc) + bare) / 2;
+}
+
+// === Prima por mantener el café T meses (venta mes a mes a tostaderos) ===
+export function primaHold(efectivo, T = 0){
+  const m = Math.min(HOLD.premCapMes, Math.max(0, T || 0));
+  return efectivo * HOLD.premRateMes * m;
+}
+
+// === Anticipo en tramos + descuento hacia el piso ===
+// precio   = lo que cobraría esperando cada tramo en fecha (ej. productor del reparto)
+// pisoPrecio = piso(lot, kc): el "todo ya" nunca cae por debajo de esto.
+// Devuelve el calendario 30/35/35 y el valor si pide todo el cash hoy (con descuento).
+export function anticipo(precio, pisoPrecio, cfg = {}){
+  const r  = cfg.rateMes ?? DISCOUNT.rateMesMax;
+  const tm = { ...TRAMO_MESES, ...cfg.meses  };
+  const w  = { ...PAGO_TRAMOS, ...cfg.tramos };
+  const pvFactor = w.preembarque * 1
+                 + w.bl     * Math.max(0, 1 - r * tm.bl)
+                 + w.arribo * Math.max(0, 1 - r * tm.arribo);
+  const alContadoRaw = precio * pvFactor;
+  const alContado    = Math.max(pisoPrecio, alContadoRaw);
+  return {
+    porTramos: precio,                              // cobrando cada tramo en fecha
+    alContado,                                      // todo hoy, con descuento (piso aplicado)
+    descuentoPct: precio > 0 ? 1 - alContado / precio : 0,
+    piso: pisoPrecio,
+    tramos: {
+      preembarque: { pct:w.preembarque, mes:tm.preembarque, monto:precio * w.preembarque },
+      bl:          { pct:w.bl,          mes:tm.bl,          monto:precio * w.bl },
+      arribo:      { pct:w.arribo,      mes:tm.arribo,      monto:precio * w.arribo },
+    },
+  };
 }

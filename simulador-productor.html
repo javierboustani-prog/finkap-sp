@@ -396,11 +396,11 @@ input[type=range]::-moz-range-thumb{width:18px;height:18px;border-radius:50%;bac
       </div>
 
       <div class="card adv-card" id="advCard">
-        <div class="t"><span>Adelanto disponible ahora</span><span class="meta">si dejás entrar al inversor</span></div>
+        <div class="t"><span>Cobro rápido · anticipo en tramos</span><span class="meta">si dejás entrar al inversor</span></div>
         <div class="adv">
-          <div class="stat"><div class="k">Cash por kg</div><div class="v" id="advKg">—</div></div>
-          <div class="stat"><div class="k">% del FOB</div><div class="v" id="advPct">—</div></div>
-          <div class="stat"><div class="k">Total ahora</div><div class="v" id="advTot">—</div></div>
+          <div class="stat"><div class="k">30% pre-embarque</div><div class="v" id="advT1">—</div></div>
+          <div class="stat"><div class="k">35% al BL</div><div class="v" id="advT2">—</div></div>
+          <div class="stat"><div class="k">35% arribo +30d</div><div class="v" id="advT3">—</div></div>
         </div>
         <div class="note" id="advNote"></div>
       </div>
@@ -665,21 +665,23 @@ function recalc(){
   $('wfPpct').textContent = (tot>0?fmt(rep.productor/tot*100,0):'—')+'% del total';
   $('wfIpct').textContent = (tot>0?fmt(rep.inversor/tot*100,0):'—')+'% del total';
   $('wfFpct').textContent = (tot>0?fmt(rep.finkap/tot*100,0):'—')+'% del total';
-  $('wfPup').textContent = 'incluye FOB '+usd(base.fob)+' + '+Math.round(phi*100)+'% de la espera';
-  $('wfPsub').textContent = phi>=0.99 ? 'FOB + 50% spread + bancás la espera' : 'FOB + 50% del spread';
+  const primaTxt = base.prima>0.005 ? ' + prima espera '+usd(base.prima) : '';
+  $('wfPup').textContent = 'incluye FOB '+usd(base.fob)+' + '+Math.round(phi*100)+'% de la espera'+primaTxt;
+  $('wfPsub').textContent = phi>=0.99 ? 'FOB + 50% spread + bancás la espera (+prima)' : 'FOB + 50% del spread';
   $('wfImsg').textContent = rep.inversor>0 ? 'te adelanta el cash' : 'no entra: bancás vos';
   $('wfIrow').classList.toggle('hide', phi>=0.999);
 
-  // adelanto
-  const conf = 90;
+  // adelanto en tramos 30/35/35 + piso (sobre el camino "cobro rápido" = phi 0)
   if(phi < 0.999){
-    const etapa = espMonths<=3?'cosecha':espMonths<=6?'post':'bl';
-    const adv = PE.adelanto(base.fob, etapa, conf);
+    const pisoP = PE.piso(l, feeds.kc);
+    const ant   = PE.anticipo(repFast.productor, pisoP);
     $('advCard').style.display='';
-    $('advKg').textContent = usd(adv.perKg);
-    $('advPct').textContent = fmt(adv.pctFob*100,0)+'%';
-    $('advTot').textContent = usd(adv.perKg*(l.kg||0),0);
-    $('advNote').innerHTML = `Si dejás entrar al inversor, cobrás <b>${usd(adv.perKg*(l.kg||0),0)}</b> ahora (a ${fmt(adv.rateMes*100,1)}%/mes) y el resto cuando rota el café. El haircut baja a medida que sube la confianza del lote.`;
+    $('advT1').textContent = usd(ant.tramos.preembarque.monto);
+    $('advT2').textContent = usd(ant.tramos.bl.monto);
+    $('advT3').textContent = usd(ant.tramos.arribo.monto);
+    $('advNote').innerHTML = `Cobrás en 3 tramos (total <b>${usd(ant.porTramos)}</b>/kg = ${usd(ant.porTramos*(l.kg||0),0)}). `
+      + `Si pedís <b>todo hoy</b>, baja a <b>${usd(ant.alContado)}</b>/kg (−${fmt(ant.descuentoPct*100,0)}%), con piso en <b>${usd(ant.piso)}</b>/kg `
+      + `(nunca por debajo de NY-C + mitad del diferencial). Cuanto más esperás, más te llevás.`;
   } else {
     $('advCard').style.display='none';
   }
