@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Plantilla A4 · Foto del grano verde — Finkap</title>
+<style>
+  :root{ --ink:#1a1a1a; --soft:#7a7a7a; --orange:#F97316; --line:#cfcfcf; }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;background:#3a3a3f;font-family:"Inter",system-ui,-apple-system,"Segoe UI",Arial,sans-serif;color:var(--ink)}
+
+  /* barra de acciones (no se imprime) */
+  .toolbar{position:sticky;top:0;z-index:10;background:#17171b;color:#f5f5f7;padding:12px 18px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;border-bottom:1px solid #2c2c33}
+  .toolbar .brand{font-weight:800;font-size:17px}
+  .toolbar .brand b{color:var(--orange)}
+  .toolbar .tip{font-size:12px;color:#9b9ba6;flex:1;min-width:200px}
+  .toolbar button{background:var(--orange);color:#fff;border:none;border-radius:9px;padding:10px 16px;font-size:14px;font-weight:700;cursor:pointer}
+  .toolbar button:hover{background:#ea670a}
+  .toolbar a{color:#9b9ba6;font-size:12px;text-decoration:none}
+  .toolbar a:hover{color:#fff}
+
+  .wrap{display:flex;justify-content:center;padding:24px}
+
+  /* HOJA A4 horizontal (297 x 210 mm) */
+  .sheet{
+    width:297mm;height:210mm;background:#fff;position:relative;
+    box-shadow:0 10px 40px rgba(0,0,0,.5);
+  }
+  /* reglas */
+  .ruler{position:absolute;background:#fff}
+  .ruler.h{height:9mm;left:14mm;right:14mm}
+  .ruler.h.top{top:3mm}
+  .ruler.h.bottom{bottom:3mm}
+  .ruler.v{width:9mm;top:14mm;bottom:14mm}
+  .ruler.v.left{left:3mm}
+  .ruler.v.right{right:3mm}
+  .tick{position:absolute;background:#1a1a1a}
+  .h .tick{bottom:0;width:.3mm}
+  .h.bottom .tick{top:0;bottom:auto}
+  .v .tick{right:0;height:.3mm}
+  .v.right .tick{left:0;right:auto}
+  .tlab{position:absolute;font-size:2.6mm;color:#1a1a1a;font-variant-numeric:tabular-nums;font-family:"JetBrains Mono",monospace}
+  .h .tlab{top:0}
+  .h.bottom .tlab{bottom:0;top:auto}
+  .v .tlab{right:3.4mm;transform:translateY(-1.4mm)}
+  .v.right .tlab{left:3.4mm;right:auto}
+
+  /* zona de granos */
+  .zone{position:absolute;left:26mm;right:26mm;top:26mm;bottom:26mm;border:.4mm dashed #d2d2d2;border-radius:2mm;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;color:#c4c4c4}
+  .zone .big{font-size:9mm;font-weight:800;letter-spacing:-.02em;color:#d8d8d8}
+  .zone .sub{font-size:4mm;margin-top:2mm;color:#cfcfcf;max-width:150mm;line-height:1.4}
+
+  /* cabecera y datos */
+  .hd{position:absolute;left:26mm;top:14mm;display:flex;align-items:center;gap:4mm;font-size:5mm;font-weight:800}
+  .hd .dot{width:7mm;height:7mm;border-radius:50%;border:1mm solid var(--orange);color:var(--orange);display:grid;place-items:center;font-weight:900;font-size:4mm}
+  .hd b{color:var(--orange)}
+  .fields{position:absolute;right:26mm;top:14mm;display:flex;gap:8mm;font-size:3.4mm;color:#555}
+  .fields .f{border-bottom:.4mm solid #bbb;min-width:34mm;padding-bottom:1mm}
+  .foot{position:absolute;left:26mm;right:26mm;bottom:14mm;font-size:3.2mm;color:#777;text-align:center;line-height:1.5}
+  .foot b{color:#1a1a1a}
+  .cal{position:absolute;bottom:14mm;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:2mm;font-size:2.8mm;color:#555}
+  .cal .barcm{width:10mm;height:3mm;border:.3mm solid #1a1a1a;border-top:none}
+
+  @media print{
+    html,body{background:#fff}
+    .toolbar{display:none}
+    .wrap{padding:0}
+    .sheet{box-shadow:none;width:297mm;height:210mm}
+    @page{size:A4 landscape;margin:0}
+  }
+</style>
+</head>
+<body>
+
+<div class="toolbar">
+  <div class="brand">finkap<b>®</b> · plantilla de análisis</div>
+  <div class="tip">Imprimí en <b>A4 horizontal</b>, escala <b>100% (tamaño real)</b> — sin “ajustar a la página”. Verificá con la regla de calibración de 1&nbsp;cm.</div>
+  <button onclick="window.print()">Imprimir / Guardar PDF</button>
+  <a href="simulador-productor.html">← Volver al simulador</a>
+</div>
+
+<div class="wrap">
+  <div class="sheet">
+    <div class="ruler h top" id="rTop"></div>
+    <div class="ruler h bottom" id="rBot"></div>
+    <div class="ruler v left" id="rLeft"></div>
+    <div class="ruler v right" id="rRight"></div>
+
+    <div class="hd"><span class="dot">f</span> finkap<b>®</b></div>
+    <div class="fields">
+      <span class="f">Lote / Productor</span>
+      <span class="f">Origen</span>
+      <span class="f">Fecha</span>
+    </div>
+
+    <div class="zone">
+      <div class="big">200&nbsp;g de granos</div>
+      <div class="sub">Esparcí los granos del lote dentro de este recuadro, sin amontonar. Foto desde arriba, con luz pareja. Más fotos del mismo lote = análisis más preciso.</div>
+    </div>
+
+    <div class="foot"><b>Doble certificación:</b> esta declaración se contrasta con el escaneo del lote al llegar. La regla en cm da la escala real del grano para el análisis por imagen.</div>
+  </div>
+</div>
+
+<script>
+// Genera reglas en cm/mm a escala real (mm de CSS = mm impresos).
+function buildH(el, lenMM){
+  const cm = Math.floor(lenMM/10);
+  let h='';
+  for(let mm=0; mm<=lenMM; mm++){
+    const isCm = mm%10===0, isHalf = mm%5===0;
+    const hgt = isCm? '4mm' : isHalf? '2.6mm' : '1.4mm';
+    h += `<span class="tick" style="left:${mm}mm;height:${hgt}"></span>`;
+    if(isCm) h += `<span class="tlab" style="left:${mm}mm;transform:translateX(-1.2mm)">${mm/10}</span>`;
+  }
+  el.innerHTML = h;
+}
+function buildV(el, lenMM){
+  let h='';
+  for(let mm=0; mm<=lenMM; mm++){
+    const isCm = mm%10===0, isHalf = mm%5===0;
+    const w = isCm? '4mm' : isHalf? '2.6mm' : '1.4mm';
+    h += `<span class="tick" style="top:${mm}mm;width:${w}"></span>`;
+    if(isCm) h += `<span class="tlab" style="top:${mm}mm">${mm/10}</span>`;
+  }
+  el.innerHTML = h;
+}
+// largo útil: ancho 297 - 2*14 = 269mm ; alto 210 - 2*14 = 182mm
+buildH(document.getElementById('rTop'), 269);
+buildH(document.getElementById('rBot'), 269);
+buildV(document.getElementById('rLeft'), 182);
+buildV(document.getElementById('rRight'), 182);
+</script>
+</body>
+</html>

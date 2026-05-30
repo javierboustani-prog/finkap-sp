@@ -1,0 +1,479 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Panel interno — Finkap</title>
+<meta name="description" content="Panel interno: márgenes implícitos por lote, comisión Finkap, libro financiero (spread de plazo vs costo de adelanto) y alertas de spread negativo. Motor único pricing-engine.js.">
+<meta name="robots" content="noindex,nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0d0d0f; --bg2:#131316; --panel:#17171b; --panel2:#1d1d22; --panel3:#222228;
+  --line:#2c2c33; --line2:#3a3a43; --text:#f5f5f7; --muted:#9b9ba6; --muted2:#6f6f7a;
+  --orange:#F97316; --orange-d:#ea670a; --orange-soft:rgba(249,115,22,.12); --orange-line:rgba(249,115,22,.45);
+  --green:#25D366; --bad:#ef5350; --ok:#46d39a; --blue:#5b9dff; --violet:#b58bff;
+  --radius:16px; --radius-sm:10px;
+  --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  --sans:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+  --shadow:0 10px 40px -12px rgba(0,0,0,.6);
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:
+    radial-gradient(1200px 600px at 85% -10%, rgba(249,115,22,.10), transparent 60%),
+    radial-gradient(900px 500px at -10% 10%, rgba(249,115,22,.05), transparent 55%),
+    var(--bg);
+  color:var(--text); font-family:var(--sans); font-size:14px; line-height:1.5;
+  -webkit-font-smoothing:antialiased; letter-spacing:-.01em; min-height:100vh;
+}
+.num,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums;letter-spacing:0}
+a{color:inherit;text-decoration:none}
+button,input,select{font-family:inherit}
+::selection{background:var(--orange);color:#fff}
+*::-webkit-scrollbar{width:10px;height:10px}
+*::-webkit-scrollbar-thumb{background:var(--line2);border-radius:99px;border:2px solid transparent;background-clip:padding-box}
+*::-webkit-scrollbar-track{background:transparent}
+
+/* topbar */
+.topbar{position:sticky;top:0;z-index:50;backdrop-filter:saturate(140%) blur(14px);background:rgba(13,13,15,.72);border-bottom:1px solid var(--line)}
+.topbar-in{max-width:1380px;margin:0 auto;padding:12px 20px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:20px;letter-spacing:-.03em}
+.brand .dot{width:30px;height:30px;border-radius:50%;border:2.5px solid var(--orange);display:grid;place-items:center;color:var(--orange);font-weight:900;font-size:16px;flex:0 0 auto}
+.brand sup{color:var(--orange);font-size:10px;font-weight:700}
+.priv{font-size:9px;text-transform:uppercase;letter-spacing:.7px;color:var(--bad);border:1px solid rgba(239,83,80,.4);background:rgba(239,83,80,.08);border-radius:99px;padding:2px 8px;font-weight:700}
+.nav{display:flex;gap:6px;margin-left:6px}
+.nav a{font-size:12px;color:var(--muted);padding:5px 11px;border-radius:99px;border:1px solid transparent}
+.nav a:hover{color:var(--text);border-color:var(--line)}
+.nav a.on{color:var(--orange);border-color:var(--orange-line);background:var(--orange-soft)}
+/* menú: en celular ocupa su propia fila, siempre visible y tappable */
+@media(max-width:760px){
+  .topbar-in{gap:10px}
+  .nav{order:3;width:100%;margin-left:0;justify-content:space-between;gap:6px}
+  .nav a{flex:1;text-align:center;padding:9px 6px;font-size:13px;border-color:var(--line)}
+  .feeds{margin-left:auto}
+}
+.feeds{display:flex;align-items:center;gap:9px;margin-left:auto;flex-wrap:wrap}
+.feed{background:var(--panel);border:1px solid var(--line);border-radius:99px;padding:5px 12px;display:flex;align-items:center;gap:8px;font-size:11px;color:var(--muted)}
+.feed .lbl{text-transform:uppercase;letter-spacing:.6px;font-size:9px;color:var(--muted2)}
+.feed .num{font-size:13px;color:var(--text);font-weight:700}
+.feed .num.live{color:var(--ok)}
+
+/* layout */
+.shell{max-width:1380px;margin:0 auto;padding:24px 20px 80px}
+.hero{margin:6px 0 18px;display:flex;align-items:flex-end;justify-content:space-between;gap:20px;flex-wrap:wrap}
+.hero h1{font-size:clamp(24px,3.5vw,34px);font-weight:800;letter-spacing:-.03em;margin:0 0 4px}
+.hero h1 .ac{color:var(--orange)}
+.hero p{color:var(--muted);max-width:620px;margin:0}
+
+/* controls */
+.controls{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;margin-bottom:18px;background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:14px 16px}
+.ctl label{display:block;font-size:9px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted2);margin-bottom:5px;font-weight:600}
+.ctl .inp,.ctl select{background:#0a0a0c;border:1px solid var(--line2);border-radius:9px;color:var(--text);padding:8px 11px;font-size:13px}
+.ctl select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%239b9ba6' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 9px center;padding-right:28px}
+.ctl .inp{width:96px;font-family:var(--mono)}
+.ctl .inp:focus,.ctl select:focus{outline:none;border-color:var(--orange)}
+.seg{display:flex;border:1px solid var(--line2);border-radius:9px;overflow:hidden}
+.seg button{background:#0a0a0c;border:none;color:var(--muted);padding:8px 12px;font-size:12px;font-weight:600;cursor:pointer;border-right:1px solid var(--line2)}
+.seg button:last-child{border-right:none}
+.seg button.on{background:var(--orange);color:#fff}
+
+/* KPIs */
+.kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:20px}
+@media(max-width:900px){.kpis{grid-template-columns:repeat(2,1fr)}}
+.kpi{background:linear-gradient(160deg,var(--panel2),var(--panel));border:1px solid var(--line);border-radius:var(--radius);padding:15px 16px;position:relative;overflow:hidden}
+.kpi .k{font-size:9px;text-transform:uppercase;letter-spacing:.7px;color:var(--muted2)}
+.kpi .v{font-family:var(--mono);font-size:26px;font-weight:800;margin-top:4px;line-height:1.05}
+.kpi .s{font-size:11px;color:var(--muted);margin-top:3px}
+.kpi.accent{border-color:var(--orange-line)}
+.kpi.accent .v{color:var(--orange)}
+.kpi.alert.hot{border-color:rgba(239,83,80,.5)}
+.kpi.alert.hot .v{color:var(--bad)}
+
+/* section */
+.sec{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:16px 18px;margin-bottom:20px}
+.sec-h{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px;flex-wrap:wrap}
+.sec-h h3{margin:0;font-size:15px;font-weight:700}
+.sec-h .t{font-size:10px;text-transform:uppercase;letter-spacing:.8px;color:var(--orange);font-weight:700}
+.sec-h .meta{font-size:11px;color:var(--muted2)}
+
+/* table */
+.tbl-wrap{overflow-x:auto;border-radius:var(--radius-sm)}
+table{width:100%;border-collapse:collapse;font-size:12.5px;min-width:880px}
+thead th{position:sticky;top:0;background:var(--panel3);text-align:right;font-size:9.5px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);font-weight:600;padding:9px 10px;white-space:nowrap;cursor:pointer;user-select:none;border-bottom:1px solid var(--line2)}
+thead th:first-child,tbody td:first-child{text-align:left}
+thead th.s-asc::after{content:" ▲";color:var(--orange)}
+thead th.s-desc::after{content:" ▼";color:var(--orange)}
+tbody td{padding:9px 10px;text-align:right;border-bottom:1px solid var(--line);white-space:nowrap}
+tbody td.name{text-align:left;font-weight:600;max-width:230px;overflow:hidden;text-overflow:ellipsis}
+tbody td .mono{font-family:var(--mono)}
+tbody tr:hover{background:var(--panel2)}
+tbody tr.neg{background:rgba(239,83,80,.07)}
+tbody tr.neg:hover{background:rgba(239,83,80,.12)}
+.chip{display:inline-block;font-size:9px;text-transform:uppercase;letter-spacing:.4px;border-radius:99px;padding:2px 7px;font-weight:700}
+.chip.regional{color:#bfe3cf;background:rgba(70,211,154,.12);border:1px solid rgba(70,211,154,.3)}
+.chip.especialidad{color:#cfe0ff;background:rgba(91,157,255,.12);border:1px solid rgba(91,157,255,.3)}
+.chip.exotico{color:#e4cfff;background:rgba(181,139,255,.14);border:1px solid rgba(181,139,255,.35)}
+.pos{color:var(--ok)} .bad{color:var(--bad);font-weight:700}
+.mk{font-weight:700}
+.bar-cell{min-width:90px}
+.minibar{height:7px;border-radius:99px;background:#0a0a0c;overflow:hidden;margin-top:4px}
+.minibar>span{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,var(--orange-d),var(--orange))}
+tfoot td{padding:10px;font-size:12px;font-weight:700;border-top:1px solid var(--line2);text-align:right;font-family:var(--mono)}
+tfoot td:first-child{text-align:left;font-family:var(--sans)}
+
+/* libro financiero */
+.fin-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+@media(max-width:900px){.fin-grid{grid-template-columns:1fr}}
+.book table{min-width:0}
+.book td.lbl{text-align:left;color:var(--muted)}
+.note{font-size:11px;color:var(--muted2);line-height:1.55;margin-top:12px;padding-top:12px;border-top:1px solid var(--line)}
+.loading{padding:40px;text-align:center;color:var(--muted2);font-size:13px}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:10.5px;color:var(--muted2);margin-top:8px}
+.legend b{color:var(--text);font-weight:600}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-in">
+    <div class="brand"><span class="dot">f</span> finkap<sup>®</sup></div>
+    <span class="priv">interno</span>
+    <nav class="nav">
+      <a href="armar-pedido.html">Venta</a>
+      <a href="simulador-productor.html">Productor</a>
+      <a href="panel-interno.html" class="on">Panel</a>
+    </nav>
+    <div class="feeds">
+      <div class="feed"><span class="lbl">Coffee C · NY</span><span class="num" id="kcVal">—</span><span style="font-size:9px;color:var(--muted2)">¢/lb</span></div>
+      <div class="feed"><span class="lbl">Dólar BNA</span><span class="num" id="tcVal">—</span></div>
+    </div>
+  </div>
+</div>
+
+<div class="shell">
+  <div class="hero">
+    <div>
+      <h1>Panel <span class="ac">interno</span></h1>
+      <p>Márgenes implícitos por lote, comisión Finkap y libro financiero. Todo calculado con el motor único (<code style="color:var(--muted)">pricing-engine.js</code>) sobre el catálogo en vivo + Coffee C + BNA.</p>
+    </div>
+  </div>
+
+  <div class="controls">
+    <div class="ctl">
+      <label>Forma de pago</label>
+      <select id="cPago"></select>
+    </div>
+    <div class="ctl">
+      <label>Volumen asumido (kg)</label>
+      <input class="inp" id="cKg" inputmode="numeric" value="1000">
+    </div>
+    <div class="ctl">
+      <label>Tránsito T (meses)</label>
+      <input class="inp" id="cT" inputmode="numeric" value="6">
+    </div>
+    <div class="ctl">
+      <label>Filtrar tier</label>
+      <div class="seg" id="cTier">
+        <button data-t="" class="on">Todos</button>
+        <button data-t="regional">Reg</button>
+        <button data-t="especialidad">Esp</button>
+        <button data-t="exotico">Exó</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="kpis" id="kpis">
+    <div class="kpi accent"><div class="k">Lotes en catálogo</div><div class="v" id="kCount">—</div><div class="s" id="kCountS">cargando…</div></div>
+    <div class="kpi"><div class="k">Markup promedio</div><div class="v" id="kMk">—</div><div class="s">efectivo / costo puesto</div></div>
+    <div class="kpi accent"><div class="k">Comisión Finkap prom.</div><div class="v" id="kComm">—</div><div class="s">sobre efectivo</div></div>
+    <div class="kpi"><div class="k">Toma Finkap / kg</div><div class="v" id="kTake">—</div><div class="s">comisión + 25% spread</div></div>
+    <div class="kpi alert" id="kAlertBox"><div class="k">Spread negativo</div><div class="v" id="kAlert">—</div><div class="s">lotes a revisar</div></div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-h">
+      <div><span class="t">Catálogo · márgenes</span><h3 style="margin-top:3px">Margen implícito por lote</h3></div>
+      <div class="meta" id="tblMeta"></div>
+    </div>
+    <div class="tbl-wrap">
+      <table id="tbl">
+        <thead><tr>
+          <th data-k="n">Lote</th>
+          <th data-k="tier">Tier</th>
+          <th data-k="score">SCA</th>
+          <th data-k="fob">FOB</th>
+          <th data-k="costo">Costo puesto</th>
+          <th data-k="pvp">PVP</th>
+          <th data-k="efectivo">Efectivo</th>
+          <th data-k="commRate">Com. %</th>
+          <th data-k="spread">Spread</th>
+          <th data-k="finkap">Toma Finkap</th>
+          <th data-k="markup" class="s-desc">Markup</th>
+        </tr></thead>
+        <tbody id="tbody"><tr><td colspan="11" class="loading">Leyendo catálogo en vivo…</td></tr></tbody>
+        <tfoot id="tfoot"></tfoot>
+      </table>
+    </div>
+    <div class="legend">
+      <span><b>Costo puesto</b> = FOB + landing + carry</span>
+      <span><b>Toma Finkap</b> = comisión + 25% del spread</span>
+      <span><b>Markup</b> = efectivo / costo puesto − 1</span>
+      <span class="bad">■ fila roja = spread negativo</span>
+    </div>
+  </div>
+
+  <div class="fin-grid">
+    <div class="sec book">
+      <div class="sec-h"><div><span class="t">Libro financiero</span><h3 style="margin-top:3px">Spread de plazo vs costo de fondeo</h3></div></div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th class="lbl" data-nosort>Plazo</th><th>Recargo PVP</th><th>Ingreso fin.</th><th>Costo fondeo</th><th>Spread neto</th></tr></thead>
+          <tbody id="finBody"></tbody>
+        </table>
+      </div>
+      <div class="note" id="finNote"></div>
+    </div>
+
+    <div class="sec">
+      <div class="sec-h"><div><span class="t">Adelanto al productor</span><h3 style="margin-top:3px">Costo del capital por etapa</h3></div></div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th class="lbl" data-nosort>Etapa</th><th>Haircut</th><th>Adelanto/kg*</th><th>% FOB</th><th>Costo/mes</th></tr></thead>
+          <tbody id="advBody"></tbody>
+        </table>
+      </div>
+      <div class="note">* sobre un FOB de referencia del catálogo (promedio), con índice de confianza 90. El haircut efectivo baja a medida que sube la confianza del lote (ProfilePrint).</div>
+    </div>
+  </div>
+
+  <div class="note" style="max-width:880px">
+    <b>Privacidad:</b> esta vista expone costos internos, comisiones y márgenes. No la publiques ni la pongas en la planilla pública del catálogo. Es para uso interno de Finkap.
+  </div>
+</div>
+
+<script type="module">
+import * as PE from './pricing-engine.js';
+
+const $ = id => document.getElementById(id);
+const fmt = (v,d=2)=> (v==null||isNaN(v))?'—':(+v).toLocaleString('es-AR',{minimumFractionDigits:d,maximumFractionDigits:d});
+const usd = (v,d=2)=> 'USD '+fmt(v,d);
+const pctv= (v,d=1)=> (v==null||isNaN(v))?'—':fmt(v*100,d)+'%';
+
+const SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/1J_Gor9FaSFkbIuKJlDROXgCRT2cgCL-I_Q64Kn75zy0/gviz/tq?tqx=out:csv&gid=0";
+const KC_API_VIA = u => "https://corsproxy.io/?url="+encodeURIComponent(u);
+const TC_API = "https://dolarapi.com/v1/dolares/oficial";
+
+const PAGO_LBL = { contado:'Contado / transferencia', d30:'Cheque 30 días', d60:'Cheque 60 días',
+  d90:'Cheque 90 días', d120:'Cheque 120 días', d150:'Cheque 150 días', d180:'Cheque 180 días' };
+const PAGO_DIAS = { contado:0, d30:30, d60:60, d90:90, d120:120, d150:150, d180:180 };
+const ETAPA_LBL = { pre:'Pre-cosecha', cosecha:'Cosecha', post:'Post-cosecha', bl:'Embarque / B-L', zf:'Zona Franca' };
+const TNA = 0.33; // costo de fondeo de referencia (TNA base de la escalera de pago)
+
+let feeds = { kc: PE.KC_REF, tc: 1430 };
+let CATALOG = [];
+let ROWS = [];                       // filas calculadas
+let sortKey = 'markup', sortDir = -1;
+let filterTier = '';
+
+/* selects */
+$('cPago').innerHTML = Object.entries(PAGO_LBL).map(([v,l])=>`<option value="${v}"${v==='d30'?' selected':''}>${l}</option>`).join('');
+
+/* ---- helpers de parseo (idénticos al resto del sitio) ---- */
+function csvToRows(text){
+  const rows=[]; let row=[],cur="",q=false;
+  for(let i=0;i<text.length;i++){const c=text[i];
+    if(q){ if(c==='"'){ if(text[i+1]==='"'){cur+='"';i++;} else q=false; } else cur+=c; }
+    else { if(c==='"') q=true; else if(c===','){row.push(cur);cur="";} else if(c==='\n'){row.push(cur);rows.push(row);row=[];cur="";} else if(c==='\r'){} else cur+=c; }
+  }
+  if(cur!==""||row.length){ row.push(cur); rows.push(row); }
+  return rows;
+}
+function numLoose(x){ if(x==null||x==="") return null; let s=String(x).replace(/[^0-9.,\-]/g,""); if(s.indexOf(",")>-1 && s.indexOf(".")>-1) s=s.replace(/\./g,"").replace(",","."); else s=s.replace(",","."); const v=parseFloat(s); return isNaN(v)?null:v; }
+function normH(h){ return String(h||"").trim().toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[^a-z0-9]+/g,"_").replace(/^_+|_+$/g,""); }
+const CAT2TIER = c => { const s=normH(c); if(s.includes('exotic')) return 'exotico'; if(s.includes('especial')) return 'especialidad'; return 'regional'; };
+const TIER_LBL = { regional:'Regional', especialidad:'Especialidad', exotico:'Exótico' };
+
+function matchOrigen(o){ return Object.keys(PE.D_ORIGEN).find(k=> normH(k)===normH(o) || (o&&normH(o).includes(normH(k)))) || o; }
+function matchProceso(p){ return Object.keys(PE.D_PROCESO).find(k=> normH(k)===normH(p)) || null; }
+
+async function loadCatalog(){
+  try{
+    const r = await fetch(SHEET_CSV_URL); if(!r.ok) throw 0;
+    const rows = csvToRows(await r.text()).filter(r=>r.some(c=>String(c).trim()!==''));
+    const head = rows.shift().map(normH);
+    const find = arr => { for(const a of arr){ const i=head.indexOf(a); if(i>-1) return i; } return -1; };
+    const ci = {
+      n: find(['nombre','variedad','producto']),
+      origen: find(['origen','origin','pais']),
+      cat: find(['categoria','category','tipo']),
+      proceso: find(['proceso','process','beneficio']),
+      sca: find(['puntos_sca','sca','puntaje_sca','puntaje']),
+      ia: find(['sca_finkap_ia','puntaje_finkap_ia','finkap_ia']),
+      pkg: find(['precio_usd_kg','precio_kg','usd_kg']),
+      pbag: find(['precio_usd_bolsa','precio_bolsa']),
+      b: find(['kg_bolsa','bolsa_kg','kg']),
+      stock: find(['stock','disponible'])
+    };
+    const get=(r,k)=> ci[k]>=0 ? (r[ci[k]]||'').trim() : '';
+    CATALOG = rows.map(r=>{
+      let b=numLoose(get(r,'b')), pkg=numLoose(get(r,'pkg')); const pbag=numLoose(get(r,'pbag'));
+      if(!pkg && pbag && b) pkg = pbag/b;
+      return {
+        n:get(r,'n'), origen:matchOrigen(get(r,'origen')), cat:get(r,'cat'),
+        tier:CAT2TIER(get(r,'cat')), proceso:matchProceso(get(r,'proceso'))||'Lavado',
+        score: numLoose(get(r,'ia')) ?? numLoose(get(r,'sca')) ?? 83, pvpReal: pkg||null
+      };
+    }).filter(x=>x.n && x.pvpReal);
+  }catch(e){
+    $('tbody').innerHTML = `<tr><td colspan="11" class="loading">No se pudo leer el catálogo en vivo. Verificá que la planilla esté compartida como "cualquiera con el enlace · lector".</td></tr>`;
+  }
+}
+
+function compute(){
+  const pago = $('cPago').value;
+  const kg = parseFloat(($('cKg').value||'').replace(',','.'))||1000;
+  const T  = parseFloat(($('cT').value||'').replace(',','.'))||6;
+  ROWS = CATALOG.map(p=>{
+    const lot = { ...p, kg, T, pago };
+    const r = PE.calcular(lot, feeds);
+    return { n:p.n, tier:p.tier, score:p.score, origen:p.origen,
+      fob:r.fob, costo:r.fob+r.landing+r.carry, pvp:r.pvp, efectivo:r.efectivo,
+      commRate:r.commRate, comm:r.comm, spread:r.spread, finkap:r.waterfall.finkap,
+      productor:r.waterfall.productor, markup:r.markup };
+  });
+  render();
+}
+
+function render(){
+  let rows = ROWS.filter(r=> !filterTier || r.tier===filterTier);
+  const dir = sortDir, k = sortKey;
+  rows.sort((a,b)=>{
+    let va=a[k], vb=b[k];
+    if(typeof va==='string'){ return va.localeCompare(vb)*dir; }
+    return (va-vb)*dir;
+  });
+  // KPIs (sobre filtro)
+  const n = rows.length;
+  const avg = arr => arr.length? arr.reduce((s,x)=>s+x,0)/arr.length : 0;
+  const neg = rows.filter(r=>r.spread<0).length;
+  $('kCount').textContent = n;
+  $('kCountS').textContent = filterTier ? TIER_LBL[filterTier] : 'todos los tiers';
+  $('kMk').textContent = pctv(avg(rows.map(r=>r.markup)));
+  $('kComm').textContent = pctv(avg(rows.map(r=>r.commRate)));
+  $('kTake').textContent = usd(avg(rows.map(r=>r.finkap)));
+  $('kAlert').textContent = neg;
+  $('kAlertBox').classList.toggle('hot', neg>0);
+
+  const maxMk = Math.max(0.01, ...rows.map(r=>r.markup));
+  $('tbody').innerHTML = rows.map(r=>`
+    <tr class="${r.spread<0?'neg':''}">
+      <td class="name" title="${r.n}">${r.n}</td>
+      <td><span class="chip ${r.tier}">${TIER_LBL[r.tier]}</span></td>
+      <td class="mono">${fmt(r.score,1)}</td>
+      <td class="mono">${fmt(r.fob)}</td>
+      <td class="mono">${fmt(r.costo)}</td>
+      <td class="mono">${fmt(r.pvp)}</td>
+      <td class="mono">${fmt(r.efectivo)}</td>
+      <td class="mono">${pctv(r.commRate)}</td>
+      <td class="mono ${r.spread<0?'bad':'pos'}">${fmt(r.spread)}</td>
+      <td class="mono">${fmt(r.finkap)}</td>
+      <td class="bar-cell"><span class="mk mono">${pctv(r.markup)}</span><span class="minibar"><span style="width:${Math.max(0,Math.min(100,r.markup/maxMk*100))}%"></span></span></td>
+    </tr>`).join('') || `<tr><td colspan="11" class="loading">Sin lotes para este filtro.</td></tr>`;
+
+  // tfoot totales
+  const sum = key => rows.reduce((s,r)=>s+r[key],0);
+  $('tfoot').innerHTML = n ? `<tr>
+    <td>Total ${n} lotes</td><td></td><td></td>
+    <td>${fmt(avg(rows.map(r=>r.fob)))}</td>
+    <td>${fmt(avg(rows.map(r=>r.costo)))}</td>
+    <td>${fmt(avg(rows.map(r=>r.pvp)))}</td>
+    <td>${fmt(avg(rows.map(r=>r.efectivo)))}</td>
+    <td>${pctv(avg(rows.map(r=>r.commRate)))}</td>
+    <td>${fmt(avg(rows.map(r=>r.spread)))}</td>
+    <td>${fmt(sum('finkap'))}</td>
+    <td>${pctv(avg(rows.map(r=>r.markup)))}</td>
+  </tr>` : '';
+
+  $('tblMeta').textContent = `${n} lotes · KC ${fmt(feeds.kc)} ¢/lb · TC ${fmt(feeds.tc,0)}`;
+  // header sort marks
+  $('tbl').querySelectorAll('thead th').forEach(th=>{
+    th.classList.remove('s-asc','s-desc');
+    if(th.dataset.k===sortKey) th.classList.add(sortDir>0?'s-asc':'s-desc');
+  });
+  renderBook();
+}
+
+/* ---- libro financiero: recargo por plazo vs costo de fondeo ---- */
+function renderBook(){
+  const rows = ROWS.filter(r=> !filterTier || r.tier===filterTier);
+  const basePvp = rows.length ? rows.reduce((s,r)=>s+r.pvp,0)/rows.length : 0;
+  const plazos = ['contado','d30','d60','d90','d120','d150','d180'];
+  $('finBody').innerHTML = plazos.map(p=>{
+    const mod = PE.PAGO[p];                       // recargo/descuento sobre PVP
+    const ingreso = basePvp*mod;                  // USD que gana Finkap por extender plazo
+    const meses = PAGO_DIAS[p]/30;
+    const costo = basePvp*(TNA/12)*meses;         // costo de fondear esos días
+    const neto = ingreso - costo;
+    return `<tr>
+      <td class="lbl">${PAGO_LBL[p]}</td>
+      <td class="mono">${(mod>=0?'+':'')+pctv(mod)}</td>
+      <td class="mono">${fmt(ingreso)}</td>
+      <td class="mono">${fmt(costo)}</td>
+      <td class="mono ${neto<0?'bad':'pos'}">${fmt(neto)}</td>
+    </tr>`;
+  }).join('');
+  $('finNote').innerHTML = `Sobre un PVP de referencia de <b>${usd(basePvp)}</b> (promedio del filtro). El <b>ingreso financiero</b> es el recargo de la escalera de pago; el <b>costo de fondeo</b> usa una TNA de ${pctv(TNA,0)}. El <b>spread neto</b> positivo indica que el recargo cubre el costo de financiar al tostadero a ese plazo.`;
+
+  // adelanto por etapa
+  const baseFob = rows.length ? rows.reduce((s,r)=>s+r.fob,0)/rows.length : 0;
+  const conf = 90;
+  $('advBody').innerHTML = Object.keys(PE.ETAPA).map(et=>{
+    const a = PE.adelanto(baseFob, et, conf);
+    const haircut = PE.ETAPA[et][0];
+    return `<tr>
+      <td class="lbl">${ETAPA_LBL[et]}</td>
+      <td class="mono">${pctv(haircut)}</td>
+      <td class="mono">${fmt(a.perKg)}</td>
+      <td class="mono">${pctv(a.pctFob)}</td>
+      <td class="mono">${pctv(a.rateMes)}</td>
+    </tr>`;
+  }).join('');
+}
+
+/* ---- interacciones ---- */
+$('tbl').querySelectorAll('thead th[data-k]').forEach(th=>{
+  th.onclick = ()=>{
+    const k = th.dataset.k;
+    if(sortKey===k){ sortDir*=-1; } else { sortKey=k; sortDir = (k==='n'||k==='tier')?1:-1; }
+    render();
+  };
+});
+$('cTier').querySelectorAll('button').forEach(b=>{
+  b.onclick=()=>{ filterTier=b.dataset.t; $('cTier').querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b)); render(); };
+});
+['cKg','cT'].forEach(id=> $(id).addEventListener('input', compute));
+$('cPago').addEventListener('change', compute);
+
+/* ---- feeds en vivo ---- */
+async function loadFeeds(){
+  try{
+    const r = await fetch(KC_API_VIA("https://query1.finance.yahoo.com/v8/finance/chart/KC=F"),{cache:'no-store'});
+    const j = await r.json(); const kc = j.chart.result[0].meta.regularMarketPrice;
+    if(kc>0){ feeds.kc = kc; $('kcVal').textContent = fmt(kc); $('kcVal').classList.add('live'); }
+  }catch(e){ feeds.kc = PE.KC_REF; $('kcVal').textContent = fmt(PE.KC_REF); }
+  try{
+    const r = await fetch(TC_API); const j = await r.json(); const v = +j.venta;
+    if(v>0){ feeds.tc = v; $('tcVal').textContent = fmt(v,0); $('tcVal').classList.add('live'); }
+  }catch(e){ $('tcVal').textContent = fmt(feeds.tc,0); }
+  compute();
+}
+
+/* INIT */
+(async ()=>{ await loadCatalog(); await loadFeeds(); compute(); })();
+</script>
+</body>
+</html>

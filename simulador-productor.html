@@ -1,0 +1,856 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Tu café, tu margen — Finkap</title>
+<meta name="description" content="Mandá tu café, esperá la rotación y llevate un margen que el mercado no te paga. Elegí cuánto esperar y cómo financiar.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0d0d0f; --bg2:#131316; --panel:#17171b; --panel2:#1d1d22; --panel3:#222228;
+  --line:#2c2c33; --line2:#3a3a43; --text:#f5f5f7; --muted:#9b9ba6; --muted2:#6f6f7a;
+  --orange:#F97316; --orange-d:#ea670a; --orange-soft:rgba(249,115,22,.12); --orange-line:rgba(249,115,22,.45);
+  --green:#25D366; --green-d:#1eb255; --bad:#ef5350; --ok:#46d39a; --blue:#5b9dff; --violet:#b58bff;
+  --radius:16px; --radius-sm:10px;
+  --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  --sans:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+  --shadow:0 10px 40px -12px rgba(0,0,0,.6);
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:
+    radial-gradient(1200px 600px at 85% -10%, rgba(249,115,22,.10), transparent 60%),
+    radial-gradient(900px 500px at -10% 10%, rgba(37,211,102,.05), transparent 55%),
+    var(--bg);
+  color:var(--text); font-family:var(--sans); font-size:14px; line-height:1.5;
+  -webkit-font-smoothing:antialiased; letter-spacing:-.01em; min-height:100vh;
+}
+.num,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums;letter-spacing:0}
+a{color:inherit;text-decoration:none}
+button,input,select,textarea{font-family:inherit}
+::selection{background:var(--orange);color:#fff}
+*::-webkit-scrollbar{width:10px;height:10px}
+*::-webkit-scrollbar-thumb{background:var(--line2);border-radius:99px;border:2px solid transparent;background-clip:padding-box}
+*::-webkit-scrollbar-track{background:transparent}
+
+/* topbar */
+.topbar{position:sticky;top:0;z-index:50;backdrop-filter:saturate(140%) blur(14px);background:rgba(13,13,15,.72);border-bottom:1px solid var(--line)}
+.topbar-in{max-width:1240px;margin:0 auto;padding:12px 20px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:20px;letter-spacing:-.03em}
+.brand .dot{width:30px;height:30px;border-radius:50%;border:2.5px solid var(--orange);display:grid;place-items:center;color:var(--orange);font-weight:900;font-size:16px;flex:0 0 auto}
+.brand sup{color:var(--orange);font-size:10px;font-weight:700}
+.nav{display:flex;gap:6px;margin-left:6px}
+.nav a{font-size:12px;color:var(--muted);padding:5px 11px;border-radius:99px;border:1px solid transparent}
+.nav a:hover{color:var(--text);border-color:var(--line)}
+.nav a.on{color:var(--orange);border-color:var(--orange-line);background:var(--orange-soft)}
+.feeds{display:flex;align-items:center;gap:9px;margin-left:auto;flex-wrap:wrap}
+.feed{background:var(--panel);border:1px solid var(--line);border-radius:99px;padding:5px 12px;display:flex;align-items:center;gap:8px;font-size:11px;color:var(--muted)}
+.feed .lbl{text-transform:uppercase;letter-spacing:.6px;font-size:9px;color:var(--muted2)}
+.feed .num{font-size:13px;color:var(--text);font-weight:700}
+.feed .num.live{color:var(--ok)}
+/* menú: en celular ocupa su propia fila, siempre visible y tappable */
+@media(max-width:760px){
+  .topbar-in{gap:10px}
+  .nav{order:3;width:100%;margin-left:0;justify-content:space-between;gap:6px}
+  .nav a{flex:1;text-align:center;padding:9px 6px;font-size:13px;border-color:var(--line)}
+  .feeds{margin-left:auto}
+}
+/* barra inferior fija (mobile): resumen + acción, siempre visible */
+.mobar{display:none}
+@media(max-width:760px){
+  .mobar{display:flex;position:fixed;bottom:0;left:0;right:0;z-index:60;align-items:center;gap:12px;
+    background:#101013;border-top:1px solid var(--line2);box-shadow:0 -10px 28px rgba(0,0,0,.55);padding:10px 14px}
+  .mobar .mb-tot{flex:1;min-width:0;cursor:pointer}
+  .mobar .mb-tot .l{font-size:10px;color:var(--muted2);text-transform:uppercase;letter-spacing:.6px}
+  .mobar .mb-tot .l::after{content:" · ver detalle ↓";color:var(--blue);font-weight:700}
+  .mobar .mb-tot .v{font-family:var(--mono);font-weight:800;font-size:19px;color:var(--green);white-space:nowrap}
+  .mobar .mb-cta{flex:0 0 auto;background:var(--green);color:#06281a;border:none;border-radius:10px;padding:11px 16px;font-size:14px;font-weight:800;cursor:pointer}
+  .mobar .mb-cta:active{background:var(--green-d)}
+  .mobar .mb-cta.armed{background:#fff;color:#06281a;box-shadow:0 0 0 2px var(--green) inset;animation:pulseCta 1.1s ease-in-out infinite}
+  @keyframes pulseCta{0%,100%{transform:scale(1)}50%{transform:scale(1.04)}}
+  .shell{padding-bottom:96px}
+}
+
+/* layout */
+.shell{max-width:1240px;margin:0 auto;padding:26px 20px 80px}
+.hero{margin:8px 0 22px}
+.hero h1{font-size:clamp(26px,4vw,40px);font-weight:800;letter-spacing:-.03em;margin:0 0 6px}
+.hero h1 .ac{color:var(--orange)}
+.hero p{color:var(--muted);max-width:720px;margin:0;font-size:15px}
+.grid{display:grid;grid-template-columns:minmax(340px,420px) 1fr;gap:18px;align-items:start}
+@media(max-width:900px){.grid{grid-template-columns:1fr}}
+
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:18px}
+.panel.sticky{position:sticky;top:80px}
+@media(max-width:900px){.panel.sticky{position:static;top:auto}}
+html{scroll-behavior:smooth;scroll-padding-top:88px}
+#detalleCard,#contratoCard{scroll-margin-top:88px}
+.step{margin-bottom:20px}
+.step:last-child{margin-bottom:0}
+.step-h{display:flex;align-items:center;gap:9px;margin:0 0 13px}
+.step-h .n{width:24px;height:24px;border-radius:7px;background:var(--orange);color:#fff;display:grid;place-items:center;font-weight:800;font-size:12px;flex:0 0 auto}
+.step-h h3{margin:0;font-size:14px;font-weight:700}
+.step-h small{color:var(--muted2);font-weight:400;font-size:11px;margin-left:auto}
+
+.field{margin-bottom:13px}
+.field > label{display:block;font-size:10px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted2);margin-bottom:5px;font-weight:600}
+.inp,select.inp,textarea.inp{width:100%;background:#0a0a0c;border:1px solid var(--line2);border-radius:9px;color:var(--text);padding:9px 11px;font-size:14px}
+.inp.num{font-family:var(--mono)}
+.inp:focus,select.inp:focus,textarea.inp:focus{outline:none;border-color:var(--orange)}
+textarea.inp{resize:vertical;min-height:58px;line-height:1.5}
+select.inp{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%239b9ba6' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;padding-right:30px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.hint{font-size:10.5px;color:var(--muted2);margin-top:4px;line-height:1.45}
+
+/* score slider */
+.score-wrap{display:flex;align-items:center;gap:10px}
+.score-val{font-family:var(--mono);font-size:26px;font-weight:800;color:var(--orange);min-width:74px;text-align:center}
+.nudge{width:30px;height:30px;border-radius:8px;background:#0a0a0c;border:1px solid var(--line2);color:var(--text);font-size:18px;cursor:pointer;flex:0 0 auto;line-height:1}
+.nudge:hover{border-color:var(--orange)}
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:6px;border-radius:99px;background:linear-gradient(90deg,var(--orange) var(--fill,50%),#0a0a0c var(--fill,50%));outline:none;margin:8px 0}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:var(--orange);border:3px solid #fff2;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,.5)}
+input[type=range]::-moz-range-thumb{width:18px;height:18px;border-radius:50%;background:var(--orange);border:3px solid #fff2;cursor:pointer}
+.score-band{display:inline-block;font-size:9px;text-transform:uppercase;letter-spacing:.5px;border-radius:99px;padding:2px 8px;font-weight:700;margin-top:6px}
+.band-regional{color:#bfe3cf;background:rgba(70,211,154,.12);border:1px solid rgba(70,211,154,.3)}
+.band-especialidad{color:#cfe0ff;background:rgba(91,157,255,.12);border:1px solid rgba(91,157,255,.3)}
+.band-exotico{color:#e4cfff;background:rgba(181,139,255,.14);border:1px solid rgba(181,139,255,.35)}
+
+/* notas chips */
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
+.chip-t{font-size:11px;border:1px solid var(--line2);background:#0a0a0c;color:var(--muted);border-radius:99px;padding:4px 10px;cursor:pointer;user-select:none}
+.chip-t.on{background:var(--orange-soft);border-color:var(--orange-line);color:var(--orange)}
+
+/* foto */
+.photo-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.dropz{border:1.5px dashed var(--line2);border-radius:var(--radius-sm);background:#0a0a0c;min-height:120px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;cursor:pointer;text-align:center;padding:10px;overflow:hidden;position:relative}
+.dropz:hover{border-color:var(--orange)}
+.dropz img{width:100%;height:100%;object-fit:cover;position:absolute;inset:0}
+.dropz .ph-ic{font-size:24px}
+.dropz .ph-t{font-size:11px;color:var(--muted);font-weight:600}
+.dropz .ph-s{font-size:9.5px;color:var(--muted2)}
+.ref-cap{font-size:9px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted2);margin-bottom:4px}
+.ref-box{border:1px solid var(--line);border-radius:var(--radius-sm);min-height:120px;display:flex;align-items:center;justify-content:center;overflow:hidden;background:var(--panel2);position:relative}
+.ref-box img{width:100%;height:100%;object-fit:cover}
+.ref-box .empty{font-size:10.5px;color:var(--muted2);padding:10px;text-align:center}
+.ref-box svg{width:100%;height:100%;display:block}
+.howto2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:11px}
+.opt{background:var(--panel2);border:1px solid var(--line);border-radius:var(--radius-sm);padding:11px 12px}
+.opt-h{font-size:12px;font-weight:700;display:flex;align-items:center;gap:7px;margin-bottom:5px}
+.opt-n{width:18px;height:18px;border-radius:5px;background:var(--orange);color:#fff;display:grid;place-items:center;font-size:11px;font-weight:800;flex:0 0 auto}
+.opt p{margin:0 0 8px;font-size:11px;color:var(--muted);line-height:1.5}
+.opt b{color:var(--text)}
+.tpl-btn{display:inline-block;font-size:11.5px;font-weight:700;color:var(--orange);border:1px solid var(--orange-line);background:var(--orange-soft);border-radius:8px;padding:6px 11px}
+.tpl-btn:hover{background:rgba(249,115,22,.2)}
+@media(max-width:520px){.howto2{grid-template-columns:1fr}}
+
+/* espera presets + slider */
+.presets{display:grid;grid-template-columns:1fr 1fr 1fr;gap:0;border:1px solid var(--line2);border-radius:9px;overflow:hidden;margin-bottom:6px}
+.presets button{background:#0a0a0c;border:none;border-right:1px solid var(--line2);color:var(--muted);padding:9px 4px;font-size:12px;font-weight:600;cursor:pointer;line-height:1.2}
+.presets button:last-child{border-right:none}
+.presets button small{display:block;font-size:9px;font-weight:400;color:var(--muted2);margin-top:2px}
+.presets button.on{background:var(--orange);color:#fff}
+.presets button.on small{color:#ffe}
+.wait-read{display:flex;justify-content:space-between;font-size:10.5px;color:var(--muted2);font-family:var(--mono)}
+
+/* RESULTS */
+.hl{background:linear-gradient(160deg,rgba(37,211,102,.10),var(--panel));border:1px solid rgba(37,211,102,.4);border-radius:var(--radius);padding:20px 22px;margin-bottom:16px;position:relative;overflow:hidden}
+.hl::after{content:"";position:absolute;right:-40px;top:-40px;width:150px;height:150px;border-radius:50%;background:rgba(37,211,102,.08)}
+.hl .k{font-size:10px;text-transform:uppercase;letter-spacing:.8px;color:var(--muted2)}
+.hl .big{font-family:var(--mono);font-size:46px;font-weight:800;color:var(--ok);line-height:1.02;margin-top:2px}
+.hl .big span{font-size:20px;color:var(--muted)}
+.hl .vs{font-size:13px;color:var(--muted);margin-top:6px}
+.hl .vs b{color:var(--text)}
+.hl .up{display:inline-block;margin-top:8px;font-size:12px;font-weight:700;color:var(--ok);background:rgba(37,211,102,.12);border:1px solid rgba(37,211,102,.35);border-radius:99px;padding:3px 11px}
+.hl .total{margin-top:10px;font-size:12px;color:var(--muted)}
+.hl .total b{font-family:var(--mono);color:var(--text);font-size:15px}
+
+.compare2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
+.c2{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius-sm);padding:12px 14px}
+.c2.sel{border-color:var(--ok)}
+.c2 .k{font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted2)}
+.c2 .v{font-family:var(--mono);font-size:22px;font-weight:800;margin-top:3px}
+.c2 .s{font-size:10.5px;color:var(--muted2);margin-top:2px}
+.c2.fast .v{color:var(--blue)} .c2.slow .v{color:var(--ok)}
+
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:16px 18px;margin-bottom:16px}
+.card > .t{font-size:10px;text-transform:uppercase;letter-spacing:.8px;color:var(--orange);font-weight:700;margin-bottom:12px;display:flex;justify-content:space-between}
+.card > .t .meta{color:var(--muted2);font-weight:400;letter-spacing:0;text-transform:none}
+
+/* breakdown */
+.bd-row{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--line);font-size:13px}
+.bd-row:last-child{border-bottom:none}
+.bd-row .l{color:var(--muted)}
+.bd-row .v{font-family:var(--mono);font-weight:600}
+.bd-row.tot{border-top:1px solid var(--line2);margin-top:4px;font-size:14px}
+.bd-row.tot .l{color:var(--text);font-weight:700}
+.bd-row.tot .v{color:var(--ok);font-weight:800}
+.bd-row .v.minus{color:var(--muted2)}
+
+/* waterfall */
+.wf-row{margin-bottom:13px}
+.wf-row.hide{display:none}
+.wf-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:5px}
+.wf-head .who{font-size:13px;font-weight:600}
+.wf-head .who small{color:var(--muted2);font-weight:400;font-size:10px;margin-left:5px}
+.wf-head .amt{font-family:var(--mono);font-size:15px;font-weight:700}
+.wf-bar{height:11px;border-radius:99px;background:#0a0a0c;overflow:hidden}
+.wf-bar > span{display:block;height:100%;border-radius:99px;transition:width .35s}
+.wf-bar.productor > span{background:linear-gradient(90deg,var(--green-d),var(--ok))}
+.wf-bar.inversor  > span{background:linear-gradient(90deg,#3f78d6,var(--blue))}
+.wf-bar.finkap    > span{background:linear-gradient(90deg,#8a5bd6,var(--violet))}
+.wf-foot{display:flex;justify-content:space-between;font-size:10px;color:var(--muted2);margin-top:4px;font-family:var(--mono)}
+
+/* comparativo catálogo */
+.cmp-list{display:flex;flex-direction:column;gap:8px}
+.cmp-item{display:flex;align-items:center;gap:11px;background:var(--panel2);border:1px solid var(--line);border-radius:var(--radius-sm);padding:8px 11px}
+.cmp-item .th{width:42px;height:42px;border-radius:8px;background:#0a0a0c;flex:0 0 auto;overflow:hidden;display:grid;place-items:center}
+.cmp-item .th img{width:100%;height:100%;object-fit:cover}
+.cmp-item .nm{font-size:12.5px;font-weight:600;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cmp-item .nm small{display:block;color:var(--muted2);font-weight:400;font-size:10px}
+.cmp-item .pr{font-family:var(--mono);font-weight:700;font-size:14px;color:var(--orange)}
+.range{margin-top:14px}
+.range-bar{height:8px;border-radius:99px;background:linear-gradient(90deg,#0a0a0c,var(--panel3));border:1px solid var(--line2);position:relative;margin:18px 4px 6px}
+.range-mark{position:absolute;top:-7px;width:3px;height:20px;background:var(--ok);border-radius:2px}
+.range-mark::after{content:attr(data-l);position:absolute;top:-15px;left:50%;transform:translateX(-50%);font-size:9px;color:var(--ok);white-space:nowrap;font-family:var(--mono)}
+.range-lab{display:flex;justify-content:space-between;font-size:10px;color:var(--muted2);font-family:var(--mono)}
+
+/* contrato */
+.contract{border:1px dashed var(--line2);border-radius:var(--radius-sm);padding:13px 15px;background:rgba(249,115,22,.04)}
+.contract .ct{font-size:11px;font-weight:700;color:var(--text);margin-bottom:8px;display:flex;align-items:center;gap:7px}
+.contract dl{margin:0;display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:12px}
+.contract dt{color:var(--muted2)}
+.contract dd{margin:0;text-align:right;font-weight:600}
+.contract .legal{font-size:10.5px;color:var(--muted2);line-height:1.5;margin-top:10px;padding-top:9px;border-top:1px solid var(--line)}
+
+.adv-card .adv{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.stat{background:var(--panel2);border:1px solid var(--line);border-radius:var(--radius-sm);padding:11px 12px}
+.stat .k{font-size:9px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted2)}
+.stat .v{font-family:var(--mono);font-size:17px;font-weight:700;margin-top:3px;color:var(--blue)}
+.note{font-size:11px;color:var(--muted2);line-height:1.5;margin-top:12px}
+.badge{display:inline-block;font-size:9px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);border:1px solid var(--line2);border-radius:99px;padding:2px 8px}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-in">
+    <div class="brand"><span class="dot">f</span> finkap<sup>®</sup></div>
+    <nav class="nav">
+      <a href="armar-pedido.html">Venta</a>
+      <a href="simulador-productor.html" class="on">Productor</a>
+      <a href="panel-interno.html">Panel</a>
+    </nav>
+    <div class="feeds">
+      <div class="feed"><span class="lbl">Coffee C · NY</span><span class="num" id="kcVal">—</span><span style="font-size:9px;color:var(--muted2)">¢/lb</span></div>
+      <div class="feed"><span class="lbl">Dólar BNA</span><span class="num" id="tcVal">—</span></div>
+    </div>
+  </div>
+</div>
+
+<div class="shell">
+  <div class="hero">
+    <h1>Tu café, <span class="ac">tu margen</span></h1>
+    <p>Mandá tu café, esperá a que rote y llevate una ganancia que el mercado de commodities no te paga. Vos elegís cuánto esperar y si bancás la espera o dejás entrar a un inversor. Finkap solo cobra una comisión transparente.</p>
+  </div>
+
+  <div class="grid">
+    <!-- INPUTS -->
+    <div class="panel sticky">
+
+      <div class="step">
+        <div class="step-h"><span class="n">1</span><h3>Tu café</h3><small>declaración del productor</small></div>
+
+        <div class="row2">
+          <div class="field">
+            <label>País de origen</label>
+            <select class="inp" id="fOrigen"></select>
+          </div>
+          <div class="field">
+            <label>Proceso</label>
+            <select class="inp" id="fProceso"></select>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Variedad</label>
+          <select class="inp" id="fVar"></select>
+          <input class="inp" id="fVarManual" placeholder="Escribí la variedad" style="display:none;margin-top:7px">
+          <div class="hint" id="varHint">Top variedades arábicas más sembradas del país. ¿No está la tuya? Elegí “Otra” y escribila.</div>
+        </div>
+
+        <div class="field">
+          <label>Puntaje de taza (SCA) <span id="bandWrap"></span></label>
+          <div class="score-wrap">
+            <button class="nudge" id="scoreDown" title="-0.25">−</button>
+            <input type="range" id="fScore" min="78" max="92" step="0.25" value="84">
+            <button class="nudge" id="scoreUp" title="+0.25">+</button>
+            <div class="score-val" id="scoreVal">84.00</div>
+          </div>
+          <div class="hint">Movés de a 0,25. Es tu evaluación declarada: se verifica con el escaneo del lote cuando llega.</div>
+        </div>
+
+        <div class="field">
+          <label>Notas sensoriales <span style="color:var(--muted2);text-transform:none;letter-spacing:0">(perfil de taza)</span></label>
+          <div class="chips" id="noteChips"></div>
+          <textarea class="inp" id="fNotas" placeholder="Cacao, panela, cítrico, frutos rojos…"></textarea>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-h"><span class="n">2</span><h3>Foto del grano verde</h3><small>formato de calibración</small></div>
+        <div class="photo-row">
+          <div>
+            <div class="ref-cap">Tu lote</div>
+            <label class="dropz" id="dropz" for="fPhoto">
+              <span class="ph-ic">📷</span>
+              <span class="ph-t">Subí tu foto</span>
+              <span class="ph-s">granos sobre regla (cm)</span>
+            </label>
+            <input type="file" id="fPhoto" accept="image/*" capture="environment" style="display:none">
+          </div>
+          <div>
+            <div class="ref-cap">Formato que procesamos</div>
+            <div class="ref-box" id="refBox"></div>
+          </div>
+        </div>
+        <div class="howto2">
+          <div class="opt">
+            <div class="opt-h"><span class="opt-n">A</span> Con plantilla A4</div>
+            <p>Imprimí la plantilla al 100%, esparcí <b>200 g</b> de tu lote y sacá la foto desde arriba.</p>
+            <a class="tpl-btn" href="plantilla-grano.html" target="_blank" rel="noopener">⬇ Descargar plantilla A4 (PDF)</a>
+          </div>
+          <div class="opt">
+            <div class="opt-h"><span class="opt-n">B</span> Desde el celular</div>
+            <p>Fondo blanco + una <b>regla en cm</b> al lado. Foto cenital, con luz pareja y sin sombras.</p>
+          </div>
+        </div>
+        <div class="note"><b>200 g por foto.</b> Más fotos del mismo lote = análisis más preciso. Con tu foto hacemos el <b>pre-análisis por imagen</b> (tamaño, color, defectos) contra nuestra base y armamos el contrato. Al llegar el café se escanea el lote para una <b>doble certificación</b>: cualquier variación impacta igual o para abajo, nunca para arriba.</div>
+      </div>
+
+      <div class="step">
+        <div class="step-h"><span class="n">3</span><h3>Volumen y espera</h3></div>
+        <div class="field">
+          <label>Volumen (kg)</label>
+          <input class="inp num" id="fKg" inputmode="numeric" value="2000">
+        </div>
+        <div class="field">
+          <label>¿Cuánto estás dispuesto a esperar?</label>
+          <div class="presets" id="presets">
+            <button data-m="3">Rápido<small>cobro ya</small></button>
+            <button data-m="6" class="on">Equilibrado<small>~6 meses</small></button>
+            <button data-m="9">Paciente<small>máx. margen</small></button>
+          </div>
+          <input type="range" id="fEspera" min="0" max="9" step="1" value="6">
+          <div class="wait-read"><span id="waitMonths">6 meses de espera</span><span id="waitPhi">bancás 67%</span></div>
+          <div class="hint">Más rápido = cobrás antes pero entra un inversor que se lleva parte. Más paciente = bancás tu café y te quedás con casi todo el spread.</div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- RESULTS -->
+    <div>
+      <div class="hl">
+        <div class="k">Te llevás</div>
+        <div class="big" id="rTake">—<span> /kg</span></div>
+        <div class="vs">vs <b id="rMkt">—</b> que te paga hoy el mercado (FOB commodity)</div>
+        <div class="up" id="rUp">—</div>
+        <div class="total">Por tu lote de <span id="rKgLbl">—</span>: <b id="rTotal">—</b></div>
+      </div>
+
+      <div class="compare2">
+        <div class="c2 fast" id="c2fast"><div class="k">Si cobrás rápido</div><div class="v" id="rFast">—</div><div class="s">entra inversor · cash ahora</div></div>
+        <div class="c2 slow" id="c2slow"><div class="k">Si bancás y esperás</div><div class="v" id="rSlow">—</div><div class="s">máximo margen para vos</div></div>
+      </div>
+
+      <div class="card" id="detalleCard">
+        <div class="t"><span>Cómo se forma tu precio</span><span class="meta" id="bdMeta"></span></div>
+        <div class="bd-row"><span class="l">Precio de venta estimado de tu café</span><span class="v" id="bdPvp">—</span></div>
+        <div class="bd-row"><span class="l">− Costo de importación (flete + derechos)</span><span class="v minus" id="bdLand">—</span></div>
+        <div class="bd-row"><span class="l">− Comisión Finkap (transparente)</span><span class="v minus" id="bdComm">—</span></div>
+        <div class="bd-row"><span class="l">= Spread a repartir</span><span class="v" id="bdSpread">—</span></div>
+        <div class="bd-row tot"><span class="l">Tu participación</span><span class="v" id="bdTake">—</span></div>
+      </div>
+
+      <div class="card">
+        <div class="t"><span>Cómo se reparte</span><span class="meta" id="wfMeta"></span></div>
+        <div class="wf-row">
+          <div class="wf-head"><span class="who">Vos · productor <small id="wfPsub"></small></span><span class="amt" id="wfP">—</span></div>
+          <div class="wf-bar productor"><span id="wfPbar" style="width:0%"></span></div>
+          <div class="wf-foot"><span id="wfPup">—</span><span id="wfPpct">—</span></div>
+        </div>
+        <div class="wf-row" id="wfIrow">
+          <div class="wf-head"><span class="who">Inversor <small>financia tu espera</small></span><span class="amt" id="wfI">—</span></div>
+          <div class="wf-bar inversor"><span id="wfIbar" style="width:0%"></span></div>
+          <div class="wf-foot"><span id="wfImsg"></span><span id="wfIpct">—</span></div>
+        </div>
+        <div class="wf-row">
+          <div class="wf-head"><span class="who">Finkap <small>comisión transparente</small></span><span class="amt" id="wfF">—</span></div>
+          <div class="wf-bar finkap"><span id="wfFbar" style="width:0%"></span></div>
+          <div class="wf-foot"><span></span><span id="wfFpct">—</span></div>
+        </div>
+      </div>
+
+      <div class="card adv-card" id="advCard">
+        <div class="t"><span>Adelanto disponible ahora</span><span class="meta">si dejás entrar al inversor</span></div>
+        <div class="adv">
+          <div class="stat"><div class="k">Cash por kg</div><div class="v" id="advKg">—</div></div>
+          <div class="stat"><div class="k">% del FOB</div><div class="v" id="advPct">—</div></div>
+          <div class="stat"><div class="k">Total ahora</div><div class="v" id="advTot">—</div></div>
+        </div>
+        <div class="note" id="advNote"></div>
+      </div>
+
+      <div class="card">
+        <div class="t"><span>Cafés similares hoy en Finkap</span><span class="meta" id="cmpMeta"></span></div>
+        <div class="cmp-list" id="cmpList"><div class="note">Cargando catálogo…</div></div>
+        <div class="range" id="cmpRange" style="display:none">
+          <div class="range-bar"><div class="range-mark" id="cmpMark" data-l=""></div></div>
+          <div class="range-lab"><span id="cmpMin">—</span><span style="color:var(--ok)">tu café</span><span id="cmpMax">—</span></div>
+        </div>
+      </div>
+
+      <div class="card" id="contratoCard">
+        <div class="t"><span>Contrato (pre-análisis)</span></div>
+        <div class="contract">
+          <div class="ct">📄 Declaración jurada del productor</div>
+          <dl>
+            <dt>Origen</dt><dd id="kOrigen">—</dd>
+            <dt>Variedad</dt><dd id="kVar">—</dd>
+            <dt>Proceso</dt><dd id="kProc">—</dd>
+            <dt>Puntaje declarado</dt><dd id="kScore">—</dd>
+            <dt>Volumen</dt><dd id="kKg">—</dd>
+            <dt>Notas</dt><dd id="kNotas">—</dd>
+            <dt>Foto del grano</dt><dd id="kPhoto">pendiente</dd>
+          </dl>
+          <div class="legal">Este contrato se firma sujeto a verificación: al llegar el café se escanea el lote y se compara con esta declaración y la foto. Si el puntaje o el perfil verificado es menor, el precio se ajusta para abajo (nunca para arriba). Doble certificación: declaración del productor + escaneo Finkap.</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- BARRA INFERIOR FIJA (mobile) -->
+<div class="mobar" id="mobar">
+  <div class="mb-tot" id="mbInfo"><div class="l">Te llevás</div><div class="v" id="mbTake">USD — /kg</div></div>
+  <button class="mb-cta" id="mbSend">Enviar mi lote</button>
+</div>
+
+<script type="module">
+import * as PE from './pricing-engine.js';
+
+const $ = id => document.getElementById(id);
+const fmt = (v,d=2)=> (v==null||isNaN(v))?'—':(+v).toLocaleString('es-AR',{minimumFractionDigits:d,maximumFractionDigits:d});
+const usd = (v,d=2)=> 'USD '+fmt(v,d);
+const pct = (v,d=0)=> (v>=0?'+':'')+fmt(v*100,d)+'%';
+
+const SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/1J_Gor9FaSFkbIuKJlDROXgCRT2cgCL-I_Q64Kn75zy0/gviz/tq?tqx=out:csv&gid=0";
+const KC_API_VIA = u => "https://corsproxy.io/?url="+encodeURIComponent(u);
+const TC_API = "https://dolarapi.com/v1/dolares/oficial";
+
+let feeds = { kc: PE.KC_REF, tc: 1430 };
+let CATALOG = [];
+let espMonths = 6;            // 0..9 meses de espera
+let photoData = null;
+
+// Foto real de calibración de la base Finkap (granos sobre regla en cm).
+// Una sola referencia para todos los cafés: assets/grano-referencia.jpg → dibujo de respaldo.
+// Apenas exista el archivo, reemplaza al ejemplo dibujado — sin tocar código.
+const REF_PHOTO_URL = 'assets/grano-referencia.png';
+let refPainted = false;
+
+// Ejemplo dibujado del formato (fallback): granos esparcidos + regla en cm.
+function formatoSVG(){
+  let beans = '';
+  let seed = 7;
+  const rnd = ()=>{ seed = (seed*9301+49297)%233280; return seed/233280; };
+  for(let i=0;i<46;i++){
+    const x = 30 + rnd()*150, y = 22 + rnd()*92, rot = rnd()*180;
+    const rx = 4.2+rnd()*1.2, ry = 6.4+rnd()*1.4;
+    const c = ['#9aa06a','#8a8f5f','#a7ac79','#7f8556'][i%4];
+    beans += `<g transform="translate(${x.toFixed(1)} ${y.toFixed(1)}) rotate(${rot.toFixed(0)})">`
+      + `<ellipse rx="${rx.toFixed(1)}" ry="${ry.toFixed(1)}" fill="${c}"/>`
+      + `<path d="M0 ${(-ry+0.6).toFixed(1)} Q ${(rx*0.4).toFixed(1)} 0 0 ${(ry-0.6).toFixed(1)}" stroke="#5f6440" stroke-width="0.7" fill="none"/></g>`;
+  }
+  let ticks = '';
+  for(let cm=0; cm<=20; cm++){ const x = 18 + cm*9; ticks += `<line x1="${x}" y1="6" x2="${x}" y2="${cm%5===0?13:10}" stroke="#9b9ba6" stroke-width="0.6"/>`;
+    if(cm%5===0) ticks += `<text x="${x}" y="4.6" font-size="3.4" fill="#6f6f7a" text-anchor="middle" font-family="monospace">${cm}</text>`; }
+  for(let cm=0; cm<=12; cm++){ const y = 18 + cm*9; ticks += `<line x1="6" y1="${y}" x2="${cm%5===0?13:10}" y2="${y}" stroke="#9b9ba6" stroke-width="0.6"/>`; }
+  return `<svg viewBox="0 0 200 130" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Formato: granos sobre regla en cm">`
+    + `<rect x="0" y="0" width="200" height="130" fill="#f3f1ea"/>`
+    + `<rect x="16" y="16" width="178" height="100" fill="#fbfaf6" stroke="#d8d4c8" stroke-width="0.5"/>`
+    + ticks + beans
+    + `<text x="105" y="125" font-size="4.2" fill="#8a8676" text-anchor="middle" font-family="monospace">escala en cm · base Finkap</text></svg>`;
+}
+function pintarReferencia(){
+  if(refPainted) return;                 // una sola foto: pintá una vez
+  refPainted = true;
+  const box = $('refBox');
+  const img = new Image();
+  img.onload  = ()=>{ box.innerHTML = `<img src="${REF_PHOTO_URL}" alt="formato de calibración Finkap">`; };
+  img.onerror = ()=>{ box.innerHTML = formatoSVG(); };
+  img.src = REF_PHOTO_URL;
+}
+
+/* ---------- Top variedades arábicas por país ---------- */
+const VARIEDADES = {
+  Colombia:['Castillo','Caturra','Colombia','Típica','Bourbon','Tabi','Geisha','Pink Bourbon','Pacamara','Maragogipe','Cenicafé 1','Bourbon Rosado'],
+  Honduras:['Catuaí','Caturra','Bourbon','Lempira','IHCAFE 90','Típica','Pacas','Parainema','Geisha','Obatá'],
+  Brasil:['Mundo Novo','Catuaí','Bourbon Amarelo','Icatu','Acaiá','Catucaí','Topázio','Obatã','Geisha','Yellow Bourbon'],
+  Guatemala:['Bourbon','Caturra','Catuaí','Típica','Pache','Geisha','Pacamara','Maragogipe','Villa Sarchí','Tekisic'],
+  'Costa Rica':['Caturra','Catuaí','Villa Sarchí','Geisha','Bourbon','Típica','Venecia','Obatá','SL28','Marsellesa'],
+  'Panamá':['Geisha','Caturra','Catuaí','Típica','Bourbon','Pacamara','Mokka','SL28','Maragogipe','Bourbon Rosado'],
+  'Perú':['Típica','Caturra','Bourbon','Catimor','Pache','Geisha','Mundo Novo','Catuaí','Pacamara','Gran Colombia'],
+  'México':['Típica','Bourbon','Mundo Novo','Caturra','Catuaí','Garnica','Geisha','Marsellesa','Pluma','Costa Rica 95'],
+  Nicaragua:['Caturra','Bourbon','Catuaí','Maragogipe','Pacamara','Geisha','Java','Maracaturra','Parainema','Catimor'],
+  'El Salvador':['Bourbon','Pacas','Pacamara','Catuaí','Caturra','Geisha','Cuscatleco','Tekisic','Maragogipe','Sarchimor'],
+  Ecuador:['Típica','Bourbon','Caturra','Geisha','Sidra','Pacas','Catuaí','Pacamara','Típica Mejorada','SL28'],
+  Bolivia:['Típica','Caturra','Catuaí','Geisha','Java','Bourbon','Caturra Amarillo','Castillo','Mundo Novo','Pacamara'],
+  Vietnam:['Catimor','Típica','Bourbon','Caturra','TR4','Mundo Novo']
+};
+const VAR_GLOBAL = ['Típica','Bourbon','Caturra','Catuaí','Mundo Novo','Geisha','Pacamara','SL28','Castillo','Catimor','Pacas','Maragogipe'];
+const norm = s => String(s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').trim();
+const VAR_EXOTICO = ['geisha','gesha','sidra','pink bourbon','bourbon rosado','sudan rume','laurina','eugenioides','wush wush','chiroso','mokka'];
+const VAR_ESPECIAL = ['sl28','sl34','pacamara','maragogipe','java','tabi','parainema','tipica mejorada','bourbon','villa sarchi','maracaturra','geisha encontrado'];
+function varTier(v){
+  const n = norm(v);
+  if(VAR_EXOTICO.some(x=>n.includes(x))) return 'exotico';
+  if(VAR_ESPECIAL.some(x=>n.includes(x))) return 'especialidad';
+  return 'regional';
+}
+function scoreTier(s){ return s>=87 ? 'exotico' : s>=85 ? 'especialidad' : 'regional'; }
+const TIER_ORDER = { regional:0, especialidad:1, exotico:2 };
+const TIER_LBL = { regional:'Regional', especialidad:'Especialidad', exotico:'Exótico' };
+
+const NOTE_OPTS = ['Chocolate','Cacao','Caramelo','Panela','Cítrico','Frutos rojos','Floral','Vainilla','Nuez','Tropical','Durazno','Miel'];
+
+/* ---------- poblar selects ---------- */
+function fillSelect(el, entries, sel){
+  el.innerHTML = entries.map(([v,l])=>`<option value="${v}"${v===sel?' selected':''}>${l}</option>`).join('');
+}
+fillSelect($('fOrigen'), Object.keys(PE.D_ORIGEN).map(k=>[k,k]), 'Honduras');
+fillSelect($('fProceso'), Object.keys(PE.D_PROCESO).filter(k=>k!=='Washed').map(k=>[k,k]), 'Lavado');
+function fillVar(){
+  const list = VARIEDADES[$('fOrigen').value] || VAR_GLOBAL;
+  $('fVar').innerHTML = list.map(v=>`<option value="${v}">${v}</option>`).join('') + '<option value="__otra__">Otra (escribir)…</option>';
+  toggleManual();
+}
+function toggleManual(){
+  const otra = $('fVar').value==='__otra__';
+  $('fVarManual').style.display = otra ? 'block' : 'none';
+}
+function currentVar(){ return $('fVar').value==='__otra__' ? ($('fVarManual').value.trim()||'(sin especificar)') : $('fVar').value; }
+
+/* notas chips */
+$('noteChips').innerHTML = NOTE_OPTS.map(n=>`<span class="chip-t" data-n="${n}">${n}</span>`).join('');
+$('noteChips').querySelectorAll('.chip-t').forEach(c=>{
+  c.onclick = ()=>{
+    c.classList.toggle('on');
+    const cur = $('fNotas').value.split(',').map(s=>s.trim()).filter(Boolean);
+    const n = c.dataset.n;
+    if(c.classList.contains('on')){ if(!cur.includes(n)) cur.push(n); }
+    else { const i=cur.indexOf(n); if(i>-1) cur.splice(i,1); }
+    $('fNotas').value = cur.join(', ');
+    recalc();
+  };
+});
+
+/* ---------- score slider ---------- */
+function setScore(v){
+  v = Math.max(78, Math.min(92, Math.round(v*4)/4));
+  $('fScore').value = v;
+  $('scoreVal').textContent = v.toFixed(2);
+  $('fScore').style.setProperty('--fill', ((v-78)/(92-78)*100)+'%');
+  recalc();
+}
+$('fScore').addEventListener('input', e=> setScore(parseFloat(e.target.value)));
+$('scoreUp').onclick = ()=> setScore(parseFloat($('fScore').value)+0.25);
+$('scoreDown').onclick = ()=> setScore(parseFloat($('fScore').value)-0.25);
+
+/* ---------- espera: presets + slider ---------- */
+function phiFromMonths(m){ return Math.max(0, Math.min(1, m/9)); }   // 0 meses→0 ; 9→1
+function setEspera(m, fromPreset){
+  espMonths = Math.max(0, Math.min(9, m));
+  $('fEspera').value = espMonths;
+  $('fEspera').style.setProperty('--fill', (espMonths/9*100)+'%');
+  const phi = phiFromMonths(espMonths);
+  $('waitMonths').textContent = espMonths===0 ? 'cobro inmediato' : espMonths+' meses de espera';
+  $('waitPhi').textContent = 'bancás '+Math.round(phi*100)+'%';
+  // marcar preset cercano
+  $('presets').querySelectorAll('button').forEach(b=>{
+    b.classList.toggle('on', Math.abs(+b.dataset.m - espMonths) <= 1.5 && (espMonths<=4? b.dataset.m==='3' : espMonths>=8? b.dataset.m==='9' : b.dataset.m==='6'));
+  });
+  recalc();
+}
+$('fEspera').addEventListener('input', e=> setEspera(parseInt(e.target.value)));
+$('presets').querySelectorAll('button').forEach(b=> b.onclick = ()=> setEspera(+b.dataset.m, true));
+
+/* ---------- foto ---------- */
+$('fPhoto').addEventListener('change', e=>{
+  const f = e.target.files[0]; if(!f) return;
+  const rd = new FileReader();
+  rd.onload = ev=>{
+    photoData = ev.target.result;
+    $('dropz').innerHTML = `<img src="${photoData}" alt="grano">`;
+    $('kPhoto').textContent = 'cargada ✓';
+    $('kPhoto').style.color = 'var(--ok)';
+  };
+  rd.readAsDataURL(f);
+});
+
+/* ---------- lote actual ---------- */
+function tierActual(score){
+  const tv = varTier(currentVar()), ts = scoreTier(score);
+  return TIER_ORDER[tv] >= TIER_ORDER[ts] ? tv : ts;
+}
+function lote(){
+  const score = parseFloat($('fScore').value)||82;
+  const kg = parseFloat(($('fKg').value||'').replace(',','.'))||0;
+  const T  = Math.max(1, espMonths || 1);
+  return { tier: tierActual(score), origen:$('fOrigen').value, proceso:$('fProceso').value, score, kg, T };
+}
+
+/* ---------- diferencial informativo ---------- */
+function diffTxt(l){
+  const dScore = 12*(l.score-82) + 6*Math.max(0,l.score-86)**2;
+  return `Dif NY = origen ${PE.D_ORIGEN[l.origen]??15} + variedad ${PE.D_VAR_TIER[l.tier]||0} + proceso ${PE.D_PROCESO[l.proceso]||0} + calidad ${fmt(dScore,0)} ¢/lb`;
+}
+
+function recalc(){
+  const l = lote();
+  // banda de tier
+  $('bandWrap').innerHTML = `<span class="score-band band-${l.tier}">${TIER_LBL[l.tier]}</span>`;
+
+  const base = PE.calcular(l, feeds);     // sin pvpReal → usa pvpSugerido; sin pago → payMod 0
+  const phi  = phiFromMonths(espMonths);
+  const rep  = PE.repartoProductor(base, phi);
+  const repFast = PE.repartoProductor(base, 0);
+  const repSlow = PE.repartoProductor(base, 1);
+
+  // headline
+  $('rTake').innerHTML = fmt(rep.productor)+'<span> /kg</span>';
+  $('rMkt').textContent = usd(base.fob);
+  $('rUp').textContent = pct(rep.upliftProductor)+' sobre el mercado';
+  $('rKgLbl').textContent = l.kg? fmt(l.kg,0)+' kg' : '— kg';
+  $('rTotal').textContent = usd(rep.productor*(l.kg||0),0);
+
+  // comparativa rápido vs lento
+  $('rFast').textContent = usd(repFast.productor);
+  $('rSlow').textContent = usd(repSlow.productor);
+  $('c2fast').classList.toggle('sel', phi<0.34);
+  $('c2slow').classList.toggle('sel', phi>0.66);
+
+  // breakdown
+  $('bdMeta').textContent = diffTxt(l);
+  $('bdPvp').textContent = usd(base.efectivo);
+  $('bdLand').textContent = '− '+usd(base.landing);
+  $('bdComm').textContent = '− '+usd(base.comm);
+  $('bdSpread').textContent = usd(Math.max(0,base.spread));
+  $('bdTake').textContent = usd(rep.productor);
+
+  // waterfall
+  const tot = rep.productor + rep.inversor + rep.finkap;
+  $('wfMeta').textContent = 'sobre lo que paga el tostadero';
+  $('wfP').textContent = usd(rep.productor);
+  $('wfI').textContent = usd(rep.inversor);
+  $('wfF').textContent = usd(rep.finkap);
+  $('wfPbar').style.width = (tot>0?rep.productor/tot*100:0)+'%';
+  $('wfIbar').style.width = (tot>0?rep.inversor/tot*100:0)+'%';
+  $('wfFbar').style.width = (tot>0?rep.finkap/tot*100:0)+'%';
+  $('wfPpct').textContent = (tot>0?fmt(rep.productor/tot*100,0):'—')+'% del total';
+  $('wfIpct').textContent = (tot>0?fmt(rep.inversor/tot*100,0):'—')+'% del total';
+  $('wfFpct').textContent = (tot>0?fmt(rep.finkap/tot*100,0):'—')+'% del total';
+  $('wfPup').textContent = 'incluye FOB '+usd(base.fob)+' + '+Math.round(phi*100)+'% de la espera';
+  $('wfPsub').textContent = phi>=0.99 ? 'FOB + 50% spread + bancás la espera' : 'FOB + 50% del spread';
+  $('wfImsg').textContent = rep.inversor>0 ? 'te adelanta el cash' : 'no entra: bancás vos';
+  $('wfIrow').classList.toggle('hide', phi>=0.999);
+
+  // adelanto
+  const conf = 90;
+  if(phi < 0.999){
+    const etapa = espMonths<=3?'cosecha':espMonths<=6?'post':'bl';
+    const adv = PE.adelanto(base.fob, etapa, conf);
+    $('advCard').style.display='';
+    $('advKg').textContent = usd(adv.perKg);
+    $('advPct').textContent = fmt(adv.pctFob*100,0)+'%';
+    $('advTot').textContent = usd(adv.perKg*(l.kg||0),0);
+    $('advNote').innerHTML = `Si dejás entrar al inversor, cobrás <b>${usd(adv.perKg*(l.kg||0),0)}</b> ahora (a ${fmt(adv.rateMes*100,1)}%/mes) y el resto cuando rota el café. El haircut baja a medida que sube la confianza del lote.`;
+  } else {
+    $('advCard').style.display='none';
+  }
+
+  // contrato
+  $('kOrigen').textContent = l.origen;
+  $('kVar').textContent = currentVar();
+  $('kProc').textContent = l.proceso;
+  $('kScore').textContent = l.score.toFixed(2)+' SCA · '+TIER_LBL[l.tier];
+  $('kKg').textContent = l.kg? fmt(l.kg,0)+' kg' : '—';
+  $('kNotas').textContent = $('fNotas').value.trim() || '—';
+
+  // barra inferior fija (mobile)
+  $('mbTake').textContent = 'USD '+fmt(rep.productor)+' /kg';
+  WA_STATE = { l, rep, phi };
+
+  renderComparativo(l, base);
+}
+
+/* ---------- barra inferior: ver detalle + enviar ---------- */
+let WA_STATE = null;
+let sendArmed = false;
+let armTimer = null;
+const WA_NUM = '5491133345576';
+
+// tap en el resumen → baja suave al detalle
+function verDetalle(){
+  ($('detalleCard')||document.body).scrollIntoView({behavior:'smooth', block:'start'});
+}
+
+// reset del botón a su estado inicial
+function disarmSend(){
+  sendArmed = false;
+  clearTimeout(armTimer);
+  const b = $('mbSend');
+  b.textContent = 'Enviar mi lote';
+  b.classList.remove('armed');
+}
+
+// 1er toque: muestra el contrato · 2do toque: abre WhatsApp
+function onSend(){
+  if(!sendArmed){
+    ($('contratoCard')||document.body).scrollIntoView({behavior:'smooth', block:'start'});
+    sendArmed = true;
+    const b = $('mbSend');
+    b.textContent = 'Confirmar y enviar →';
+    b.classList.add('armed');
+    clearTimeout(armTimer);
+    armTimer = setTimeout(disarmSend, 9000);   // si no confirma, vuelve solo
+    return;
+  }
+  enviarLote();
+  disarmSend();
+}
+
+function enviarLote(){
+  if(!WA_STATE){ return; }
+  const { l, rep } = WA_STATE;
+  const kg = l.kg || 0;
+  const msg =
+`Hola Finkap! Quiero enviar mi lote de café:
+• Origen: ${l.origen}
+• Variedad: ${currentVar()}
+• Proceso: ${l.proceso}
+• Puntaje declarado: ${l.score.toFixed(2)} SCA (${TIER_LBL[l.tier]})
+• Notas: ${($('fNotas').value.trim()||'—')}
+• Volumen: ${fmt(kg,0)} kg
+• Espera: ${espMonths} meses
+• Me llevaría: USD ${fmt(rep.productor)}/kg (USD ${fmt(rep.productor*kg,0)} por el lote)
+(declaración sujeta a verificación por escaneo al llegar)`;
+  window.open('https://wa.me/'+WA_NUM+'?text='+encodeURIComponent(msg), '_blank');
+}
+
+/* ---------- comparativo con catálogo ---------- */
+function renderComparativo(l, base){
+  if(!CATALOG.length){ return; }
+  const sims = CATALOG
+    .map(p=>({...p, d: Math.abs((p.score??83)-l.score) + (p.tier===l.tier?0:3) + (norm(p.origen)===norm(l.origen)?0:1.2)}))
+    .sort((a,b)=>a.d-b.d).slice(0,4);
+  $('cmpMeta').textContent = TIER_LBL[l.tier];
+  $('cmpList').innerHTML = sims.map(p=>`
+    <div class="cmp-item">
+      <div class="th">${p.img?`<img src="${p.img}" alt="">`:'<span style="font-size:18px">🌱</span>'}</div>
+      <div class="nm">${p.n}<small>${p.origen||''} · ${p.score?fmt(p.score,1)+' SCA':''}</small></div>
+      <div class="pr">${usd(p.pvp)}</div>
+    </div>`).join('') || '<div class="note">Sin comparables.</div>';
+
+  // rango de precios del tier
+  const tierItems = CATALOG.filter(p=>p.tier===l.tier && p.pvp);
+  if(tierItems.length>=2){
+    const mn = Math.min(...tierItems.map(p=>p.pvp)), mx = Math.max(...tierItems.map(p=>p.pvp));
+    const mine = base.efectivo;
+    const posPct = Math.max(0, Math.min(100, (mine-mn)/Math.max(0.01,mx-mn)*100));
+    $('cmpRange').style.display='';
+    $('cmpMin').textContent = usd(mn);
+    $('cmpMax').textContent = usd(mx);
+    const mk = $('cmpMark'); mk.style.left = posPct+'%'; mk.setAttribute('data-l', usd(mine));
+  } else { $('cmpRange').style.display='none'; }
+}
+
+/* ---------- parseo catálogo ---------- */
+function csvToRows(text){
+  const rows=[]; let row=[],cur="",q=false;
+  for(let i=0;i<text.length;i++){const c=text[i];
+    if(q){ if(c==='"'){ if(text[i+1]==='"'){cur+='"';i++;} else q=false; } else cur+=c; }
+    else { if(c==='"') q=true; else if(c===','){row.push(cur);cur="";} else if(c==='\n'){row.push(cur);rows.push(row);row=[];cur="";} else if(c==='\r'){} else cur+=c; }
+  }
+  if(cur!==""||row.length){ row.push(cur); rows.push(row); }
+  return rows;
+}
+function numLoose(x){ if(x==null||x==="") return null; let s=String(x).replace(/[^0-9.,\-]/g,""); if(s.indexOf(",")>-1 && s.indexOf(".")>-1) s=s.replace(/\./g,"").replace(",","."); else s=s.replace(",","."); const v=parseFloat(s); return isNaN(v)?null:v; }
+function normH(h){ return String(h||"").trim().toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[^a-z0-9]+/g,"_").replace(/^_+|_+$/g,""); }
+const CAT2TIER = c => { const s=normH(c); if(s.includes('exotic')) return 'exotico'; if(s.includes('especial')) return 'especialidad'; return 'regional'; };
+
+async function loadCatalog(){
+  try{
+    const r = await fetch(SHEET_CSV_URL); if(!r.ok) throw 0;
+    const rows = csvToRows(await r.text()).filter(r=>r.some(c=>String(c).trim()!==''));
+    const head = rows.shift().map(normH);
+    const find = arr => { for(const a of arr){ const i=head.indexOf(a); if(i>-1) return i; } return -1; };
+    const ci = { n:find(['nombre','variedad','producto']), origen:find(['origen','origin','pais']),
+      cat:find(['categoria','category','tipo']), sca:find(['puntos_sca','sca','puntaje']),
+      ia:find(['sca_finkap_ia','finkap_ia']), pkg:find(['precio_usd_kg','precio_kg']),
+      pbag:find(['precio_usd_bolsa','precio_bolsa']), b:find(['kg_bolsa','bolsa_kg']), img:find(['imagen_url','imagen','foto']) };
+    const g=(r,k)=> ci[k]>=0?(r[ci[k]]||'').trim():'';
+    CATALOG = rows.map(r=>{
+      let b=numLoose(g(r,'b')), pkg=numLoose(g(r,'pkg')); const pbag=numLoose(g(r,'pbag'));
+      if(!pkg && pbag && b) pkg=pbag/b;
+      return { n:g(r,'n'), origen:g(r,'origen'), tier:CAT2TIER(g(r,'cat')),
+        score:numLoose(g(r,'ia'))??numLoose(g(r,'sca'))??null, pvp:pkg||null, img:g(r,'img')||null };
+    }).filter(x=>x.n && x.pvp);
+    recalc();
+  }catch(e){ $('cmpList').innerHTML = '<div class="note">No se pudo leer el catálogo para comparar.</div>'; }
+}
+
+/* ---------- feeds ---------- */
+async function loadFeeds(){
+  try{
+    const r = await fetch(KC_API_VIA("https://query1.finance.yahoo.com/v8/finance/chart/KC=F"),{cache:'no-store'});
+    const j = await r.json(); const kc = j.chart.result[0].meta.regularMarketPrice;
+    if(kc>0){ feeds.kc=kc; $('kcVal').textContent=fmt(kc); $('kcVal').classList.add('live'); }
+  }catch(e){ feeds.kc=PE.KC_REF; $('kcVal').textContent=fmt(PE.KC_REF); }
+  try{
+    const r = await fetch(TC_API); const j = await r.json(); const v=+j.venta;
+    if(v>0){ feeds.tc=v; $('tcVal').textContent=fmt(v,0); $('tcVal').classList.add('live'); }
+  }catch(e){ $('tcVal').textContent=fmt(feeds.tc,0); }
+  recalc();
+}
+
+/* listeners */
+$('fOrigen').addEventListener('change', ()=>{ fillVar(); recalc(); });
+$('fProceso').addEventListener('change', recalc);
+$('fVar').addEventListener('change', ()=>{ toggleManual(); recalc(); });
+$('fVarManual').addEventListener('input', recalc);
+$('fNotas').addEventListener('input', recalc);
+$('fKg').addEventListener('input', recalc);
+$('mbInfo').addEventListener('click', verDetalle);
+$('mbSend').addEventListener('click', onSend);
+// si el productor cambia algo del lote, el botón vuelve a "Enviar mi lote"
+['fOrigen','fProceso','fVar','fVarManual','fNotas','fKg','fEspera'].forEach(id=>{
+  const el=$(id); if(el) el.addEventListener('input', ()=>{ if(sendArmed) disarmSend(); });
+});
+
+/* INIT */
+fillVar();
+setScore(84);
+setEspera(6);
+pintarReferencia();
+loadFeeds();
+loadCatalog();
+recalc();
+</script>
+</body>
+</html>
