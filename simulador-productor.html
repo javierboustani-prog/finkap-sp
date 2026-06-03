@@ -177,17 +177,23 @@ input[type=range]::-moz-range-thumb{width:18px;height:18px;border-radius:50%;bac
 .c2.fast .v{color:var(--blue)} .c2.slow .v{color:var(--ok)}
 
 .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:16px 18px;margin-bottom:16px}
-.card > .t{font-size:10px;text-transform:uppercase;letter-spacing:.8px;color:var(--orange);font-weight:700;margin-bottom:12px;display:flex;justify-content:space-between}
-.card > .t .meta{color:var(--muted2);font-weight:400;letter-spacing:0;text-transform:none}
+.card > .t{font-size:10px;text-transform:uppercase;letter-spacing:.8px;color:var(--orange);font-weight:700;margin-bottom:12px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:2px 10px;align-items:baseline}
+.card > .t .meta{color:var(--muted2);font-weight:400;letter-spacing:0;text-transform:none;text-align:right;flex:1 1 auto;min-width:0}
 
 /* breakdown */
 .bd-row{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--line);font-size:13px}
 .bd-row:last-child{border-bottom:none}
 .bd-row .l{color:var(--muted)}
 .bd-row .v{font-family:var(--mono);font-weight:600}
-.bd-row.tot{border-top:1px solid var(--line2);margin-top:4px;font-size:14px}
-.bd-row.tot .l{color:var(--text);font-weight:700}
-.bd-row.tot .v{color:var(--ok);font-weight:800}
+.bd-row.hd .l{color:var(--text);font-weight:600}
+.bd-row.hd .v{color:var(--text);font-weight:800}
+.bd-row.sub{border-top:1px solid var(--line2)}
+.bd-row.sub .l{color:var(--text);font-weight:600}
+.bd-row.sub .v{font-weight:800}
+.bd-row.tot{border-top:2px solid var(--line2);margin-top:4px;font-size:14px;align-items:flex-start;flex-wrap:wrap}
+.bd-row.tot .l{color:var(--text);font-weight:700;display:flex;flex-direction:column;gap:2px}
+.bd-row.tot .l small{font-weight:400;font-size:11px;color:var(--muted2)}
+.bd-row.tot .v{color:var(--ok);font-weight:800;font-size:16px}
 .bd-row .v.minus{color:var(--muted2)}
 
 /* waterfall */
@@ -355,7 +361,7 @@ input[type=range]::-moz-range-thumb{width:18px;height:18px;border-radius:50%;bac
     <!-- RESULTS -->
     <div>
       <div class="hl">
-        <div class="k">Te llevás</div>
+        <div class="k" id="rTakeK">Te llevás</div>
         <div class="big" id="rTake">—<span> /kg</span></div>
         <div class="vs">vs <b id="rMkt">—</b> que te paga hoy el mercado (FOB commodity)</div>
         <div class="up" id="rUp">—</div>
@@ -369,11 +375,13 @@ input[type=range]::-moz-range-thumb{width:18px;height:18px;border-radius:50%;bac
 
       <div class="card" id="detalleCard">
         <div class="t"><span>Cómo se forma tu precio</span><span class="meta" id="bdMeta"></span></div>
-        <div class="bd-row"><span class="l">Precio de venta estimado de tu café</span><span class="v" id="bdPvp">—</span></div>
-        <div class="bd-row"><span class="l">− Costo de importación (flete + derechos)</span><span class="v minus" id="bdLand">—</span></div>
-        <div class="bd-row"><span class="l">− Comisión Finkap (transparente)</span><span class="v minus" id="bdComm">—</span></div>
-        <div class="bd-row"><span class="l">= Spread a repartir</span><span class="v" id="bdSpread">—</span></div>
-        <div class="bd-row tot"><span class="l">Tu participación</span><span class="v" id="bdTake">—</span></div>
+        <div class="bd-row hd"><span class="l">Lo que paga el tostadero por tu café</span><span class="v" id="bdPvp">—</span></div>
+        <div class="bd-row"><span class="l">− Tu café (FOB · precio base de hoy)</span><span class="v minus" id="bdFob">—</span></div>
+        <div class="bd-row"><span class="l">− Traerlo a Argentina (flete + aranceles)</span><span class="v minus" id="bdLand">—</span></div>
+        <div class="bd-row"><span class="l">− Financiar la espera</span><span class="v minus" id="bdCarry">—</span></div>
+        <div class="bd-row"><span class="l">− Comisión Finkap</span><span class="v minus" id="bdComm">—</span></div>
+        <div class="bd-row sub"><span class="l">= Margen del negocio a repartir</span><span class="v" id="bdSpread">—</span></div>
+        <div class="bd-row tot"><span class="l">Te llevás <small id="bdTakeSub"></small></span><span class="v" id="bdTake">—</span></div>
       </div>
 
       <div class="card">
@@ -615,10 +623,16 @@ function lote(){
   return { tier: tierActual(score), origen:$('fOrigen').value, proceso:$('fProceso').value, score, kg, T };
 }
 
-/* ---------- diferencial informativo ---------- */
+/* ---------- diferencial informativo (lenguaje productor, solo lo que suma) ---------- */
 function diffTxt(l){
   const dScore = 12*(l.score-82) + 6*Math.max(0,l.score-86)**2;
-  return `Dif NY = origen ${PE.D_ORIGEN[l.origen]??15} + variedad ${PE.D_VAR_TIER[l.tier]||0} + proceso ${PE.D_PROCESO[l.proceso]||0} + calidad ${fmt(dScore,0)} ¢/lb`;
+  const sg = n => (n>0?'+':'')+fmt(n,0);
+  const parts = [];
+  const org = PE.D_ORIGEN[l.origen]??15; if(org) parts.push('origen '+sg(org));
+  if(Math.round(dScore)) parts.push('calidad '+sg(dScore));
+  const prc = PE.D_PROCESO[l.proceso]||0; if(prc) parts.push('proceso '+sg(prc));
+  const vr  = PE.D_VAR_TIER[l.tier]||0;   if(vr)  parts.push('variedad '+sg(vr));
+  return parts.length ? 'tu FOB = NY '+parts.join(' ')+' ¢/lb' : 'tu FOB = NY ¢/lb';
 }
 
 function recalc(){
@@ -633,6 +647,9 @@ function recalc(){
   const repSlow = PE.repartoProductor(base, 1);
 
   // headline
+  $('rTakeK').textContent = phi<0.01 ? 'Te llevás · cobrando ya'
+                          : phi>0.99 ? 'Te llevás · esperando al máximo'
+                          : 'Te llevás · con '+espMonths+' meses de espera';
   $('rTake').innerHTML = fmt(rep.productor)+'<span> /kg</span>';
   $('rMkt').textContent = usd(base.fob);
   $('rUp').textContent = pct(rep.upliftProductor)+' sobre el mercado';
@@ -645,13 +662,16 @@ function recalc(){
   $('c2fast').classList.toggle('sel', phi<0.34);
   $('c2slow').classList.toggle('sel', phi>0.66);
 
-  // breakdown
+  // breakdown — cada línea resta y cierra: PVP − FOB − flete − carry − comisión = margen
   $('bdMeta').textContent = diffTxt(l);
-  $('bdPvp').textContent = usd(base.efectivo);
+  $('bdPvp').textContent  = usd(base.efectivo);
+  $('bdFob').textContent  = '− '+usd(base.fob);
   $('bdLand').textContent = '− '+usd(base.landing);
+  $('bdCarry').textContent= '− '+usd(base.carry);
   $('bdComm').textContent = '− '+usd(base.comm);
   $('bdSpread').textContent = usd(Math.max(0,base.spread));
   $('bdTake').textContent = usd(rep.productor);
+  $('bdTakeSub').textContent = '= tu FOB '+usd(base.fob)+' + tu parte del negocio '+usd(rep.productor-base.fob);
 
   // waterfall
   const tot = rep.productor + rep.inversor + rep.finkap;
@@ -665,13 +685,12 @@ function recalc(){
   $('wfPpct').textContent = (tot>0?fmt(rep.productor/tot*100,0):'—')+'% del total';
   $('wfIpct').textContent = (tot>0?fmt(rep.inversor/tot*100,0):'—')+'% del total';
   $('wfFpct').textContent = (tot>0?fmt(rep.finkap/tot*100,0):'—')+'% del total';
-  const primaTxt = base.prima>0.005 ? ' + prima espera '+usd(base.prima) : '';
-  const fleteTxt = rep.landingRelief>0.005
-    ? ' · flete + aranceles los banca el inversor ('+usd(rep.landingRelief)+'/kg)'
-    : (phi>=0.99 ? ' · flete + aranceles corren por tu cuenta (importás vos)' : '');
-  $('wfPup').textContent = 'incluye FOB '+usd(base.fob)+' + '+Math.round(phi*100)+'% de la espera'+primaTxt+fleteTxt;
-  $('wfPsub').textContent = phi>=0.99 ? 'FOB + 50% spread + bancás la espera (+prima)' : 'FOB limpio + 50% del spread';
-  $('wfImsg').textContent = rep.inversor>0 ? 'te adelanta el cash' : 'no entra: bancás vos';
+  $('wfPup').textContent = 'tu FOB '+usd(base.fob)+' + tu parte del negocio';
+  $('wfPsub').textContent = phi>=0.99 ? 'máximo margen'
+                          : (phi<0.01 ? 'cobrás ya' : 'parte ya + esperás');
+  $('wfImsg').textContent = rep.inversor>0
+    ? (rep.landingRelief>0.005 ? 'te adelanta el cash y te banca el flete' : 'te adelanta el cash')
+    : 'no entra: importás y bancás vos';
   $('wfIrow').classList.toggle('hide', phi>=0.999);
 
   // adelanto en tramos 30/35/35 + piso (sobre el camino "cobro rápido" = phi 0)
