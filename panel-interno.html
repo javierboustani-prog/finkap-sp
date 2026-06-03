@@ -219,19 +219,20 @@ tfoot td:first-child{text-align:left;font-family:var(--sans)}
       </table>
     </div>
     <div class="legend">
-      <span><b>Costo puesto</b> = FOB + landing + carry</span>
-      <span><b>Toma Finkap</b> = comisión + 25% del spread</span>
-      <span><b>Markup</b> = efectivo / costo puesto − 1</span>
-      <span class="bad">■ fila roja = spread negativo</span>
+      <span><b>Costo puesto</b> = FOB + flete/aranceles + financiación en tránsito</span>
+      <span><b>Efectivo</b> = Costo puesto + Comisión + Spread <span style="color:var(--muted2)">(la fila cierra acá)</span></span>
+      <span><b>El efectivo se reparte:</b> flete/aranceles (costo) · Productor (FOB + 50% spread) · Inversor (financiación + 25% spread) · Finkap (comisión + 25% spread)</span>
+      <span><b>Markup</b> = Efectivo / Costo puesto − 1</span>
+      <span class="bad">■ fila roja = spread negativo (el PVP no cubre el costo puesto)</span>
     </div>
   </div>
 
   <div class="fin-grid">
     <div class="sec book">
-      <div class="sec-h"><div><span class="t">Libro financiero</span><h3 style="margin-top:3px">Spread de plazo vs costo de fondeo</h3></div></div>
+      <div class="sec-h"><div><span class="t">Libro financiero</span><h3 style="margin-top:3px">Spread de plazo vs costo de capital</h3></div></div>
       <div class="tbl-wrap">
         <table>
-          <thead><tr><th class="lbl" data-nosort>Plazo</th><th>Recargo PVP</th><th>Ingreso fin.</th><th>Costo fondeo</th><th>Spread neto</th></tr></thead>
+          <thead><tr><th class="lbl" data-nosort>Plazo</th><th>Recargo PVP</th><th>Ingreso financiero</th><th>Costo de capital</th><th>Spread neto</th></tr></thead>
           <tbody id="finBody"></tbody>
         </table>
       </div>
@@ -242,11 +243,11 @@ tfoot td:first-child{text-align:left;font-family:var(--sans)}
       <div class="sec-h"><div><span class="t">Adelanto al productor</span><h3 style="margin-top:3px">Costo del capital por etapa</h3></div></div>
       <div class="tbl-wrap">
         <table>
-          <thead><tr><th class="lbl" data-nosort>Etapa</th><th>Haircut</th><th>Adelanto/kg*</th><th>% FOB</th><th>Costo/mes</th></tr></thead>
+          <thead><tr><th class="lbl" data-nosort>Etapa</th><th>Retención</th><th>Adelanto/kg*</th><th>% FOB</th><th>Costo/mes</th></tr></thead>
           <tbody id="advBody"></tbody>
         </table>
       </div>
-      <div class="note">* sobre un FOB de referencia del catálogo (promedio), con índice de confianza 90. El haircut efectivo baja a medida que sube la confianza del lote (ProfilePrint).</div>
+      <div class="note">* sobre un FOB de referencia del catálogo (promedio), con índice de confianza 90. La <b>retención</b> es la parte del adelanto que Finkap no libera por adelantado (cubre el riesgo); baja a medida que sube la confianza del lote.</div>
     </div>
   </div>
 
@@ -426,7 +427,7 @@ function renderBook(){
       <td class="mono ${neto<0?'bad':'pos'}">${fmt(neto)}</td>
     </tr>`;
   }).join('');
-  $('finNote').innerHTML = `Sobre un PVP de referencia de <b>${usd(basePvp)}</b> (promedio del filtro). El <b>ingreso financiero</b> es el recargo de la escalera de pago; el <b>costo de fondeo</b> usa una TNA de ${pctv(TNA,0)}. El <b>spread neto</b> positivo indica que el recargo cubre el costo de financiar al tostadero a ese plazo.`;
+  $('finNote').innerHTML = `Sobre un PVP de referencia de <b>${usd(basePvp)}</b> (promedio del filtro). El <b>ingreso financiero</b> es el recargo de la escalera de pago; el <b>costo de capital</b> usa una TNA de ${pctv(TNA,0)}. El <b>spread neto</b> positivo indica que el recargo cubre el costo de financiar al tostadero a ese plazo.`;
 
   // adelanto por etapa
   const baseFob = rows.length ? rows.reduce((s,r)=>s+r.fob,0)/rows.length : 0;
