@@ -15,10 +15,12 @@ export const D_PROCESO = { Lavado:0, Washed:0, Honey:10, Natural:18, 'Anaeróbic
 export const D_VAR_TIER = { regional:0, especialidad:40, exotico:250 };
 
 // --- Config: tiers calibrados al catálogo real ---
+// slopeDn: castigo extra al PVP por punto POR DEBAJO del refScore (rota la cola
+// baja sin mover los buenos). Calibra el café flojo: regional 81 ≈ FOB cobra-ya 7.90.
 export const TIER = {
-  regional:     { pvpRef:13.30, refScore:83, comm:0.05, slope:0.30, sens:0.65 },
-  especialidad: { pvpRef:21.00, refScore:86, comm:0.09, slope:0.55, sens:0.40 },
-  exotico:      { pvpRef:24.50, refScore:88, comm:0.14, slope:1.20, sens:0.15 },
+  regional:     { pvpRef:13.30, refScore:83, comm:0.05, slope:0.30, sens:0.65, slopeDn:0.671 },
+  especialidad: { pvpRef:21.00, refScore:86, comm:0.09, slope:0.55, sens:0.40, slopeDn:0 },
+  exotico:      { pvpRef:24.50, refScore:88, comm:0.14, slope:1.20, sens:0.15, slopeDn:0 },
 };
 
 // --- Config: costos, finanzas, reparto ---
@@ -87,7 +89,8 @@ export function confianza({ declarado, escaneo, humedad, sensorial=0.9, visual=0
 // Modo B (sugerencia): flotado con NY desde el ref del tier.
 export function pvpSugerido(lot, kc){
   const t = TIER[lot.tier];
-  return t.pvpRef * (1 + t.sens*(kc/KC_REF - 1)) + (lot.score - t.refScore) * t.slope;
+  return t.pvpRef * (1 + t.sens*(kc/KC_REF - 1)) + (lot.score - t.refScore) * t.slope
+       - (t.slopeDn ?? 0) * Math.max(0, t.refScore - lot.score);   // castigo cola baja
 }
 
 // === Cálculo completo del lote ===
