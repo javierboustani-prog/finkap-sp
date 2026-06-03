@@ -666,8 +666,11 @@ function recalc(){
   $('wfIpct').textContent = (tot>0?fmt(rep.inversor/tot*100,0):'—')+'% del total';
   $('wfFpct').textContent = (tot>0?fmt(rep.finkap/tot*100,0):'—')+'% del total';
   const primaTxt = base.prima>0.005 ? ' + prima espera '+usd(base.prima) : '';
-  $('wfPup').textContent = 'incluye FOB '+usd(base.fob)+' + '+Math.round(phi*100)+'% de la espera'+primaTxt;
-  $('wfPsub').textContent = phi>=0.99 ? 'FOB + 50% spread + bancás la espera (+prima)' : 'FOB + 50% del spread';
+  const fleteTxt = rep.landingRelief>0.005
+    ? ' · flete + aranceles los banca el inversor ('+usd(rep.landingRelief)+'/kg)'
+    : (phi>=0.99 ? ' · flete + aranceles corren por tu cuenta (importás vos)' : '');
+  $('wfPup').textContent = 'incluye FOB '+usd(base.fob)+' + '+Math.round(phi*100)+'% de la espera'+primaTxt+fleteTxt;
+  $('wfPsub').textContent = phi>=0.99 ? 'FOB + 50% spread + bancás la espera (+prima)' : 'FOB limpio + 50% del spread';
   $('wfImsg').textContent = rep.inversor>0 ? 'te adelanta el cash' : 'no entra: bancás vos';
   $('wfIrow').classList.toggle('hide', phi>=0.999);
 

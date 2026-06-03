@@ -158,6 +158,15 @@ export function repartoProductor(base, phi = 1){
   let inversor  = (1 - phi) * finSlice + prmInv;
   const finkap  = base.comm + sp * SPLIT.finkap + prmFinkap;
 
+  // Flete + aranceles (landing): el productor cobra FOB y NO banca los costos de
+  // importación sobre la parte que cobra ya. Quien tiene la posición de importación
+  // los paga: el inversor cuando el productor cobra ya, el propio productor sólo si
+  // se lo guarda. Releva (1-phi)·50% del landing (lo que el productor absorbía vía su
+  // 50% del spread) y se lo pasa al inversor. phi=0 → productor limpio de flete.
+  const landingRelief = (1 - phi) * SPLIT.productor * (base.landing || 0);
+  productor += landingRelief;
+  inversor  -= landingRelief;
+
   // Castigo "cobro rápido": 5%·(1-phi) de lo del productor → a quien compra/financia el contrato.
   const cashHcRate = CASH_HAIRCUT * (1 - phi);
   const cashHc = cashHcRate * productor;
@@ -165,7 +174,7 @@ export function repartoProductor(base, phi = 1){
   inversor  += cashHc;
 
   return { productor, inversor, finkap, finSlice, prima:prm, phi, cashHc, cashHcRate,
-           upliftProductor: base.fob>0 ? productor/base.fob - 1 : 0 };
+           landingRelief, upliftProductor: base.fob>0 ? productor/base.fob - 1 : 0 };
 }
 
 // === Piso de precio: NY-C puro + mitad del diferencial = (FOB + NY·C)/2 ===
