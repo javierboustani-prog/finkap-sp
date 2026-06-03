@@ -195,6 +195,10 @@ input[type=range]::-moz-range-thumb{width:18px;height:18px;border-radius:50%;bac
 .bd-row.tot .l small{font-weight:400;font-size:11px;color:var(--muted2)}
 .bd-row.tot .v{color:var(--ok);font-weight:800;font-size:16px}
 .bd-row .v.minus{color:var(--muted2)}
+.bd-row .v.plus{color:var(--ok)}
+.bd-row .l small{color:var(--muted2);font-weight:400}
+.bd-note{margin-top:11px;font-size:11.5px;color:var(--muted2);line-height:1.55}
+.bd-note b{color:var(--text);font-family:var(--mono)}
 
 /* waterfall */
 .wf-row{margin-bottom:13px}
@@ -375,13 +379,10 @@ input[type=range]::-moz-range-thumb{width:18px;height:18px;border-radius:50%;bac
 
       <div class="card" id="detalleCard">
         <div class="t"><span>Cómo se forma tu precio</span><span class="meta" id="bdMeta"></span></div>
-        <div class="bd-row hd"><span class="l">Lo que paga el tostadero por tu café</span><span class="v" id="bdPvp">—</span></div>
-        <div class="bd-row"><span class="l">− Tu café (FOB · precio base de hoy)</span><span class="v minus" id="bdFob">—</span></div>
-        <div class="bd-row"><span class="l">− Traerlo a Argentina (flete + aranceles)</span><span class="v minus" id="bdLand">—</span></div>
-        <div class="bd-row"><span class="l">− Financiar la espera</span><span class="v minus" id="bdCarry">—</span></div>
-        <div class="bd-row"><span class="l">− Comisión Finkap</span><span class="v minus" id="bdComm">—</span></div>
-        <div class="bd-row sub"><span class="l">= Margen del negocio a repartir</span><span class="v" id="bdSpread">—</span></div>
+        <div class="bd-row"><span class="l">Tu café hoy en el mercado <small>(FOB)</small></span><span class="v" id="bdFob">—</span></div>
+        <div class="bd-row"><span class="l">+ Tu parte del negocio con Finkap</span><span class="v plus" id="bdPart">—</span></div>
         <div class="bd-row tot"><span class="l">Te llevás <small id="bdTakeSub"></small></span><span class="v" id="bdTake">—</span></div>
+        <div class="bd-note" id="bdNote"></div>
       </div>
 
       <div class="card">
@@ -662,16 +663,15 @@ function recalc(){
   $('c2fast').classList.toggle('sel', phi<0.34);
   $('c2slow').classList.toggle('sel', phi>0.66);
 
-  // breakdown — cada línea resta y cierra: PVP − FOB − flete − carry − comisión = margen
+  // breakdown — se construye HACIA ARRIBA desde el FOB (no se resta el café del productor)
   $('bdMeta').textContent = diffTxt(l);
-  $('bdPvp').textContent  = usd(base.efectivo);
-  $('bdFob').textContent  = '− '+usd(base.fob);
-  $('bdLand').textContent = '− '+usd(base.landing);
-  $('bdCarry').textContent= '− '+usd(base.carry);
-  $('bdComm').textContent = '− '+usd(base.comm);
-  $('bdSpread').textContent = usd(Math.max(0,base.spread));
+  $('bdFob').textContent  = usd(base.fob);
+  $('bdPart').textContent = '+ '+usd(Math.max(0, rep.productor - base.fob));
   $('bdTake').textContent = usd(rep.productor);
-  $('bdTakeSub').textContent = '= tu FOB '+usd(base.fob)+' + tu parte del negocio '+usd(rep.productor-base.fob);
+  $('bdTakeSub').textContent = '+'+fmt(rep.upliftProductor*100,0)+'% sobre el mercado';
+  $('bdNote').innerHTML = `El tostadero paga <b>${usd(base.efectivo)}</b>/kg por tu café. `
+    + `De ahí cubrimos el flete + aranceles (${usd(base.landing)}) y la comisión Finkap (${usd(base.comm)}); `
+    + `el resto es la ganancia del negocio que se reparte abajo — y a vos te toca la mayor parte.`;
 
   // waterfall
   const tot = rep.productor + rep.inversor + rep.finkap;
