@@ -118,6 +118,7 @@ tbody tr.neg:hover{background:rgba(239,83,80,.12)}
 .chip.especialidad{color:#cfe0ff;background:rgba(91,157,255,.12);border:1px solid rgba(91,157,255,.3)}
 .chip.exotico{color:#e4cfff;background:rgba(181,139,255,.14);border:1px solid rgba(181,139,255,.35)}
 .pos{color:var(--ok)} .bad{color:var(--bad);font-weight:700}
+.floorcell{color:#e0a44e}
 .mk{font-weight:700}
 .bar-cell{min-width:90px}
 .minibar{height:7px;border-radius:99px;background:#0a0a0c;overflow:hidden;margin-top:4px}
@@ -209,12 +210,13 @@ tfoot td:first-child{text-align:left;font-family:var(--sans)}
           <th data-k="costo">Costo puesto</th>
           <th data-k="pvp">PVP</th>
           <th data-k="efectivo">Efectivo</th>
+          <th data-k="piso" title="Precio mínimo de venta: bajo esto el spread es negativo">Piso</th>
           <th data-k="commRate">Com. %</th>
           <th data-k="spread">Spread</th>
           <th data-k="finkap">Toma Finkap</th>
           <th data-k="markup" class="s-desc">Markup</th>
         </tr></thead>
-        <tbody id="tbody"><tr><td colspan="11" class="loading">Leyendo catálogo en vivo…</td></tr></tbody>
+        <tbody id="tbody"><tr><td colspan="12" class="loading">Leyendo catálogo en vivo…</td></tr></tbody>
         <tfoot id="tfoot"></tfoot>
       </table>
     </div>
@@ -223,6 +225,7 @@ tfoot td:first-child{text-align:left;font-family:var(--sans)}
       <span><b>Efectivo</b> = Costo puesto + Comisión + Spread <span style="color:var(--muted2)">(la fila cierra acá)</span></span>
       <span><b>El efectivo se reparte:</b> flete/aranceles (costo) · Productor (FOB + 50% spread) · Inversor (financiación + 25% spread) · Finkap (comisión + 25% spread)</span>
       <span><b>Markup</b> = Efectivo / Costo puesto − 1</span>
+      <span><b style="color:#e0a44e">Piso</b> = precio mínimo de venta: bajo esto Finkap pierde comisión (spread &lt; 0). No vendas por debajo.</span>
       <span class="bad">■ fila roja = spread negativo (el PVP no cubre el costo puesto)</span>
     </div>
   </div>
@@ -330,7 +333,7 @@ async function loadCatalog(){
       };
     }).filter(x=>x.n && x.pvpReal);
   }catch(e){
-    $('tbody').innerHTML = `<tr><td colspan="11" class="loading">No se pudo leer el catálogo en vivo. Verificá que la planilla esté compartida como "cualquiera con el enlace · lector".</td></tr>`;
+    $('tbody').innerHTML = `<tr><td colspan="12" class="loading">No se pudo leer el catálogo en vivo. Verificá que la planilla esté compartida como "cualquiera con el enlace · lector".</td></tr>`;
   }
 }
 
@@ -343,6 +346,7 @@ function compute(){
     const r = PE.calcular(lot, feeds);
     return { n:p.n, tier:p.tier, score:p.score, origen:p.origen,
       fob:r.fob, costo:r.fob+r.landing+r.carry, pvp:r.pvp, efectivo:r.efectivo,
+      piso:(r.fob+r.landing+r.carry)/(1-r.commRate),
       commRate:r.commRate, comm:r.comm, spread:r.spread, finkap:r.waterfall.finkap,
       productor:r.waterfall.productor, markup:r.markup };
   });
@@ -379,11 +383,12 @@ function render(){
       <td class="mono">${fmt(r.costo)}</td>
       <td class="mono">${fmt(r.pvp)}</td>
       <td class="mono">${fmt(r.efectivo)}</td>
+      <td class="mono floorcell">${fmt(r.piso)}</td>
       <td class="mono">${pctv(r.commRate)}</td>
       <td class="mono ${r.spread<0?'bad':'pos'}">${fmt(r.spread)}</td>
       <td class="mono">${fmt(r.finkap)}</td>
       <td class="bar-cell"><span class="mk mono">${pctv(r.markup)}</span><span class="minibar"><span style="width:${Math.max(0,Math.min(100,r.markup/maxMk*100))}%"></span></span></td>
-    </tr>`).join('') || `<tr><td colspan="11" class="loading">Sin lotes para este filtro.</td></tr>`;
+    </tr>`).join('') || `<tr><td colspan="12" class="loading">Sin lotes para este filtro.</td></tr>`;
 
   // tfoot totales
   const sum = key => rows.reduce((s,r)=>s+r[key],0);
@@ -393,6 +398,7 @@ function render(){
     <td>${fmt(avg(rows.map(r=>r.costo)))}</td>
     <td>${fmt(avg(rows.map(r=>r.pvp)))}</td>
     <td>${fmt(avg(rows.map(r=>r.efectivo)))}</td>
+    <td>${fmt(avg(rows.map(r=>r.piso)))}</td>
     <td>${pctv(avg(rows.map(r=>r.commRate)))}</td>
     <td>${fmt(avg(rows.map(r=>r.spread)))}</td>
     <td>${fmt(sum('finkap'))}</td>
