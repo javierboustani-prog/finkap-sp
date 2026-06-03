@@ -257,6 +257,10 @@ select.fld{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns
 .resumen-t{color:var(--orange);margin-bottom:4px;padding-top:6px}
 .resumen .kvline.efec{border-top:1px dashed var(--line2);margin-top:3px}
 .resumen .kvline.efec .v{color:var(--orange)}
+.resumen .kvline.sub{border-top:1px dashed var(--line2);margin-top:3px;padding-top:9px}
+.resumen .kvline.sub .k{color:var(--text);font-weight:600}
+.resumen .kvline.efeckg{padding:1px 0 3px}
+.resumen .kvline.efeckg .k,.resumen .kvline.efeckg .v{color:var(--muted2);font-size:11px;font-weight:600}
 
 .mixwrap{margin-top:10px;display:none}
 .mixchips{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px}
@@ -482,12 +486,13 @@ select.fld{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns
         </div>
         <div class="resumen" id="resumen">
           <div class="lblup resumen-t">Resumen del pedido</div>
-          <div class="kvline"><span class="k">Subtotal lista</span><span class="v" id="rSub">USD 0,00</span></div>
+          <div class="kvline"><span class="k">Precio de lista</span><span class="v" id="rSub">USD 0,00</span></div>
           <div class="kvline"><span class="k" id="rDescLbl">Descuento por volumen</span><span class="v neg" id="rDesc">USD 0,00</span></div>
-          <div class="kvline"><span class="k">Base con descuento</span><span class="v" id="rBase">USD 0,00</span></div>
-          <div class="kvline"><span class="k" id="rModLbl">Modificador forma de pago</span><span class="v" id="rMod">USD 0,00</span></div>
-          <div class="kvline efec"><span class="k">Precio efectivo por kg <span style="font-size:9px;color:var(--muted2)">sin IVA</span></span><span class="v" id="rEfec">USD 0,00</span></div>
-          <div class="kvline"><span class="k">IVA 21%</span><span class="v" id="pIva">USD 0,00</span></div>
+          <div class="kvline sub"><span class="k">Subtotal con descuento</span><span class="v" id="rBase">USD 0,00</span></div>
+          <div class="kvline"><span class="k" id="rModLbl">Ajuste por forma de pago</span><span class="v" id="rMod">USD 0,00</span></div>
+          <div class="kvline sub"><span class="k">Subtotal <span style="font-size:9px;color:var(--muted2)">sin IVA</span></span><span class="v" id="rConPago">USD 0,00</span></div>
+          <div class="kvline efeckg"><span class="k">≈ precio por kg</span><span class="v" id="rEfec">USD 0,00</span></div>
+          <div class="kvline"><span class="k">+ IVA 21%</span><span class="v" id="pIva">USD 0,00</span></div>
           <div class="kvline big"><span class="k">TOTAL USD</span><span class="v" id="pUsd">USD 0,00</span></div>
           <div class="kvline ars"><span class="k">TOTAL ARS <span style="font-size:9px;color:var(--muted2)">@ TC BNA</span></span><span class="v" id="pArs">ARS 0,00</span></div>
         </div>
@@ -956,14 +961,15 @@ function recalcPay(neto, gross, kgTot){
   const rDesc=$("rDesc");
   rDesc.textContent=(descMonto>0?"− ":"")+fmtUSD(descMonto);
   rDesc.className="v "+(descMonto>0?"neg":"");
-  // Base con descuento
+  // Subtotal con descuento
   $("rBase").textContent=fmtUSD(neto);
-  // Modificador forma de pago (verde si descuenta, rojo si recarga)
-  $("rModLbl").textContent="Modificador forma de pago ("+(ajustePct>=0?"+":"")+ajustePct.toFixed(2)+"%)";
+  // Ajuste por forma de pago (verde si descuenta, rojo si recarga)
+  $("rModLbl").textContent="Ajuste por forma de pago ("+(ajustePct>=0?"+":"")+ajustePct.toFixed(2)+"%)";
   const rMod=$("rMod");
   rMod.textContent=(ajusteMonto<0?"− ":ajusteMonto>0?"+ ":"")+fmtUSD(Math.abs(ajusteMonto));
   rMod.className="v "+(ajusteMonto<0?"neg":ajusteMonto>0?"pos":"");
-  // Precio efectivo por kg
+  // Subtotal sin IVA (lo que el IVA grava) + precio por kg como referencia
+  $("rConPago").textContent=fmtUSD(conPago);
   $("rEfec").textContent=fmtUSD(efectivoKg)+"/kg";
   $("pIva").textContent=fmtUSD(iva);
   $("pUsd").textContent=fmtUSD(totalUsd);
