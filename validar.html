@@ -1,0 +1,294 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Validar motor — Finkap</title>
+<meta name="description" content="Batería de auto-test del motor de precios pricing-engine.js: aranceles por país, conservación del reparto, landing-relief, castigo cobro-rápido y calibración slopeDn.">
+<meta name="robots" content="noindex,nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0d0d0f; --bg2:#131316; --panel:#17171b; --panel2:#1d1d22; --panel3:#222228;
+  --line:#2c2c33; --line2:#3a3a43; --text:#f5f5f7; --muted:#9b9ba6; --muted2:#6f6f7a;
+  --orange:#F97316; --orange-soft:rgba(249,115,22,.12); --orange-line:rgba(249,115,22,.45);
+  --ok:#46d39a; --ok-soft:rgba(70,211,154,.1); --bad:#ef5350; --bad-soft:rgba(239,83,80,.1);
+  --radius:16px; --radius-sm:10px;
+  --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  --sans:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+  --shadow:0 10px 40px -12px rgba(0,0,0,.6);
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:
+    radial-gradient(1200px 600px at 85% -10%, rgba(249,115,22,.10), transparent 60%),
+    radial-gradient(900px 500px at -10% 10%, rgba(249,115,22,.05), transparent 55%),
+    var(--bg);
+  color:var(--text); font-family:var(--sans); font-size:14px; line-height:1.5;
+  -webkit-font-smoothing:antialiased; letter-spacing:-.01em; min-height:100vh;
+}
+.num,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums;letter-spacing:0}
+a{color:inherit;text-decoration:none}
+::selection{background:var(--orange);color:#fff}
+
+/* topbar */
+.topbar{position:sticky;top:0;z-index:50;backdrop-filter:saturate(140%) blur(14px);background:rgba(13,13,15,.72);border-bottom:1px solid var(--line)}
+.topbar-in{max-width:1080px;margin:0 auto;padding:12px 20px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:20px;letter-spacing:-.03em}
+.brand .dot{width:30px;height:30px;border-radius:50%;border:2.5px solid var(--orange);display:grid;place-items:center;color:var(--orange);font-weight:900;font-size:16px;flex:0 0 auto}
+.brand sup{color:var(--orange);font-size:10px;font-weight:700}
+.priv{font-size:9px;text-transform:uppercase;letter-spacing:.7px;color:var(--bad);border:1px solid rgba(239,83,80,.4);background:rgba(239,83,80,.08);border-radius:99px;padding:2px 8px;font-weight:700}
+.nav{display:flex;gap:6px;margin-left:6px}
+.nav a{font-size:12px;color:var(--muted);padding:5px 11px;border-radius:99px;border:1px solid transparent}
+.nav a:hover{color:var(--text);border-color:var(--line)}
+.nav a.on{color:var(--orange);border-color:var(--orange-line);background:var(--orange-soft)}
+@media(max-width:760px){
+  .topbar-in{gap:10px}
+  .nav{order:3;width:100%;margin-left:0;justify-content:space-between;gap:6px}
+  .nav a{flex:1;text-align:center;padding:9px 6px;font-size:13px;border-color:var(--line)}
+}
+
+.shell{max-width:1080px;margin:0 auto;padding:24px 20px 80px}
+.hero{margin:6px 0 18px}
+.hero h1{font-size:clamp(24px,3.5vw,32px);font-weight:800;letter-spacing:-.03em;margin:0 0 4px}
+.hero h1 .ac{color:var(--orange)}
+.hero p{color:var(--muted);max-width:640px;margin:0}
+.hero code{color:var(--muted);font-family:var(--mono);font-size:.9em}
+
+/* summary banner */
+.banner{display:flex;align-items:center;gap:16px;flex-wrap:wrap;border-radius:var(--radius);padding:16px 20px;margin:18px 0 22px;border:1px solid var(--line);background:var(--panel)}
+.banner.ok{border-color:var(--ok);background:linear-gradient(160deg,var(--ok-soft),transparent)}
+.banner.bad{border-color:var(--bad);background:linear-gradient(160deg,var(--bad-soft),transparent)}
+.banner .big{font-family:var(--mono);font-size:34px;font-weight:800;line-height:1}
+.banner.ok .big{color:var(--ok)} .banner.bad .big{color:var(--bad)}
+.banner .lbl{font-size:13px;color:var(--muted)}
+.banner .lbl b{color:var(--text)}
+.banner .meta{margin-left:auto;font-size:11px;color:var(--muted2);font-family:var(--mono);text-align:right}
+.btn{border:1px solid var(--line2);background:var(--panel3);color:var(--text);border-radius:10px;padding:9px 15px;font-weight:600;font-size:13px;cursor:pointer;font-family:inherit}
+.btn:hover{border-color:var(--orange-line);color:var(--orange)}
+
+/* groups */
+.grp{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:6px 18px 10px;margin-bottom:16px}
+.grp-h{display:flex;align-items:center;gap:10px;padding:12px 0 8px}
+.grp-h .t{font-size:10px;text-transform:uppercase;letter-spacing:.8px;color:var(--orange);font-weight:700}
+.grp-h .c{margin-left:auto;font-family:var(--mono);font-size:11px;color:var(--muted2)}
+.grp-h .c b.ok{color:var(--ok)} .grp-h .c b.bad{color:var(--bad)}
+
+.row{display:flex;align-items:center;gap:12px;padding:8px 0;border-top:1px solid var(--line)}
+.row .ico{flex:0 0 auto;width:20px;height:20px;border-radius:6px;display:grid;place-items:center;font-size:12px;font-weight:800}
+.row.pass .ico{background:var(--ok-soft);color:var(--ok);border:1px solid rgba(70,211,154,.35)}
+.row.fail .ico{background:var(--bad-soft);color:var(--bad);border:1px solid rgba(239,83,80,.4)}
+.row .nm{flex:1;min-width:0;font-size:13px}
+.row.fail .nm{color:#ffd2d1}
+.row .dt{font-family:var(--mono);font-size:11px;color:var(--muted2);text-align:right;white-space:nowrap}
+.row.fail .dt{color:var(--bad)}
+
+.foot{font-size:11px;color:var(--muted2);line-height:1.6;margin-top:14px;max-width:760px}
+.foot b{color:var(--muted)}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-in">
+    <div class="brand"><span class="dot">f</span> finkap<sup>®</sup></div>
+    <span class="priv">interno</span>
+    <nav class="nav">
+      <a href="armar-pedido.html">Venta</a>
+      <a href="simulador-productor.html">Productor</a>
+      <a href="panel-interno.html">Panel</a>
+      <a href="validar.html" class="on">Validar</a>
+    </nav>
+  </div>
+</div>
+
+<div class="shell">
+  <div class="hero">
+    <h1>Validar <span class="ac">motor</span></h1>
+    <p>Batería de auto-test sobre <code>pricing-engine.js</code> — la única fuente de verdad. Se corre con la referencia de calibración (<code>KC_REF</code>) para que sea determinista. Si todo está verde, las tres vistas (venta · productor · panel) calculan sobre una base sana.</p>
+  </div>
+
+  <div class="banner" id="banner">
+    <div class="big" id="bigCount">…</div>
+    <div class="lbl" id="bigLbl">Corriendo batería…</div>
+    <div class="meta" id="bannerMeta"></div>
+    <button class="btn" onclick="location.reload()">Volver a correr</button>
+  </div>
+
+  <div id="results"></div>
+
+  <div class="foot">
+    <b>Qué cubre:</b> aranceles de importación por país (Phase-5) · que cada lote <i>cierre</i>
+    (efectivo = costo puesto + comisión + spread, y el reparto del efectivo) · la conservación del
+    reparto al productor a través de <code>phi</code> (que el alivio de flete y el castigo por cobrar
+    rápido sean puras transferencias, no plata creada o perdida) · la calibración <code>slopeDn</code>
+    de la cola baja (café flojo) sin tocar los buenos · y la escalera de forma de pago que comparte la venta.
+    <br><b>Nota:</b> esta página es interna. No la enlaces desde la planilla pública.
+  </div>
+</div>
+
+<script type="module">
+import * as PE from './pricing-engine.js';
+
+const $ = id => document.getElementById(id);
+const feeds = { kc: PE.KC_REF, tc: 1430 };          // determinista
+const lot = (tier,score,origen='Honduras',pago='d30',extra={}) =>
+  ({ origen, proceso:'Lavado', tier, score, kg:1000, T:6, pago, ...extra });
+const approx = (a,b,tol=1e-6)=> Math.abs(a-b)<=tol;
+const f4 = v => (v==null||isNaN(v))?'—':(+v).toFixed(4);
+
+const TESTS = [];
+function test(group, name, pass, detail){ TESTS.push({ group, name, pass:!!pass, detail:detail||'' }); }
+
+/* ============================================================
+   A · Aranceles de importación por país (Phase-5)
+   ============================================================ */
+(function(){
+  const G='Aranceles por país';
+  test(G,'Brasil = 3% (exento DIE)',  PE.arancelRate('Brasil')===0.03,  'rate '+PE.arancelRate('Brasil'));
+  test(G,'Perú = 3% (exento DIE)',    PE.arancelRate('Perú')===0.03,    'rate '+PE.arancelRate('Perú'));
+  test(G,'Colombia = 3% (exento DIE)',PE.arancelRate('Colombia')===0.03,'rate '+PE.arancelRate('Colombia'));
+  test(G,'Panamá = 3% (exento DIE)',  PE.arancelRate('Panamá')===0.03,  'rate '+PE.arancelRate('Panamá'));
+  test(G,'Honduras = 12% (9% DIE + 3%)', PE.arancelRate('Honduras')===0.12, 'rate '+PE.arancelRate('Honduras'));
+  test(G,'Origen sin tabla → default 12%', PE.arancelRate('Vietnam')===PE.ARANCEL_DEF, 'rate '+PE.arancelRate('Vietnam'));
+
+  const co = PE.calcular(lot('regional',83,'Colombia'), feeds);
+  const ho = PE.calcular(lot('regional',83,'Honduras'), feeds);
+  test(G,'calcular() aplica 3% a Colombia', co.arancel===0.03, 'arancel '+co.arancel);
+  test(G,'calcular() aplica 12% a Honduras', ho.arancel===0.12, 'arancel '+ho.arancel);
+  test(G,'landing = flete + arancel·FOB',
+        approx(ho.landing, PE.COSTOS.freight + ho.arancel*ho.fob, 1e-9),
+        'landing '+f4(ho.landing));
+})();
+
+/* ============================================================
+   B · Cada lote cierra (identidades de calcular)
+   ============================================================ */
+(function(){
+  const G='Cada lote cierra';
+  for(const [tier,score] of [['regional',83],['especialidad',86],['exotico',88]]){
+    const r = PE.calcular(lot(tier,score,'Colombia',undefined,{pvpReal: tier==='regional'?13.05:(tier==='especialidad'?21:24.5)}), feeds);
+    const costo = r.fob + r.landing + r.carry;
+    test(G, `${tier}: efectivo = costo puesto + comisión + spread`,
+         approx(r.efectivo, costo + r.comm + r.spread, 1e-9),
+         f4(r.efectivo));
+    if(r.spread>0){
+      const reparto = r.landing + r.waterfall.productor + r.waterfall.inversor + r.waterfall.finkap;
+      test(G, `${tier}: efectivo = flete + productor + inversor + finkap`,
+           approx(r.efectivo, reparto, 1e-9),
+           f4(reparto));
+    }
+  }
+})();
+
+/* ============================================================
+   C · Reparto al productor: conservación, alivio de flete, castigo cobro-rápido
+   ============================================================ */
+(function(){
+  const G='Reparto al productor (phi)';
+  const base = PE.calcular(lot('regional',83,'Colombia',undefined,{pvpReal:13.05}), feeds);
+  const r0 = PE.repartoProductor(base,0);    // cobra ya (inversor financia)
+  const r5 = PE.repartoProductor(base,0.5);
+  const r1 = PE.repartoProductor(base,1);    // espera (autofinancia)
+  const sum = r => r.productor + r.inversor + r.finkap;
+
+  test(G,'Conservación: total invariante en phi (0 = 0,5 = 1)',
+       approx(sum(r0),sum(r1),1e-9) && approx(sum(r0),sum(r5),1e-9),
+       f4(sum(r0)));
+  test(G,'Alivio de flete: 0 al esperar (phi=1)', approx(r1.landingRelief,0,1e-12), f4(r1.landingRelief));
+  test(G,'Alivio de flete: 50% del flete al cobrar ya (phi=0)',
+       approx(r0.landingRelief, PE.SPLIT.productor*base.landing, 1e-9),
+       f4(r0.landingRelief));
+  test(G,'Castigo cobro-rápido: 5% al cobrar ya (phi=0)', approx(r0.cashHcRate,0.05,1e-12), f4(r0.cashHcRate));
+  test(G,'Castigo cobro-rápido: 2,5% en phi=0,5', approx(r5.cashHcRate,0.025,1e-12), f4(r5.cashHcRate));
+  test(G,'Castigo cobro-rápido: 0 al esperar (phi=1)', approx(r1.cashHcRate,0,1e-12), f4(r1.cashHcRate));
+  test(G,'Cobrar ya paga menos que esperar', r0.productor < r1.productor,
+       f4(r0.productor)+' < '+f4(r1.productor));
+  test(G,'Inversor positivo al cobrar ya (phi=0)', r0.inversor>0, f4(r0.inversor));
+})();
+
+/* ============================================================
+   D · Calibración slopeDn (cola baja) — determinista a KC_REF
+   ============================================================ */
+(function(){
+  const G='Calibración cola baja (slopeDn)';
+  test(G,'Regional score 83 = PVP ref intacto (13,30)',
+       approx(PE.pvpSugerido(lot('regional',83),PE.KC_REF),13.30,1e-9));
+  test(G,'Regional score 81 = castigo cola (11,358)',
+       approx(PE.pvpSugerido(lot('regional',81),PE.KC_REF),11.358,1e-9));
+  test(G,'Regional score 85 (sobre ref) sin slopeDn (13,90)',
+       approx(PE.pvpSugerido(lot('regional',85),PE.KC_REF),13.90,1e-9));
+  test(G,'Especialidad 84: slopeDn=0 (19,90, sólo slope)',
+       approx(PE.pvpSugerido(lot('especialidad',84),PE.KC_REF),19.90,1e-9));
+
+  // monotonía del PVP sugerido en regional
+  let mono=true, prev=-Infinity;
+  for(let s=79;s<=86;s++){ const v=PE.pvpSugerido(lot('regional',s),PE.KC_REF); if(v<=prev) mono=false; prev=v; }
+  test(G,'PVP sugerido regional crece con el puntaje (79→86)', mono);
+
+  // ancla real: café flojo regional cobra-ya ~ 7,90
+  const cy81 = PE.repartoProductor(PE.calcular(lot('regional',81),feeds),0).productor;
+  const cy83 = PE.repartoProductor(PE.calcular(lot('regional',83),feeds),0).productor;
+  test(G,'Cobra-ya regional 81 aterriza cerca de 7,90 (objetivo)',
+       Math.abs(cy81-7.90)<=0.20, f4(cy81));
+  test(G,'Cobra-ya monótono: 83 paga más que 81', cy83>cy81, f4(cy83)+' > '+f4(cy81));
+})();
+
+/* ============================================================
+   E · Escalera de forma de pago (compartida con la venta)
+   ============================================================ */
+(function(){
+  const G='Escalera de forma de pago';
+  test(G,'Contado = −2,5%', PE.PAGO.contado===-0.025);
+  test(G,'Cheque 90d = +5,5%', PE.PAGO.d90===0.055);
+  test(G,'Cheque 180d = +13,75%', PE.PAGO.d180===0.1375);
+  const e30 = PE.calcular(lot('regional',83,'Colombia',undefined,{pvpReal:13}),feeds).efectivo;
+  const e90 = PE.calcular(lot('regional',83,'Colombia','d90',{pvpReal:13}),feeds).efectivo;
+  test(G,'Efectivo escala con el plazo (90d ≈ +5,5% vs 30d)',
+       approx(e90/e30, 1.055, 1e-6), f4(e90/e30));
+})();
+
+/* ============================================================
+   RENDER
+   ============================================================ */
+(function render(){
+  const groups = [];
+  for(const t of TESTS){
+    let g = groups.find(x=>x.name===t.group);
+    if(!g){ g={name:t.group, rows:[]}; groups.push(g); }
+    g.rows.push(t);
+  }
+  const total = TESTS.length;
+  const passed = TESTS.filter(t=>t.pass).length;
+  const allOk = passed===total;
+
+  const banner = $('banner');
+  banner.classList.add(allOk?'ok':'bad');
+  $('bigCount').textContent = passed+'/'+total;
+  $('bigLbl').innerHTML = allOk
+    ? '<b>Todo verde.</b> El motor calcula sobre una base sana.'
+    : `<b>${total-passed} test(s) fallando.</b> Revisá el detalle abajo antes de confiar en las vistas.`;
+  $('bannerMeta').innerHTML = `KC_REF ${PE.KC_REF} ¢/lb · TC ${feeds.tc}<br>${new Date().toLocaleString('es-AR')}`;
+
+  $('results').innerHTML = groups.map(g=>{
+    const ok = g.rows.filter(r=>r.pass).length, n = g.rows.length;
+    const cls = ok===n?'ok':'bad';
+    return `<div class="grp">
+      <div class="grp-h"><span class="t">${g.name}</span>
+        <span class="c"><b class="${cls}">${ok}</b>/${n}</span></div>
+      ${g.rows.map(r=>`<div class="row ${r.pass?'pass':'fail'}">
+        <span class="ico">${r.pass?'✓':'✕'}</span>
+        <span class="nm">${r.name}</span>
+        <span class="dt">${r.detail}</span>
+      </div>`).join('')}
+    </div>`;
+  }).join('');
+
+  document.title = (allOk?'✓ ':'✕ ')+passed+'/'+total+' — Validar motor — Finkap';
+})();
+</script>
+</body>
+</html>
