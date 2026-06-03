@@ -680,7 +680,8 @@ function recalc(){
     $('advT2').textContent = usd(ant.tramos.bl.monto);
     $('advT3').textContent = usd(ant.tramos.arribo.monto);
     $('advNote').innerHTML = `Cobrás en 3 tramos (total <b>${usd(ant.porTramos)}</b>/kg = ${usd(ant.porTramos*(l.kg||0),0)}). `
-      + `Si pedís <b>todo hoy</b>, baja a <b>${usd(ant.alContado)}</b>/kg (−${fmt(ant.descuentoPct*100,0)}%), con piso en <b>${usd(ant.piso)}</b>/kg `
+      + `Ya incluye el <b>5% de costo de financiación</b> (Finkap/inversor compra tu contrato). `
+      + `Si pedís <b>todo hoy</b>, baja a <b>${usd(ant.alContado)}</b>/kg (−${fmt(ant.descuentoPct*100,0)}% extra por timing), con piso en <b>${usd(ant.piso)}</b>/kg `
       + `(nunca por debajo de NY-C + mitad del diferencial). Cuanto más esperás, más te llevás.`;
   } else {
     $('advCard').style.display='none';

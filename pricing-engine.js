@@ -22,8 +22,19 @@ export const TIER = {
 };
 
 // --- Config: costos, finanzas, reparto ---
-export const COSTOS = { freight:0.45, duty:0.12, rate:0.015, storage:0.03 }; // freight/kg, duty %FOB, %/mes, almacén/kg/mes
+export const COSTOS = { freight:0.45, duty:0.12, rate:0.015, storage:0.03 }; // freight/kg, duty %FOB (fallback), %/mes, almacén/kg/mes
 export const SPLIT  = { productor:0.50, inversor:0.25, finkap:0.25 };
+
+// --- Aranceles de importación a Argentina (% sobre FOB; NO son crédito fiscal) ---
+// Exentos de DIE (solo 3% tasa de estadística): Brasil, Perú, Colombia, Panamá.
+// Resto: 9% DIE + 3% estadística = 12%.
+export const ARANCEL = { Brasil:0.03, 'Perú':0.03, Colombia:0.03, 'Panamá':0.03 };
+export const ARANCEL_DEF = 0.12;
+export function arancelRate(origen){ return ARANCEL[origen] ?? ARANCEL_DEF; }
+
+// Castigo flat por "cobrar rápido": Finkap/el inversor compra y financia el contrato.
+// Escala con (1-phi): full al adelantar todo, 0 si el productor banca la espera.
+export const CASH_HAIRCUT = 0.05;
 
 // Escalera de forma de pago del tostadero (modificador sobre PVP):
 export const PAGO = {
@@ -86,7 +97,8 @@ export function calcular(lot, feeds, cfg = {}){
   const split  = { ...SPLIT,  ...cfg.split  };
   const t = TIER[lot.tier];
   const F   = fob(lot, kc);
-  const landing = costos.freight + costos.duty * F;
+  const aranRate = cfg.arancel ?? arancelRate(lot.origen);     // por país (FOB)
+  const landing = costos.freight + aranRate * F;
   const carry   = (F*costos.rate + costos.storage) * (lot.T/2);
   // PVP: usá el real del catálogo si está; si no, el sugerido
   const pvp = lot.pvpReal ?? pvpSugerido(lot, kc);
@@ -106,7 +118,7 @@ export function calcular(lot, feeds, cfg = {}){
     inversor:  carry + sp*split.inversor,
     finkap:    comm + sp*split.finkap,
   };
-  return { fob:F, pvp, efectivo, iva, conIva, ars, landing, carry,
+  return { fob:F, pvp, efectivo, iva, conIva, ars, landing, carry, arancel:aranRate,
            commRate, comm, spread, prima, waterfall,
            upliftProductor: waterfall.productor/F - 1,
            markup: efectivo/(F+landing+carry) - 1 };
@@ -142,10 +154,17 @@ export function repartoProductor(base, phi = 1){
   const prmProd   = prmRest * PRIMA_SPLIT.prodBase + prmWait * phi;
   const prmInv    = prmWait * (1 - phi);
 
-  const productor = base.fob + sp * SPLIT.productor + phi * finSlice + prmProd;
-  const inversor  = (1 - phi) * finSlice + prmInv;
-  const finkap    = base.comm + sp * SPLIT.finkap + prmFinkap;
-  return { productor, inversor, finkap, finSlice, prima:prm, phi,
+  let productor = base.fob + sp * SPLIT.productor + phi * finSlice + prmProd;
+  let inversor  = (1 - phi) * finSlice + prmInv;
+  const finkap  = base.comm + sp * SPLIT.finkap + prmFinkap;
+
+  // Castigo "cobro rápido": 5%·(1-phi) de lo del productor → a quien compra/financia el contrato.
+  const cashHcRate = CASH_HAIRCUT * (1 - phi);
+  const cashHc = cashHcRate * productor;
+  productor -= cashHc;
+  inversor  += cashHc;
+
+  return { productor, inversor, finkap, finSlice, prima:prm, phi, cashHc, cashHcRate,
            upliftProductor: base.fob>0 ? productor/base.fob - 1 : 0 };
 }
 
