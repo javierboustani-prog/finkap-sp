@@ -624,15 +624,41 @@ let activeCat = "Todas", activeOrig = "Todos", searchTxt = "";
 
 const $ = id => document.getElementById(id);
 
-/* ---------- descuento por volumen (idéntico al actual, lineal continuo, por línea) ---------- */
+/* ---------- descuento por volumen (lineal continuo, por línea) ----------
+   La curva apunta hasta 19% para grandes volúmenes. El tope REAL de cada
+   línea lo pone effDisc(): nunca descuenta por debajo del piso del lote
+   (costo puesto + comisión), calculado en vivo con el motor (window.finkapFloor).
+   Así regional/especialidad por tonelada cobran el 19% completo, y un producto
+   barato (p.ej. robusta @7,90) se auto-frena donde se acaba el margen. */
 function descVol(kg){
   if(kg < 300)  return 0;
-  if(kg < 600)  return +(3.0 + (kg-300)/300 * 1.5).toFixed(2);
-  if(kg < 900)  return +(4.5 + (kg-600)/300 * 1.0).toFixed(2);
-  if(kg < 1500) return +(5.5 + (kg-900)/600 * 2.0).toFixed(2);
-  if(kg < 2100) return +(7.5 + (kg-1500)/600 * 1.5).toFixed(2);
-  if(kg < 3000) return +(9.0 + (kg-2100)/900 * 1.0).toFixed(2);
-  return 10;
+  if(kg < 600)  return +(3.0 + (kg-300)/300 * 1.5).toFixed(2);   // 3,0 → 4,5
+  if(kg < 900)  return +(4.5 + (kg-600)/300 * 1.0).toFixed(2);   // 4,5 → 5,5
+  if(kg < 1500) return +(5.5 + (kg-900)/600 * 2.0).toFixed(2);   // 5,5 → 7,5
+  if(kg < 2100) return +(7.5 + (kg-1500)/600 * 1.5).toFixed(2);  // 7,5 → 9,0
+  if(kg < 3000) return +(9.0 + (kg-2100)/900 * 1.0).toFixed(2);  // 9,0 → 10,0
+  if(kg < 4500) return +(10.0 + (kg-3000)/1500 * 3.0).toFixed(2);// 10 → 13
+  if(kg < 6000) return +(13.0 + (kg-4500)/1500 * 3.0).toFixed(2);// 13 → 16
+  if(kg < 7500) return +(16.0 + (kg-6000)/1500 * 3.0).toFixed(2);// 16 → 19
+  return 19;
+}
+/* cat del catálogo → tier del motor (robusta y regional comparten tier) */
+function catToTier(cat){ const s=(cat||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
+  if(s.includes('exot')) return 'exotico';
+  if(s.includes('especial')) return 'especialidad';
+  return 'regional'; }
+function lineTier(it){ let cat=it.cat; if(!cat){ const c=CATALOG.find(x=>x.n===it.n); cat=c?c.cat:'Regional'; } return catToTier(cat); }
+/* descuento efectivo de una línea: curva por volumen, frenada en el piso del lote */
+function effDisc(it, kg){
+  let d = descVol(kg);
+  if(typeof window.finkapFloor === 'function' && it.p > 0){
+    const piso = window.finkapFloor({ origen:it.origen, tier:lineTier(it), score:it.score, kg, T:6 }, { kc:KC, tc:TC });
+    if(piso > 0){
+      const maxD = Math.max(0, 100*(1 - piso/it.p));
+      if(d > maxD) d = +maxD.toFixed(2);
+    }
+  }
+  return d;
 }
 function modCheque(d){ if(d<=30) return 0; return (d-30)/30 * (TNA_DEFAULT/12); }
 const fmtUSD = v => "USD "+(+v).toLocaleString("es-AR",{minimumFractionDigits:2,maximumFractionDigits:2});
@@ -882,7 +908,7 @@ function lmAdd(){ if(!lmSelected){toast("Elegí una variedad");return;} addToOrd
 function addToOrder(name, q=1){
   const p=CATALOG.find(x=>x.n===name); if(!p||!p.disp) return;
   const ex=order.find(o=>o.n===name);
-  if(ex) ex.q+=q; else order.push({n:p.n,origen:p.origen,b:p.b,p:p.p,sca:p.sca,q});
+  if(ex) ex.q+=q; else order.push({n:p.n,origen:p.origen,b:p.b,p:p.p,sca:p.sca,cat:p.cat,score:p.sca,q});
   save(); toast(`${p.n} agregado`);
 }
 function changeQty(name,d){
@@ -903,7 +929,7 @@ function recalc(){
   }
   let totalKg=0, totalNeto=0, totalGross=0;
   body.innerHTML = order.map(it=>{
-    const kg=it.q*it.b, sub=kg*it.p, d=descVol(kg), neto=sub*(1-d/100);
+    const kg=it.q*it.b, sub=kg*it.p, d=effDisc(it,kg), neto=sub*(1-d/100);
     totalKg+=kg; totalNeto+=neto; totalGross+=sub;
     return `<div class="oitem">
       <div class="oi-top">
@@ -981,7 +1007,7 @@ function recalcPay(neto, gross, kgTot){
 function buildSummary(o){
   const L=["FINKAP — Solicitud de cotización",""];
   L.push("Variedades:");
-  order.forEach(it=>{ const kg=it.q*it.b,d=descVol(kg);
+  order.forEach(it=>{ const kg=it.q*it.b,d=effDisc(it,kg);
     L.push(`• ${it.n} — ${it.q} bolsa(s) × ${fmtN(it.b)}kg = ${fmtN(kg)}kg @ USD ${it.p.toFixed(2)}/kg (desc ${d.toFixed(2)}%)`);
   });
   L.push("");
@@ -1175,6 +1201,24 @@ recalc();
      pricing-engine.js es la fuente de verdad; esto avisa por consola si los valores se desincronizan. -->
 <script type="module">
 import * as PE from './pricing-engine.js';
+
+/* Piso de venta de un lote: precio mínimo donde el spread llega a 0 (Finkap
+   solo conserva su comisión). = costo puesto / (1 − comisión). Lo consume la
+   venta (effDisc) para no descontar nunca por debajo del costo + comisión.
+   pricing-engine.js es la ÚNICA fuente de la fórmula. */
+window.finkapFloor = function(lot, feeds){
+  try{
+    const f = { kc: (feeds && feeds.kc) || PE.KC_REF, tc: (feeds && feeds.tc) || 1430 };
+    const r = PE.calcular({ origen:lot.origen, tier:lot.tier||'regional',
+      proceso:lot.proceso||'Lavado', score:lot.score||83,
+      kg:lot.kg||1000, T:lot.T||6, pago:'contado' }, f);
+    const costo = r.fob + r.landing + r.carry;
+    const piso = costo / (1 - r.commRate);
+    return (isFinite(piso) && piso>0) ? piso : 0;
+  }catch(e){ return 0; }
+};
+if(window.recalc) window.recalc();  // re-render con el freno de piso ya disponible
+
 const MAP = { trf:'contado', ch30:'d30', ch60:'d60', ch90:'d90', ch120:'d120', ch150:'d150', ch180:'d180' };
 const va = window.PAY_AJUSTE || {};
 const drift = Object.entries(MAP).filter(([k,pe]) => Math.abs((va[k]/100) - PE.PAGO[pe]) > 1e-9);
