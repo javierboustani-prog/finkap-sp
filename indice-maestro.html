@@ -204,9 +204,11 @@ const fmtFecha = s => { if(!s) return '—'; const [y,m,d]=s.split('-'); const M
    match = nombre exacto del lote en el índice. Se van agregando a medida que
    se leen las charlas del proyecto "Cerebro Finkap (Fichas)". */
 const CHAT_GAITANA = "https://chatgpt.com/g/g-p-688a5c74274c8191b7f918da411e10b1-cerebro-finkap-fichas/shared/c/69d6a119-e050-8333-97c7-8ecd0b149905";
+const CHAT_HERRERA = "https://chatgpt.com/g/g-p-688a5c74274c8191b7f918da411e10b1-cerebro-finkap-fichas/shared/c/69d6a042-c144-8327-b682-4893763a7678";
 const CEREBRO = [
   { match:"BLEND FINKAP",            score:83, resumen:"Colombia · Castillo · 1700msnm · Lavado · criba 14/15 · 10,92% · dulce/almendrado/cítrico. Base comercial de blend.", chat:CHAT_GAITANA },
   { match:"SUPREMO GAITANIA LAVADO", score:84, resumen:"Colombia (Tolima) · Castillo · 1800msnm · Lavado · criba 15/16 · 11,21% · dulces/nueces/cítrica. Comercial sólido para blends y espresso.", chat:CHAT_GAITANA },
+  { match:"SUPREMO HERRERA LAVADO",  score:84, resumen:"Colombia (Tolima, San Antonio) · Emanuel Enciso · Castillo · 1800msnm · Lavado · criba 15/16 · scan NIR 84,08 vs productor 84,5 (alta correlación) · nueces/cacao/acidez cítrica. Clásico comercial sólido, ideal espresso/cápsulas.", chat:CHAT_HERRERA },
 ];
 
 /* === modelo de lote: hitos + completitud + próximo paso === */
