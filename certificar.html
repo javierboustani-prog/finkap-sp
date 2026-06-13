@@ -173,12 +173,16 @@ table.liq td.n{font-family:var(--mono);text-align:right;white-space:nowrap}
             <select id="proceso"><option>Lavado</option><option>Honey</option><option>Natural</option><option>Anaeróbico</option></select>
           </div>
         </div>
+        <div class="fld"><label>Productor</label><input id="productor" placeholder="Finca / cooperativa / exportador"></div>
         <div class="row2">
           <div class="fld"><label>Variedad</label><input id="variedad" placeholder="Caturra, Gesha…"></div>
           <div class="fld"><label>Altura (msnm)</label><input id="altura" inputmode="numeric" placeholder="1.650"></div>
         </div>
-        <div class="fld"><label>SCA declarado <span class="hint" style="display:inline">(puntaje de taza que declara el productor)</span></label>
-          <input id="sca" inputmode="decimal" placeholder="84" value="84"></div>
+        <div class="row2">
+          <div class="fld"><label>Criba estimada</label><input id="criba" placeholder="15/16"></div>
+          <div class="fld"><label>SCA declarado <span class="hint" style="display:inline">(taza del productor)</span></label><input id="sca" inputmode="decimal" placeholder="84" value="84"></div>
+        </div>
+        <div class="fld"><label>Notas sensoriales declaradas <span class="hint" style="display:inline">(opcional; nunca se inventan)</span></label><input id="notas" placeholder="dulce, nueces, cítrica…"></div>
       </div>
 
       <div class="card">
@@ -229,6 +233,13 @@ table.liq td.n{font-family:var(--mono);text-align:right;white-space:nowrap}
 
         <button class="btn go" id="publicar">Publicar contrato provisorio (online · negociable)</button>
         <div class="seal" id="seal" style="display:none"></div>
+      </div>
+
+      <div class="card" id="fichaCard" style="display:none">
+        <p class="card-h" style="display:flex;align-items:center;gap:8px">Ficha técnica — formato Finkap
+          <button class="btn" id="copyFicha" style="width:auto;margin:0;padding:6px 12px;font-size:12px;margin-left:auto">Copiar</button></p>
+        <div class="hint" style="margin:-6px 0 10px">Misma estructura que el cerebro de Jesús (Dossier Técnico). El espectro NIR y la cata fina los completa el scan; acá queda el armazón listo para editar.</div>
+        <pre id="fichaTxt" style="white-space:pre-wrap;font-family:var(--mono);font-size:11.5px;line-height:1.55;color:var(--text);background:var(--bg2);border:1px solid var(--line);border-radius:var(--radius-sm);padding:12px;margin:0;max-height:420px;overflow:auto"></pre>
       </div>
 
       <div class="card contratos">
@@ -297,10 +308,64 @@ function inputs(){
   if(visual) visual.defSecundarios=num($('defSec').value)||0;
   return {
     ficha:{ scaDeclarado:sca, origen:$('origen').value, proceso:$('proceso').value,
-            variedad:$('variedad').value||null, altura:num($('altura').value) },
+            variedad:$('variedad').value||null, altura:num($('altura').value),
+            productor:$('productor').value||null, criba:$('criba').value||null,
+            notas:$('notas').value||null },
     scan: ss!=null ? { score:ss, humedad:hum??11 } : null,
     visual: visual,
   };
+}
+
+/* ---- ficha técnica en el formato exacto de Jesús (Dossier Técnico Finkap) ----
+   Sin emojis, tono profesional, nunca inventa notas (solo declaradas / "a confirmar"). */
+function nivelTxt(x, alto, medio){ return x==null?'a confirmar':x>=0.75?alto:x>=0.5?medio:'baja'; }
+function fichaFinkap(inp, cert, tier){
+  const f=inp.ficha, sc=inp.scan, vi=inp.visual;
+  const dash = v => (v==null||v==='')?'—':v;
+  const hum = sc?.humedad ?? null;
+  const humRango = hum==null?'':(hum>=9.5&&hum<=12.5?' (dentro de rango óptimo de almacenamiento)':' (fuera de rango óptimo)');
+  const colorTxt = vi? (vi.colorUnif>=0.85?'verde parejo, secado homogéneo':vi.colorUnif>=0.6?'verde con leve variabilidad cromática':'alta variabilidad cromática') : 'a confirmar con la muestra física';
+  const unifTxt  = vi? nivelTxt(vi.uniformidad,'alta','media') : 'a confirmar';
+  const defTxt   = vi? `${vi.defSecundarios||0} defecto(s) secundario(s); sin defectos críticos detectados` : 'a confirmar con grading físico';
+  const tuesteTxt = { regional:'Tueste medio. Priorizar cuerpo y dulzor; perfil clásico versátil para espresso, cápsulas y blends. Desarrollo 11–13% post-crack.',
+                      especialidad:'Tueste medio claro. Resaltar acidez y complejidad; apto filtro y single origin. Desarrollo 9–11% post-crack, control en Maillard.',
+                      exotico:'Tueste claro. Preservar aromáticos y acidez brillante; filtro de especialidad. Curva progresiva, evitar sobre-desarrollo.' }[tier];
+  const espectro = sc ? `Escaneo NIR disponible (puntaje ${sc.score}). Correlación con la ficha del productor para estimar homogeneidad química, azúcares, lípidos y comportamiento térmico esperado. (Lectura fina de la curva: ver scan en ProfilePrint.)`
+                      : 'Pendiente de escaneo ProfilePrint. La certificación es provisoria hasta contar con el espectro NIR.';
+  return [
+`DOSSIER TÉCNICO — FINKAP COFFEE LAB`,
+`Lote: ${dash(f.variedad||f.origen)}`,
+``,
+`DATOS DEL CAFÉ`,
+`Origen: ${dash(f.origen)}`,
+`Productor: ${dash(f.productor)}`,
+`Variedad: ${dash(f.variedad)}`,
+`Altitud: ${f.altura?f.altura+' msnm':'—'}`,
+`Proceso: ${dash(f.proceso)}`,
+`Criba estimada: ${dash(f.criba)}`,
+`Humedad: ${hum!=null?hum+'%':'—'}`,
+`Notas sensoriales: ${f.notas?f.notas+' (declaradas)':'a confirmar en taza'}`,
+`Puntaje SCA promedio (escaneo): ${sc?sc.score:'pendiente de escaneo'}`,
+`Estimación Finkap: ${cert.scoreProvisorio!=null?cert.scoreProvisorio.toFixed(1):'—'}`,
+``,
+`COMENTARIO TÉCNICO`,
+`Grano de proceso ${dash(f.proceso)} con humedad ${hum!=null?hum+'%':'no informada'}${humRango}. Uniformidad ${unifTxt} según análisis visual. Sin signos evidentes de fermentación defectuosa ni oxidación severa. Estructura coherente con la altitud declarada; comportamiento esperado en tueste estable. No se infieren notas sensoriales absolutas: sólo posibles según proceso, variedad y espectro.`,
+``,
+`EVALUACIÓN VISUAL DEL CAFÉ VERDE`,
+`- Tamaño del grano: criba estimada ${dash(f.criba)}`,
+`- Color: ${colorTxt}`,
+`- Uniformidad: ${unifTxt}`,
+`- Defectos: ${defTxt}`,
+``,
+`ANÁLISIS DEL ESPECTRO NIR`,
+espectro,
+``,
+`CONCLUSIÓN`,
+`Coherencia productor–NIR–foto: índice de confianza ${cert.confianza!=null?cert.confianza.toFixed(0):'—'}/100. Estado de certificación: ${cert.nivel}. ${cert.motivo}`,
+``,
+`RECOMENDACIÓN DE TUESTE`,
+tuesteTxt,
+  ].join('\n');
 }
 
 function evaluar(){
@@ -324,11 +389,19 @@ function evaluar(){
     $('ctrCard').style.display='block';
     $('publicar').disabled=false;
     $('seal').style.display='none';
+    $('fichaTxt').textContent = fichaFinkap(inp, r, tier);
+    $('fichaCard').style.display='block';
   } else {
     $('ctrCard').style.display='none';
+    $('fichaCard').style.display='none';
     ultimo=null;
   }
 }
+
+$('copyFicha').addEventListener('click', async ()=>{
+  try{ await navigator.clipboard.writeText($('fichaTxt').textContent); $('copyFicha').textContent='Copiado ✓';
+       setTimeout(()=>$('copyFicha').textContent='Copiar',1500); }catch(e){ $('copyFicha').textContent='—'; }
+});
 
 function renderLiq(inp, tier, score, precio){
   const lot={ origen:inp.ficha.origen, proceso:inp.ficha.proceso };
@@ -386,7 +459,7 @@ function renderContratos(){
 }
 
 /* ---- bind ---- */
-['origen','proceso','variedad','altura','sca','scanScore','humedad','defSec'].forEach(id=>{
+['origen','proceso','variedad','altura','sca','scanScore','humedad','defSec','productor','criba','notas'].forEach(id=>{
   $(id).addEventListener('input', evaluar);
   $(id).addEventListener('change', evaluar);
 });
