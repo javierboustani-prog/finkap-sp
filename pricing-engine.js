@@ -217,3 +217,59 @@ export function anticipo(precio, pisoPrecio, cfg = {}){
     },
   };
 }
+
+// === Liquidación por validación física (clawback por calidad) ===
+// Compuerta 2: compara el grado PROVISORIO sellado cuando el productor subió la
+// foto contra el grado FINAL del lote físico (ProfilePrint + green grading) y
+// resuelve cuánto cobra. Determinista y auditable: mismas entradas → misma
+// liquidación. La foto sólo abrió el mercado; acá el físico define la plata.
+//   lot   : lote del contrato (origen, proceso… del grado provisorio)
+//   feeds : { kc, tc }
+//   prov  : { score, tier?, precio }            grado y precio CERRADOS (sellados al subir la foto)
+//   final : { score, tier?, defectoGrave? }     grado físico real al arribo
+//   cfg   : { tol, bandaMayor, pisoPct, cap }
+//
+// Tres estados:
+//   validado : física coincide (Δ ≤ tolerancia)            → 100%
+//   reprecio : bajó de grado de buena fe (Δ ≤ banda mayor)  → precio de mercado del grado REAL
+//   liquidado: las muestras no son las mismas               → piso de rescate (40-50%), contrato invalidado
+export const LIQUIDACION = { tol:1, bandaMayor:4, pisoPct:0.45, cap:1.00 };
+const TIER_RANK = { regional:0, especialidad:1, exotico:2 };
+
+export function liquidar(lot, feeds, prov, final, cfg = {}){
+  const c = { ...LIQUIDACION, ...cfg };
+  const kc = feeds.kc;
+  const tierProv  = prov.tier  ?? lot.tier;
+  const tierFinal = final.tier ?? lot.tier;
+  // valor implícito del motor en cada grado (sensible al puntaje y al tier)
+  const vProv  = pvpSugerido({ ...lot, tier:tierProv,  score:prov.score  }, kc);
+  const vFinal = pvpSugerido({ ...lot, tier:tierFinal, score:final.score }, kc);
+  const ratio  = vProv > 0 ? vFinal / vProv : 0;
+
+  const dScore   = prov.score - final.score;            // + = llegó PEOR que lo declarado
+  const bajaTier = (TIER_RANK[tierFinal] ?? 0) < (TIER_RANK[tierProv] ?? 0);
+  const grave    = !!final.defectoGrave;
+
+  let estado, payoutPct, motivo;
+  if(!grave && dScore <= c.tol && !bajaTier){
+    estado = 'validado';
+    payoutPct = c.cap;                                  // 100%
+    motivo = 'La muestra física coincide con lo declarado (dentro de la tolerancia). Cobra el precio pactado.';
+  } else if(!grave && dScore <= c.bandaMayor){
+    estado = 'reprecio';                                // buena fe: precio justo del grado real
+    payoutPct = Math.min(c.cap, Math.max(c.pisoPct, ratio));
+    motivo = 'Bajó de grado de buena fe: se liquida al precio de mercado de lo realmente entregado.';
+  } else {
+    estado = 'liquidado';                               // mismatch grosero / defecto grave
+    payoutPct = c.pisoPct;
+    motivo = 'Las muestras no son las mismas: contrato invalidado al precio pactado, se liquida a valor de rescate.';
+  }
+
+  const montoLiq = prov.precio * payoutPct;
+  return {
+    estado, payoutPct, montoLiq,
+    precioProv: prov.precio, precioLiq: montoLiq,
+    quita: prov.precio - montoLiq, quitaPct: 1 - payoutPct,
+    dScore, bajaTier, grave, ratio, vProv, vFinal, motivo,
+  };
+}

@@ -252,6 +252,38 @@ function test(group, name, pass, detail){ TESTS.push({ group, name, pass:!!pass,
 })();
 
 /* ============================================================
+   F · Liquidación por validación física (clawback por calidad)
+   ============================================================ */
+(function(){
+  const G='Liquidación por validación física';
+  const L=(prov,fin)=>PE.liquidar({origen:'Brasil',proceso:'Lavado'}, feeds, prov, fin);
+  const P={tier:'especialidad',score:84,precio:19.90};
+  const coincide = L(P,{tier:'especialidad',score:84});
+  test(G,'Coincide (84→84) → validado 100%',
+       coincide.estado==='validado' && approx(coincide.payoutPct,1,1e-9), coincide.payoutPct);
+  const tol = L(P,{tier:'especialidad',score:83});
+  test(G,'Dentro de tolerancia (84→83) → 100%',
+       tol.estado==='validado' && approx(tol.payoutPct,1,1e-9), 'Δ '+tol.dScore);
+  const mejor = L(P,{tier:'especialidad',score:86});
+  test(G,'Llegó mejor (84→86) → 100% (precio pactado es el techo)',
+       mejor.estado==='validado' && approx(mejor.payoutPct,1,1e-9), 'Δ '+mejor.dScore);
+  const rep = L(P,{tier:'regional',score:80});
+  test(G,'Buena fe, bajó tier (84 esp→80 reg) → reprecio al grado real',
+       rep.estado==='reprecio' && approx(rep.payoutPct, rep.vFinal/rep.vProv, 1e-9), f4(rep.payoutPct));
+  test(G,'Reprecio nunca por debajo del piso de rescate', rep.payoutPct>=PE.LIQUIDACION.pisoPct, f4(rep.payoutPct));
+  const liq = L(P,{tier:'regional',score:79});
+  test(G,'Mismatch grosero (Δ>4) → liquidado 45%',
+       liq.estado==='liquidado' && approx(liq.payoutPct,PE.LIQUIDACION.pisoPct,1e-9), f4(liq.payoutPct));
+  const grave = L(P,{tier:'especialidad',score:84,defectoGrave:true});
+  test(G,'Defecto grave → liquidado 45% sin importar el puntaje',
+       grave.estado==='liquidado' && approx(grave.payoutPct,PE.LIQUIDACION.pisoPct,1e-9), f4(grave.payoutPct));
+  test(G,'Monto = precio provisorio × payout', approx(liq.montoLiq, P.precio*liq.payoutPct, 1e-9), 'USD '+f4(liq.montoLiq));
+  test(G,'Quita = precio − monto', approx(liq.quita, P.precio-liq.montoLiq, 1e-9), 'USD '+f4(liq.quita));
+  test(G,'Determinismo: misma entrada → misma salida',
+       L(P,{tier:'regional',score:80}).payoutPct===rep.payoutPct);
+})();
+
+/* ============================================================
    RENDER
    ============================================================ */
 (function render(){
