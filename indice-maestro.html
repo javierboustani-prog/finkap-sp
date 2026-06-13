@@ -200,6 +200,15 @@ let sortKey='compl', sortDir=-1, q='', fOrigen='', fEstado='';
 const norm = s => (s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]+/g,' ').trim();
 const fmtFecha = s => { if(!s) return '—'; const [y,m,d]=s.split('-'); const M=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic']; return `${d} ${M[+m-1]} ${y.slice(2)}`; };
 
+/* Fichas extraídas del cerebro (Jesús) — puntaje SCA + informe técnico.
+   match = nombre exacto del lote en el índice. Se van agregando a medida que
+   se leen las charlas del proyecto "Cerebro Finkap (Fichas)". */
+const CHAT_GAITANA = "https://chatgpt.com/g/g-p-688a5c74274c8191b7f918da411e10b1-cerebro-finkap-fichas/shared/c/69d6a119-e050-8333-97c7-8ecd0b149905";
+const CEREBRO = [
+  { match:"BLEND FINKAP",            score:83, resumen:"Colombia · Castillo · 1700msnm · Lavado · criba 14/15 · 10,92% · dulce/almendrado/cítrico. Base comercial de blend.", chat:CHAT_GAITANA },
+  { match:"SUPREMO GAITANIA LAVADO", score:84, resumen:"Colombia (Tolima) · Castillo · 1800msnm · Lavado · criba 15/16 · 11,21% · dulces/nueces/cítrica. Comercial sólido para blends y espresso.", chat:CHAT_GAITANA },
+];
+
 /* === modelo de lote: hitos + completitud + próximo paso === */
 function leerCertificados(){
   try{ return JSON.parse(localStorage.getItem('finkap_contratos_prov_v1')||'[]'); }catch(e){ return []; }
@@ -222,6 +231,11 @@ function construir(){
     }
     l.foto=true; l.ficha=true; l.scoreProv=c.scoreProvisorio;
     l.estado = c.nivel==='certificado' ? 'certif' : 'prov';
+  });
+  // merge: fichas del cerebro (puntaje SCA + informe)
+  CEREBRO.forEach(f=>{
+    const l = lotes.find(x=> norm(x.n)===norm(f.match));
+    if(l){ l.informe=true; l.ficha=true; l.score=f.score; l.chat=f.chat; l.resumen=f.resumen; }
   });
   // completitud + próximo paso
   lotes.forEach(l=>{
@@ -263,7 +277,7 @@ function render(){
 
   $('tbody').innerHTML=rows.map(r=>`
     <tr>
-      <td class="name">${r.n}${r.scoreProv!=null?` <span class="mono" style="color:var(--warn);font-size:11px">prov ${(+r.scoreProv).toFixed(1)}</span>`:''}</td>
+      <td class="name">${r.n}${r.score!=null?` <span class="mono" style="color:var(--blue);font-size:11px" title="${r.resumen||''}">SCA ${r.score}</span>`:r.scoreProv!=null?` <span class="mono" style="color:var(--warn);font-size:11px">prov ${(+r.scoreProv).toFixed(1)}</span>`:''}${r.chat?` · <a href="${r.chat}" target="_blank" style="color:var(--blue);font-size:11px">ficha</a>`:''}</td>
       <td><span class="chip org">${r.origen}</span></td>
       <td><span class="chip ${r.estado}">${FINKAP_LBL[r.estado]||r.estado}</span></td>
       <td>${hitos(r)}</td>
