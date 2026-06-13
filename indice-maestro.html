@@ -80,6 +80,14 @@ td.mono{font-family:var(--mono)}
 .chip.eval{color:var(--warn);background:var(--warn-soft);border:1px solid var(--warn-line)}
 .chip.org{color:var(--muted);background:var(--panel3);border:1px solid var(--line2)}
 .pend{color:var(--muted2);font-style:italic;font-size:12px}
+.chip.prov{color:var(--warn);background:var(--warn-soft);border:1px solid var(--warn-line)}
+.chip.certif{color:var(--blue);background:rgba(124,196,255,.1);border:1px solid rgba(124,196,255,.4)}
+.hitos{display:inline-flex;gap:4px;align-items:center}
+.hito{width:20px;height:20px;border-radius:6px;display:grid;place-items:center;font-size:10px;font-weight:800;font-family:var(--mono);border:1px solid var(--line2);background:var(--panel3);color:var(--muted2)}
+.hito.on{background:var(--ok-soft);border-color:rgba(70,211,154,.4);color:var(--ok)}
+.compl{font-family:var(--mono);font-size:11px;color:var(--muted2);margin-left:7px}
+.next{font-size:12px;color:var(--warn)}
+.next.done{color:var(--ok)}
 .foot{font-size:11px;color:var(--muted2);line-height:1.7;margin-top:16px;max-width:860px}
 .foot b{color:var(--muted)}
 .legend{display:flex;gap:16px;flex-wrap:wrap;font-size:11px;color:var(--muted);margin-top:10px}
@@ -113,47 +121,47 @@ td.mono{font-family:var(--mono)}
     <div class="kpi"><div class="v" id="kTot">—</div><div class="l">lotes cosecha actual</div></div>
     <div class="kpi ok"><div class="v" id="kCat">—</div><div class="l">ya en catálogo Finkap</div></div>
     <div class="kpi warn"><div class="v" id="kEval">—</div><div class="l">en evaluación</div></div>
-    <div class="kpi blue"><div class="v" id="kScan">—</div><div class="l">scans pendientes de cargar puntaje</div></div>
+    <div class="kpi blue"><div class="v" id="kCert">—</div><div class="l">certificados por el productor (foto+ficha)</div></div>
   </div>
 
   <div class="tools">
     <input id="q" placeholder="Buscar lote…">
     <select id="fOrigen"><option value="">Todos los orígenes</option></select>
-    <select id="fEstado"><option value="">Catálogo + evaluación</option><option value="cat">Solo catálogo</option><option value="eval">Solo evaluación</option></select>
+    <select id="fEstado"><option value="">Todos los estados</option><option value="cat">Catálogo</option><option value="eval">Evaluación</option><option value="prov">Provisorio</option><option value="certif">Certificado</option></select>
     <span class="meta" id="meta"></span>
   </div>
 
   <div class="tbl-wrap">
     <table id="tbl">
       <thead><tr>
-        <th data-k="n">Lote (ProfilePrint)</th>
+        <th data-k="n">Lote</th>
         <th data-k="origen">Origen</th>
+        <th data-k="estado">Estado</th>
+        <th data-k="compl" title="Ficha · Foto · Scan · Informe">Completitud</th>
+        <th data-k="next">Próximo paso</th>
         <th data-k="fecha">Scan</th>
-        <th data-k="esp">Esp.</th>
-        <th data-k="finkap">Catálogo Finkap</th>
-        <th data-k="score">Puntaje scan</th>
-        <th data-k="ficha">Ficha cerebro</th>
       </tr></thead>
       <tbody id="tbody"></tbody>
     </table>
   </div>
 
   <div class="legend">
-    <span><b class="chip cat" style="display:inline-block">catálogo</b> ya se vende en Finkap</span>
-    <span><b class="chip eval" style="display:inline-block">evaluación</b> scaneado, todavía no en el catálogo</span>
-    <span><b>Puntaje / Ficha</b> = pendientes hasta enchufar el puente o traerlos lote por lote</span>
+    <span>Hitos: <b class="hito on" style="display:inline-grid">F</b> ficha · <b class="hito on" style="display:inline-grid">P</b> foto · <b class="hito on" style="display:inline-grid">S</b> scan · <b class="hito on" style="display:inline-grid">I</b> informe</span>
+    <span><b class="chip cat" style="display:inline-block">catálogo</b> se vende · <b class="chip eval" style="display:inline-block">evaluación</b> en estudio · <b class="chip prov" style="display:inline-block">provisorio</b>/<b class="chip certif" style="display:inline-block">certificado</b> = lo cargó el productor en Certificar</span>
   </div>
 
   <div class="foot">
-    <b>Fuente:</b> snapshot de ProfilePrint (<code>inventory/product-lots</code>) leído el 13 jun 2026 con la sesión de Javier. Es una foto fija: para refrescarla automáticamente hace falta el puente (API). <b>El puntaje del scan y la ficha del cerebro</b> no están en la lista general de ProfilePrint — se cargan abriendo cada lote; los voy completando cuando me digas.
-    <br><b>Privacidad:</b> vista interna, no enlazar desde la planilla pública.
+    <b>Cómo se conecta:</b> cuando un productor sube foto + ficha en <a href="certificar.html" style="color:var(--orange)">Certificar</a>, ese lote aparece acá automáticamente con sus hitos <b>F</b> y <b>P</b> completos. El hito <b>S</b> (scan) viene del snapshot de ProfilePrint; el <b>I</b> (informe) lo genera el cerebro. El <b>Próximo paso</b> te dice, lote por lote, qué falta para certificarlo.
+    <br><b>Hoy (sin puente):</b> la conexión Certificar→Índice funciona dentro del mismo navegador. Para que un productor cargue desde su celular y aparezca en este panel hace falta el puente (base de datos compartida) — el modelo ya está listo para enchufarlo.
+    <br><b>Fuente scan:</b> snapshot de ProfilePrint (<code>inventory/product-lots</code>) leído el 13 jun 2026. <b>Privacidad:</b> vista interna.
   </div>
 </div>
 
 <script>
 /* Snapshot ProfilePrint · cosecha actual (scans mar–may 2026) · cruzado con catálogo Finkap.
-   finkap:'cat' = está en el catálogo; 'eval' = scaneado, en evaluación.
-   score/ficha = null → pendiente de cargar. */
+   Hitos por lote: ficha · foto · scan · informe. El scan viene de ProfilePrint (todos
+   estos están scaneados → scan:true). La foto+ficha las completa el productor en Certificar
+   (se mergean desde localStorage). El informe lo genera el cerebro (pendiente). */
 const DATA = [
   { n:"Peru Chirinos Finca Churupampa", origen:"Perú",      fecha:"2026-05-06", esp:10, finkap:"cat"  },
   { n:"Honduras Piedra Habladora",      origen:"Honduras",  fecha:"2026-05-05", esp:10, finkap:"cat"  },
@@ -186,40 +194,82 @@ const DATA = [
 ];
 
 const $=id=>document.getElementById(id);
-const FINKAP_LBL={cat:'catálogo',eval:'evaluación'};
-let sortKey='fecha', sortDir=-1, q='', fOrigen='', fEstado='';
+const FINKAP_LBL={cat:'catálogo',eval:'evaluación',prov:'provisorio',certif:'certificado'};
+let sortKey='compl', sortDir=-1, q='', fOrigen='', fEstado='';
 
-const fmtFecha = s => { const [y,m,d]=s.split('-'); const M=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic']; return `${d} ${M[+m-1]} ${y.slice(2)}`; };
+const norm = s => (s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]+/g,' ').trim();
+const fmtFecha = s => { if(!s) return '—'; const [y,m,d]=s.split('-'); const M=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic']; return `${d} ${M[+m-1]} ${y.slice(2)}`; };
+
+/* === modelo de lote: hitos + completitud + próximo paso === */
+function leerCertificados(){
+  try{ return JSON.parse(localStorage.getItem('finkap_contratos_prov_v1')||'[]'); }catch(e){ return []; }
+}
+function construir(){
+  const certs = leerCertificados();
+  // base: snapshot ProfilePrint (scan ya hecho)
+  const lotes = DATA.map(r=>({
+    ...r, scan:true, foto:false, informe:false,
+    ficha: r.finkap==='cat',          // los de catálogo ya tienen ficha conocida
+    estado: r.finkap, scoreProv:null,
+  }));
+  // merge: lo que el productor certificó (foto+ficha) en Certificar
+  certs.forEach(c=>{
+    const key = norm(c.variedad||c.origen);
+    let l = lotes.find(x=> norm(x.n)===key || norm(x.n).includes(key) || key.includes(norm(x.n)));
+    if(!l){ // lote nuevo, todavía no está en ProfilePrint
+      l = { n:c.variedad||c.origen, origen:c.origen||'—', fecha:null, esp:'—', finkap:'prov', scan:false, informe:false };
+      lotes.push(l);
+    }
+    l.foto=true; l.ficha=true; l.scoreProv=c.scoreProvisorio;
+    l.estado = c.nivel==='certificado' ? 'certif' : 'prov';
+  });
+  // completitud + próximo paso
+  lotes.forEach(l=>{
+    l.compl = (l.ficha?1:0)+(l.foto?1:0)+(l.scan?1:0)+(l.informe?1:0);
+    l.next = !l.ficha ? 'Completar ficha'
+           : !l.foto ? 'Subir foto en Certificar'
+           : !l.scan ? 'Escanear en ProfilePrint'
+           : !l.informe ? 'Generar ficha del cerebro'
+           : 'Completo ✓';
+  });
+  return lotes;
+}
+let LOTES = construir();
 
 /* selects */
 [...new Set(DATA.map(r=>r.origen))].filter(o=>o!=='—').sort().forEach(o=>{
   const op=document.createElement('option'); op.value=o; op.textContent=o; $('fOrigen').appendChild(op);
 });
 
+function hitos(l){
+  const d=(on,t)=>`<span class="hito ${on?'on':''}" title="${t}${on?'':' — pendiente'}">${t[0]}</span>`;
+  return `<span class="hitos">${d(l.ficha,'Ficha')}${d(l.foto,'Foto')}${d(l.scan,'Scan')}${d(l.informe,'Informe')}</span><span class="compl">${l.compl}/4</span>`;
+}
+
 function render(){
-  let rows=DATA.filter(r=>
+  LOTES = construir();
+  let rows=LOTES.filter(r=>
     (!q || r.n.toLowerCase().includes(q)) &&
     (!fOrigen || r.origen===fOrigen) &&
-    (!fEstado || r.finkap===fEstado)
+    (!fEstado || r.finkap===fEstado || r.estado===fEstado)
   );
-  rows.sort((a,b)=>{ let va=a[sortKey],vb=b[sortKey]; if(typeof va==='string') return va.localeCompare(vb)*sortDir; return (va-vb)*sortDir; });
+  rows.sort((a,b)=>{ let va=a[sortKey],vb=b[sortKey]; if(va==null)va=''; if(vb==null)vb=''; if(typeof va==='string') return va.localeCompare(vb)*sortDir; return (va-vb)*sortDir; });
 
-  $('kTot').textContent=DATA.length;
-  $('kCat').textContent=DATA.filter(r=>r.finkap==='cat').length;
-  $('kEval').textContent=DATA.filter(r=>r.finkap==='eval').length;
-  $('kScan').textContent=DATA.filter(r=>r.score==null).length;
-  $('meta').textContent=`${rows.length} de ${DATA.length} lotes`;
+  $('kTot').textContent=LOTES.length;
+  $('kCat').textContent=LOTES.filter(r=>r.finkap==='cat').length;
+  $('kEval').textContent=LOTES.filter(r=>r.finkap==='eval').length;
+  $('kCert').textContent=LOTES.filter(r=>r.foto).length;
+  $('meta').textContent=`${rows.length} de ${LOTES.length} lotes`;
 
   $('tbody').innerHTML=rows.map(r=>`
     <tr>
-      <td class="name">${r.n}</td>
+      <td class="name">${r.n}${r.scoreProv!=null?` <span class="mono" style="color:var(--warn);font-size:11px">prov ${(+r.scoreProv).toFixed(1)}</span>`:''}</td>
       <td><span class="chip org">${r.origen}</span></td>
+      <td><span class="chip ${r.estado}">${FINKAP_LBL[r.estado]||r.estado}</span></td>
+      <td>${hitos(r)}</td>
+      <td><span class="next${r.compl===4?' done':''}">${r.next}</span></td>
       <td class="mono">${fmtFecha(r.fecha)}</td>
-      <td class="mono">${r.esp}</td>
-      <td><span class="chip ${r.finkap}">${FINKAP_LBL[r.finkap]}</span></td>
-      <td>${r.score!=null?`<span class="mono">${r.score}</span>`:'<span class="pend">pendiente</span>'}</td>
-      <td>${r.ficha?`<a href="${r.ficha}" target="_blank" style="color:var(--blue)">ver ficha</a>`:'<span class="pend">pendiente</span>'}</td>
-    </tr>`).join('') || `<tr><td colspan="7" style="text-align:center;color:var(--muted2);padding:24px">Sin lotes para este filtro.</td></tr>`;
+    </tr>`).join('') || `<tr><td colspan="6" style="text-align:center;color:var(--muted2);padding:24px">Sin lotes para este filtro.</td></tr>`;
 
   document.querySelectorAll('thead th[data-k]').forEach(th=>{
     th.classList.remove('s-asc','s-desc');
