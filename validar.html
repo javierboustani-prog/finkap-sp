@@ -100,6 +100,7 @@ a{color:inherit;text-decoration:none}
       <a href="armar-pedido.html">Venta</a>
       <a href="simulador-productor.html">Productor</a>
       <a href="panel-interno.html">Panel</a>
+      <a href="certificar.html">Certificar</a>
       <a href="validar.html" class="on">Validar</a>
     </nav>
   </div>
@@ -281,6 +282,28 @@ function test(group, name, pass, detail){ TESTS.push({ group, name, pass:!!pass,
   test(G,'Quita = precio − monto', approx(liq.quita, P.precio-liq.montoLiq, 1e-9), 'USD '+f4(liq.quita));
   test(G,'Determinismo: misma entrada → misma salida',
        L(P,{tier:'regional',score:80}).payoutPct===rep.payoutPct);
+})();
+
+/* ============================================================
+   G · Certificación provisoria (compuerta 1: foto + ficha + scan)
+   ============================================================ */
+(function(){
+  const G='Certificación provisoria';
+  const fuerte = PE.certificar({scan:{score:88,humedad:11}, ficha:{scaDeclarado:88,origen:'Colombia',proceso:'Lavado'}});
+  test(G,'Scan + ficha alineados → certificado (ancla física)',
+       fuerte.nivel==='certificado' && fuerte.viable && approx(fuerte.scoreProvisorio,88,1e-9), 'score '+fuerte.scoreProvisorio);
+  const defs = PE.certificar({scan:{score:86,humedad:11}, ficha:{scaDeclarado:86,origen:'Colombia',proceso:'Lavado'}, visual:{defSecundarios:2,colorUnif:1,uniformidad:1}});
+  test(G,'La foto RESTA: 2 defectos secundarios = −1,0 punto',
+       approx(defs.scoreProvisorio, 85, 1e-9), 'score '+defs.scoreProvisorio);
+  const prov = PE.certificar({ficha:{scaDeclarado:84,origen:'Brasil',proceso:'Natural'}, visual:{colorUnif:0.88,uniformidad:0.9}});
+  test(G,'Sin scan → provisorio, no certificado', prov.nivel==='provisorio' && prov.viable, prov.nivel);
+  test(G,'Sin ancla física la confianza se castiga (<60)', prov.confianza<PE.CERT.minConfianza, 'conf '+prov.confianza);
+  const flojo = PE.certificar({scan:{score:77,humedad:11}, ficha:{scaDeclarado:78,origen:'Honduras',proceso:'Lavado'}});
+  test(G,'Por debajo del piso vendible (80) → rechazado', flojo.nivel==='rechazado' && !flojo.viable, 'score '+flojo.scoreProvisorio);
+  const inc = PE.certificar({scan:{score:85}, ficha:{scaDeclarado:85}});
+  test(G,'Ficha incompleta → rechazado (no entra al mercado)', inc.nivel==='rechazado' && inc.faltan.includes('origen'), inc.faltan.join(','));
+  test(G,'Determinismo: misma entrada → mismo veredicto',
+       PE.certificar({scan:{score:88,humedad:11}, ficha:{scaDeclarado:88,origen:'Colombia',proceso:'Lavado'}}).scoreProvisorio===fuerte.scoreProvisorio);
 })();
 
 /* ============================================================

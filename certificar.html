@@ -1,0 +1,396 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Certificar lote — Finkap</title>
+<meta name="description" content="Pre-certificación automática de café verde Finkap: subí la foto del grano y la ficha, el motor evalúa viabilidad y publica el contrato provisorio, sujeto a validación física al arribo.">
+<meta name="robots" content="noindex,nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0d0d0f; --bg2:#131316; --panel:#17171b; --panel2:#1d1d22; --panel3:#222228;
+  --line:#2c2c33; --line2:#3a3a43; --text:#f5f5f7; --muted:#9b9ba6; --muted2:#6f6f7a;
+  --orange:#F97316; --orange-soft:rgba(249,115,22,.12); --orange-line:rgba(249,115,22,.45);
+  --ok:#46d39a; --ok-soft:rgba(70,211,154,.1); --bad:#ef5350; --bad-soft:rgba(239,83,80,.1);
+  --warn:#e0a44e; --warn-soft:rgba(224,164,78,.12); --warn-line:rgba(224,164,78,.45);
+  --radius:16px; --radius-sm:10px;
+  --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  --sans:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+  --shadow:0 10px 40px -12px rgba(0,0,0,.6);
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:
+    radial-gradient(1200px 600px at 85% -10%, rgba(249,115,22,.10), transparent 60%),
+    radial-gradient(900px 500px at -10% 10%, rgba(249,115,22,.05), transparent 55%),
+    var(--bg);
+  color:var(--text); font-family:var(--sans); font-size:14px; line-height:1.5;
+  -webkit-font-smoothing:antialiased; letter-spacing:-.01em; min-height:100vh;
+}
+.num,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums;letter-spacing:0}
+a{color:inherit;text-decoration:none}
+::selection{background:var(--orange);color:#fff}
+
+.topbar{position:sticky;top:0;z-index:50;backdrop-filter:saturate(140%) blur(14px);background:rgba(13,13,15,.72);border-bottom:1px solid var(--line)}
+.topbar-in{max-width:1080px;margin:0 auto;padding:12px 20px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:20px;letter-spacing:-.03em}
+.brand .dot{width:30px;height:30px;border-radius:50%;border:2.5px solid var(--orange);display:grid;place-items:center;color:var(--orange);font-weight:900;font-size:16px;flex:0 0 auto}
+.brand sup{color:var(--orange);font-size:10px;font-weight:700}
+.priv{font-size:9px;text-transform:uppercase;letter-spacing:.7px;color:var(--bad);border:1px solid rgba(239,83,80,.4);background:rgba(239,83,80,.08);border-radius:99px;padding:2px 8px;font-weight:700}
+.nav{display:flex;gap:6px;margin-left:6px}
+.nav a{font-size:12px;color:var(--muted);padding:5px 11px;border-radius:99px;border:1px solid transparent}
+.nav a:hover{color:var(--text);border-color:var(--line)}
+.nav a.on{color:var(--orange);border-color:var(--orange-line);background:var(--orange-soft)}
+@media(max-width:760px){
+  .topbar-in{gap:10px}
+  .nav{order:3;width:100%;margin-left:0;justify-content:space-between;gap:6px}
+  .nav a{flex:1;text-align:center;padding:9px 6px;font-size:13px;border-color:var(--line)}
+}
+
+.shell{max-width:1080px;margin:0 auto;padding:24px 20px 80px}
+.hero{margin:6px 0 18px}
+.hero h1{font-size:clamp(24px,3.5vw,32px);font-weight:800;letter-spacing:-.03em;margin:0 0 4px}
+.hero h1 .ac{color:var(--orange)}
+.hero p{color:var(--muted);max-width:680px;margin:0}
+.hero code{color:var(--muted);font-family:var(--mono);font-size:.9em}
+
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:start}
+@media(max-width:860px){.grid{grid-template-columns:1fr}}
+
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:18px 18px 16px;margin-bottom:18px}
+.card-h{font-size:10px;text-transform:uppercase;letter-spacing:.8px;color:var(--orange);font-weight:700;margin:0 0 14px}
+.card-h .step{display:inline-grid;place-items:center;width:18px;height:18px;border-radius:50%;border:1px solid var(--orange-line);color:var(--orange);font-size:10px;margin-right:7px}
+
+label{display:block;font-size:11px;color:var(--muted);margin:0 0 5px;font-weight:600}
+.fld{margin-bottom:13px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+input,select{width:100%;background:var(--panel3);border:1px solid var(--line2);border-radius:var(--radius-sm);color:var(--text);font-family:inherit;font-size:14px;padding:10px 11px;outline:none}
+input:focus,select:focus{border-color:var(--orange-line)}
+input[type=file]{padding:8px;font-size:12px;color:var(--muted)}
+.hint{font-size:10px;color:var(--muted2);margin-top:4px;line-height:1.45}
+.src{font-size:9px;text-transform:uppercase;letter-spacing:.5px;border-radius:99px;padding:1px 7px;font-weight:700;margin-left:6px}
+.src.pp{color:#7cc4ff;border:1px solid rgba(124,196,255,.4);background:rgba(124,196,255,.08)}
+.src.auto{color:var(--ok);border:1px solid rgba(70,211,154,.35);background:var(--ok-soft)}
+
+.preview{width:100%;height:150px;border:1px dashed var(--line2);border-radius:var(--radius-sm);object-fit:cover;background:var(--bg2);display:block;margin-bottom:8px}
+.metrics{display:flex;gap:10px;flex-wrap:wrap}
+.metric{flex:1;min-width:90px;background:var(--panel2);border:1px solid var(--line);border-radius:var(--radius-sm);padding:8px 10px}
+.metric .v{font-family:var(--mono);font-size:18px;font-weight:700}
+.metric .l{font-size:9px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted2)}
+
+/* veredicto */
+.verdict{border-radius:var(--radius);padding:18px;border:1px solid var(--line);background:var(--panel);transition:border-color .2s}
+.verdict.cert{border-color:var(--ok);background:linear-gradient(160deg,var(--ok-soft),transparent)}
+.verdict.prov{border-color:var(--warn);background:linear-gradient(160deg,var(--warn-soft),transparent)}
+.verdict.rech{border-color:var(--bad);background:linear-gradient(160deg,var(--bad-soft),transparent)}
+.badge{display:inline-block;font-size:10px;text-transform:uppercase;letter-spacing:.8px;font-weight:800;padding:4px 11px;border-radius:99px;margin-bottom:12px}
+.verdict.cert .badge{color:var(--ok);border:1px solid var(--ok)}
+.verdict.prov .badge{color:var(--warn);border:1px solid var(--warn-line)}
+.verdict.rech .badge{color:var(--bad);border:1px solid var(--bad)}
+.vbig{display:flex;align-items:baseline;gap:16px;flex-wrap:wrap;margin-bottom:10px}
+.vbig .score{font-family:var(--mono);font-size:40px;font-weight:800;line-height:1}
+.vbig .score small{font-size:14px;color:var(--muted2)}
+.vbig .conf{font-size:12px;color:var(--muted)}
+.vbig .conf b{font-family:var(--mono);color:var(--text);font-size:15px}
+.bar{height:7px;border-radius:99px;background:var(--panel3);overflow:hidden;margin:4px 0 12px}
+.bar > span{display:block;height:100%;border-radius:99px}
+.verdict.cert .bar>span{background:var(--ok)} .verdict.prov .bar>span{background:var(--warn)} .verdict.rech .bar>span{background:var(--bad)}
+.vmotivo{font-size:13px;color:var(--text);line-height:1.55}
+.vmotivo.muted{color:var(--muted)}
+
+/* precio + liquidación */
+.kv{display:flex;justify-content:space-between;align-items:baseline;padding:8px 0;border-top:1px solid var(--line);font-size:13px}
+.kv:first-of-type{border-top:none}
+.kv .k{color:var(--muted)} .kv .v{font-family:var(--mono);font-weight:700;font-size:16px}
+table.liq{width:100%;border-collapse:collapse;margin-top:8px;font-size:12.5px}
+table.liq th,table.liq td{text-align:left;padding:8px 6px;border-top:1px solid var(--line)}
+table.liq th{font-size:9px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted2);font-weight:700;border-top:none}
+table.liq td.n{font-family:var(--mono);text-align:right;white-space:nowrap}
+.pill{font-size:9px;text-transform:uppercase;letter-spacing:.4px;font-weight:700;padding:1px 7px;border-radius:99px}
+.pill.ok{color:var(--ok);background:var(--ok-soft)} .pill.warn{color:var(--warn);background:var(--warn-soft)} .pill.bad{color:var(--bad);background:var(--bad-soft)}
+
+.btn{border:1px solid var(--line2);background:var(--panel3);color:var(--text);border-radius:10px;padding:11px 16px;font-weight:700;font-size:14px;cursor:pointer;font-family:inherit;width:100%;margin-top:14px}
+.btn.go{background:var(--orange);border-color:var(--orange);color:#fff}
+.btn.go:hover{filter:brightness(1.08)}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+
+.seal{font-family:var(--mono);font-size:11px;color:var(--muted);background:var(--bg2);border:1px solid var(--line);border-radius:var(--radius-sm);padding:10px 12px;word-break:break-all;margin-top:10px}
+.seal b{color:var(--ok)}
+
+.contratos{margin-top:6px}
+.ctr{display:flex;align-items:center;gap:12px;padding:11px 0;border-top:1px solid var(--line);font-size:13px}
+.ctr .nm{flex:1;min-width:0}
+.ctr .nm small{display:block;color:var(--muted2);font-size:11px}
+.ctr .pr{font-family:var(--mono);font-weight:700}
+.ctr-empty{color:var(--muted2);font-size:12px;padding:10px 0}
+
+.foot{font-size:11px;color:var(--muted2);line-height:1.6;margin-top:18px;max-width:820px}
+.foot b{color:var(--muted)}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-in">
+    <div class="brand"><span class="dot">f</span> finkap<sup>®</sup></div>
+    <span class="priv">interno</span>
+    <nav class="nav">
+      <a href="armar-pedido.html">Venta</a>
+      <a href="simulador-productor.html">Productor</a>
+      <a href="panel-interno.html">Panel</a>
+      <a href="certificar.html" class="on">Certificar</a>
+      <a href="validar.html">Validar</a>
+    </nav>
+  </div>
+</div>
+
+<div class="shell">
+  <div class="hero">
+    <h1>Certificá tu <span class="ac">lote</span></h1>
+    <p>Subí la foto del grano y la ficha. El motor evalúa la viabilidad <b>automáticamente</b> y, si pasa, publica un <b>contrato provisorio</b> online y negociable. La foto abre el mercado; la <b>validación física al arribo</b> (ProfilePrint) define la liquidación. Mismas entradas → mismo veredicto: la certificación no se negocia en un chat, sale de un rubro auditable.</p>
+  </div>
+
+  <div class="grid">
+    <!-- IZQUIERDA: ENTRADAS -->
+    <div>
+      <div class="card">
+        <p class="card-h"><span class="step">1</span>Ficha del productor</p>
+        <div class="row2">
+          <div class="fld"><label>Origen</label>
+            <select id="origen">
+              <option>Colombia</option><option>Brasil</option><option>Honduras</option>
+              <option>Perú</option><option>Guatemala</option><option>Etiopía</option>
+              <option>Costa Rica</option><option>Panamá</option><option>Bolivia</option>
+              <option>México</option><option>Nicaragua</option><option>Ecuador</option>
+            </select>
+          </div>
+          <div class="fld"><label>Proceso</label>
+            <select id="proceso"><option>Lavado</option><option>Honey</option><option>Natural</option><option>Anaeróbico</option></select>
+          </div>
+        </div>
+        <div class="row2">
+          <div class="fld"><label>Variedad</label><input id="variedad" placeholder="Caturra, Gesha…"></div>
+          <div class="fld"><label>Altura (msnm)</label><input id="altura" inputmode="numeric" placeholder="1.650"></div>
+        </div>
+        <div class="fld"><label>SCA declarado <span class="hint" style="display:inline">(puntaje de taza que declara el productor)</span></label>
+          <input id="sca" inputmode="decimal" placeholder="84" value="84"></div>
+      </div>
+
+      <div class="card">
+        <p class="card-h"><span class="step">2</span>Scan ProfilePrint <span class="src pp">ancla física</span></p>
+        <div class="hint" style="margin:-6px 0 12px">Si ya escaneaste la muestra, cargá el resultado: es la prueba objetiva que vuelve la certificación <b>fuerte</b>. Sin scan, el lote entra como <b>provisorio</b>.</div>
+        <div class="row2">
+          <div class="fld"><label>Puntaje del scan</label><input id="scanScore" inputmode="decimal" placeholder="(opcional)"></div>
+          <div class="fld"><label>Humedad %</label><input id="humedad" inputmode="decimal" placeholder="11.0"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <p class="card-h"><span class="step">3</span>Foto del grano <span class="src auto">análisis automático</span></p>
+        <img id="preview" class="preview" alt="Vista previa del grano" style="display:none">
+        <div class="fld" id="dropFld"><input type="file" id="foto" accept="image/*"></div>
+        <div class="metrics" id="visMetrics" style="display:none">
+          <div class="metric"><div class="v" id="mUnif">—</div><div class="l">Uniformidad</div></div>
+          <div class="metric"><div class="v" id="mColor">—</div><div class="l">Color parejo</div></div>
+          <div class="fld" style="flex:1;min-width:120px;margin:0"><label>Defectos secundarios</label><input id="defSec" inputmode="numeric" value="0"></div>
+        </div>
+        <div class="hint">El navegador mide <b>uniformidad</b> y <b>color</b> de la foto en vivo, sin subirla a ningún lado. La cuenta fina de defectos la confirma el scan físico / la visión IA — por eso el peso fuerte está en ProfilePrint, no en la foto.</div>
+      </div>
+    </div>
+
+    <!-- DERECHA: VEREDICTO + CONTRATO -->
+    <div>
+      <div class="verdict rech" id="verdict">
+        <span class="badge" id="vBadge">—</span>
+        <div class="vbig">
+          <div class="score" id="vScore">—<small>/100</small></div>
+          <div class="conf">confianza <b id="vConf">—</b>/100</div>
+        </div>
+        <div class="bar"><span id="vBar" style="width:0%"></span></div>
+        <div class="vmotivo" id="vMotivo">Completá la ficha para evaluar el lote.</div>
+      </div>
+
+      <div class="card" id="ctrCard" style="margin-top:18px;display:none">
+        <p class="card-h">Contrato provisorio</p>
+        <div class="kv"><span class="k">Tier de mercado</span><span class="v" id="cTier">—</span></div>
+        <div class="kv"><span class="k">Precio provisorio <span class="hint" style="display:inline">(orientativo, sujeto a validación)</span></span><span class="v" id="cPrecio">—</span></div>
+
+        <p class="card-h" style="margin:16px 0 6px">Cómo se liquida al arribo</p>
+        <table class="liq">
+          <thead><tr><th>Si la muestra física…</th><th>Estado</th><th style="text-align:right">Cobra</th></tr></thead>
+          <tbody id="liqBody"></tbody>
+        </table>
+        <div class="hint" style="margin-top:8px">Si lo que llega no coincide con lo declarado, el contrato se invalida al precio pactado y se liquida a valor de rescate. Es determinista: no depende de quién mire.</div>
+
+        <button class="btn go" id="publicar">Publicar contrato provisorio (online · negociable)</button>
+        <div class="seal" id="seal" style="display:none"></div>
+      </div>
+
+      <div class="card contratos">
+        <p class="card-h">Lotes publicados <span class="hint" style="display:inline">(en este navegador)</span></p>
+        <div id="ctrList"><div class="ctr-empty">Todavía no publicaste ningún lote.</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="foot">
+    <b>Cómo funciona la certificación:</b> el motor (<code>pricing-engine.js · certificar()</code>) fusiona scan + ficha + foto en un puntaje provisorio y un veredicto, con un rubro determinista y auditable — los pesos los calibra el Q-grader, no se inventan en cada caso.
+    <b>Compuerta 1 (acá):</b> viabilidad → entra al mercado. <b>Compuerta 2 (al arribo):</b> <code>liquidar()</code> compara contra lo sellado y define la plata.
+    <br><b>Nota:</b> página interna. El “sello” es un resguardo local de demostración; en producción se ancla con hash firmado (trazabilidad inalterable).
+  </div>
+</div>
+
+<script type="module">
+import * as PE from './pricing-engine.js';
+
+const $ = id => document.getElementById(id);
+const feeds = { kc: PE.KC_REF, tc: 1430 };          // determinista
+const clamp01 = x => Math.max(0, Math.min(1, +x||0));
+const num = v => { const n=parseFloat(String(v).replace(',','.')); return isNaN(n)?null:n; };
+const usd = v => 'USD '+(+v).toLocaleString('es-AR',{minimumFractionDigits:2,maximumFractionDigits:2});
+const tierDe = s => s>=88 ? 'exotico' : s>=84 ? 'especialidad' : 'regional';
+const TIER_LBL = { regional:'Regional', especialidad:'Especialidad', exotico:'Exótico' };
+
+let visual = null;           // observación automática de la foto
+let ultimo = null;           // último cómputo viable (para publicar)
+
+/* ---- análisis automático de la foto (en el navegador, sin subirla) ---- */
+function analizarImagen(img){
+  const N=120, cv=document.createElement('canvas'); cv.width=N; cv.height=N;
+  const ctx=cv.getContext('2d'); ctx.drawImage(img,0,0,N,N);
+  const d=ctx.getImageData(0,0,N,N).data;
+  let n=0,sL=0,sL2=0,sS=0,sS2=0;
+  for(let i=0;i<d.length;i+=4){
+    const r=d[i],g=d[i+1],b=d[i+2];
+    const L=(0.299*r+0.587*g+0.114*b)/255;
+    const mx=Math.max(r,g,b),mn=Math.min(r,g,b),S=mx===0?0:(mx-mn)/mx;
+    sL+=L; sL2+=L*L; sS+=S; sS2+=S*S; n++;
+  }
+  const sdL=Math.sqrt(Math.max(0,sL2/n-(sL/n)**2));
+  const sdS=Math.sqrt(Math.max(0,sS2/n-(sS/n)**2));
+  return { uniformidad:+clamp01(1-sdL/0.28).toFixed(2), colorUnif:+clamp01(1-sdS/0.30).toFixed(2) };
+}
+
+$('foto').addEventListener('change', e=>{
+  const f=e.target.files[0]; if(!f) return;
+  const img=new Image();
+  img.onload=()=>{
+    $('preview').src=img.src; $('preview').style.display='block';
+    const m=analizarImagen(img);
+    visual={ ...m, defSecundarios:num($('defSec').value)||0, defPrimarios:0 };
+    $('mUnif').textContent=(m.uniformidad*100).toFixed(0)+'%';
+    $('mColor').textContent=(m.colorUnif*100).toFixed(0)+'%';
+    $('visMetrics').style.display='flex';
+    evaluar();
+  };
+  img.src=URL.createObjectURL(f);
+});
+
+/* ---- evaluación (automática en cada cambio) ---- */
+function inputs(){
+  const sca=num($('sca').value), ss=num($('scanScore').value), hum=num($('humedad').value);
+  if(visual) visual.defSecundarios=num($('defSec').value)||0;
+  return {
+    ficha:{ scaDeclarado:sca, origen:$('origen').value, proceso:$('proceso').value,
+            variedad:$('variedad').value||null, altura:num($('altura').value) },
+    scan: ss!=null ? { score:ss, humedad:hum??11 } : null,
+    visual: visual,
+  };
+}
+
+function evaluar(){
+  const inp=inputs();
+  const r=PE.certificar(inp);
+  const v=$('verdict');
+  v.className='verdict '+(r.nivel==='certificado'?'cert':r.nivel==='provisorio'?'prov':'rech');
+  $('vBadge').textContent = r.nivel==='certificado'?'✓ Certificado':r.nivel==='provisorio'?'≈ Provisorio':'✕ No viable';
+  $('vScore').innerHTML = (r.scoreProvisorio!=null?r.scoreProvisorio.toFixed(2):'—')+'<small>/100</small>';
+  $('vConf').textContent = r.confianza!=null?r.confianza.toFixed(0):'—';
+  $('vBar').style.width = Math.max(0,Math.min(100, r.scoreProvisorio||0))+'%';
+  $('vMotivo').textContent = r.motivo;
+
+  if(r.viable){
+    const score=r.scoreProvisorio, tier=tierDe(score);
+    const precio=PE.pvpSugerido({tier,score}, feeds.kc);
+    $('cTier').textContent=TIER_LBL[tier];
+    $('cPrecio').textContent=usd(precio)+' /kg';
+    renderLiq(inp, tier, score, precio);
+    ultimo={ inp, nivel:r.nivel, score, tier, precio, conf:r.confianza };
+    $('ctrCard').style.display='block';
+    $('publicar').disabled=false;
+    $('seal').style.display='none';
+  } else {
+    $('ctrCard').style.display='none';
+    ultimo=null;
+  }
+}
+
+function renderLiq(inp, tier, score, precio){
+  const lot={ origen:inp.ficha.origen, proceso:inp.ficha.proceso };
+  const prov={ tier, score, precio };
+  const esc=[
+    { t:'Coincide con lo declarado', fin:{tier,score} },
+    { t:'Baja 3 puntos (buena fe)',  fin:{tier:tierDe(score-3),score:score-3} },
+    { t:'No coincide / defecto grave', fin:{tier,score,defectoGrave:true} },
+  ];
+  $('liqBody').innerHTML = esc.map(e=>{
+    const r=PE.liquidar(lot, feeds, prov, e.fin);
+    const cls=r.estado==='validado'?'ok':r.estado==='reprecio'?'warn':'bad';
+    return `<tr><td>${e.t}</td><td><span class="pill ${cls}">${r.estado}</span></td>
+      <td class="n">${usd(r.montoLiq)} · ${(r.payoutPct*100).toFixed(0)}%</td></tr>`;
+  }).join('');
+}
+
+/* ---- publicar contrato provisorio (sella + guarda local) ---- */
+function hash(str){ let h=0; for(let i=0;i<str.length;i++){ h=(Math.imul(31,h)+str.charCodeAt(i))|0; } return (h>>>0).toString(16).padStart(8,'0'); }
+const KEY='finkap_contratos_prov_v1';
+const load = () => { try{ return JSON.parse(localStorage.getItem(KEY)||'[]'); }catch(e){ return []; } };
+
+$('publicar').addEventListener('click', ()=>{
+  if(!ultimo) return;
+  const snap={
+    origen:ultimo.inp.ficha.origen, proceso:ultimo.inp.ficha.proceso,
+    variedad:ultimo.inp.ficha.variedad, altura:ultimo.inp.ficha.altura,
+    scaDeclarado:ultimo.inp.ficha.scaDeclarado, scan:ultimo.inp.scan, visual:ultimo.inp.visual,
+    nivel:ultimo.nivel, scoreProvisorio:ultimo.score, tier:ultimo.tier, precio:ultimo.precio, conf:ultimo.conf,
+    kcRef:feeds.kc, terminos:'liquidar() · validado 100% / reprecio al grado real / no-coincide 45%',
+  };
+  const cuerpo=JSON.stringify(snap);
+  const sello=hash(cuerpo);
+  const lista=load();
+  lista.unshift({ ...snap, sello, n:lista.length+1 });
+  localStorage.setItem(KEY, JSON.stringify(lista));
+  $('seal').style.display='block';
+  $('seal').innerHTML=`Sellado · <b>#${sello}</b> · ${ultimo.tier} ${ultimo.score.toFixed(2)} · ${usd(ultimo.precio)}/kg<br><span style="color:var(--muted2)">online · negociable · sujeto a validación física</span>`;
+  $('publicar').disabled=true;
+  renderContratos();
+});
+
+function renderContratos(){
+  const lista=load();
+  const el=$('ctrList');
+  if(!lista.length){ el.innerHTML='<div class="ctr-empty">Todavía no publicaste ningún lote.</div>'; return; }
+  el.innerHTML=lista.map(c=>{
+    const cls=c.nivel==='certificado'?'ok':'warn';
+    return `<div class="ctr">
+      <div class="nm">${c.variedad||c.origen} <span class="pill ${cls}">${c.nivel}</span>
+        <small>${c.origen} · ${c.proceso} · ${TIER_LBL[c.tier]} ${(+c.scoreProvisorio).toFixed(1)} · sello #${c.sello}</small></div>
+      <div class="pr">${usd(c.precio)}/kg</div>
+    </div>`;
+  }).join('');
+}
+
+/* ---- bind ---- */
+['origen','proceso','variedad','altura','sca','scanScore','humedad','defSec'].forEach(id=>{
+  $(id).addEventListener('input', evaluar);
+  $(id).addEventListener('change', evaluar);
+});
+evaluar();
+renderContratos();
+</script>
+</body>
+</html>
