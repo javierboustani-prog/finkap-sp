@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Cambiar clave — Finkap</title>
+<meta name="robots" content="noindex,nofollow">
+<style>
+body{margin:0;background:#0d0d0f;color:#f5f5f7;font-family:Inter,system-ui,-apple-system,sans-serif;min-height:100vh;display:grid;place-items:center;padding:20px}
+.card{width:420px;max-width:92vw;background:#17171b;border:1px solid #2c2c33;border-radius:16px;padding:24px}
+.dot{width:42px;height:42px;border-radius:50%;border:2.5px solid #F97316;display:grid;place-items:center;color:#F97316;font-weight:900;font-size:20px;margin-bottom:14px}
+h1{font-size:19px;margin:0 0 4px}
+p{color:#9b9ba6;font-size:13px;line-height:1.55;margin:0 0 16px}
+label{font-size:11px;color:#9b9ba6;display:block;margin:0 0 5px;font-weight:600}
+input{width:100%;padding:11px 12px;border-radius:10px;border:1px solid #3a3a43;background:#222228;color:#f5f5f7;font-size:14px;outline:none;font-family:inherit;margin-bottom:14px}
+input:focus{border-color:rgba(249,115,22,.45)}
+.out{background:#131316;border:1px solid #2c2c33;border-radius:10px;padding:12px;font-family:"JetBrains Mono",ui-monospace,monospace;font-size:12px;color:#46d39a;word-break:break-all;min-height:18px;margin-bottom:10px}
+.steps{font-size:12px;color:#9b9ba6;line-height:1.6}
+.steps code{color:#f5f5f7;background:#222228;padding:1px 6px;border-radius:5px;font-size:11px}
+button{padding:9px 14px;border-radius:9px;border:none;background:#F97316;color:#fff;font-weight:700;font-size:13px;cursor:pointer;font-family:inherit}
+</style>
+</head>
+<body>
+  <div class="card">
+    <div class="dot">f</div>
+    <h1>Cambiar la clave interna</h1>
+    <p>Escribí la nueva clave del equipo. El navegador calcula su <b>hash SHA-256</b> (la clave nunca se guarda ni se envía a ningún lado). Pegá ese hash en <code>gate.js</code> y listo.</p>
+    <label>Nueva clave</label>
+    <input id="pw" type="text" placeholder="escribí la clave nueva" autocomplete="off">
+    <label>Hash para pegar en gate.js (línea <code>PASS_HASH</code>)</label>
+    <div class="out" id="hash">—</div>
+    <button id="copy">Copiar hash</button>
+    <div class="steps" style="margin-top:16px">
+      <b>Pasos:</b><br>
+      1. Copiá el hash de arriba.<br>
+      2. En <code>gate.js</code>, reemplazá el valor de <code>var PASS_HASH='…'</code> por el nuevo.<br>
+      3. Subí el cambio. La clave vieja deja de funcionar.
+    </div>
+  </div>
+<script>
+const pw=document.getElementById('pw'), out=document.getElementById('hash');
+async function calc(){
+  if(!pw.value){ out.textContent='—'; return; }
+  const h=await crypto.subtle.digest('SHA-256', new TextEncoder().encode(pw.value));
+  out.textContent=Array.from(new Uint8Array(h)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+pw.addEventListener('input', calc);
+document.getElementById('copy').addEventListener('click', async()=>{
+  try{ await navigator.clipboard.writeText(out.textContent); document.getElementById('copy').textContent='Copiado ✓'; setTimeout(()=>document.getElementById('copy').textContent='Copiar hash',1500); }catch(e){}
+});
+</script>
+</body>
+</html>
