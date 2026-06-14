@@ -118,6 +118,30 @@ export function pvpSugerido(lot, kc){
        - (t.slopeDn ?? 0) * Math.max(0, t.refScore - lot.score);   // castigo cola baja
 }
 
+// === Nivel de mercado por ORIGEN (precio base de referencia, USD/kg) ===
+// Calibrado con el catálogo real de Finkap. El precio NO depende del tier de
+// trazabilidad: depende del ORIGEN (a cuánto se coloca ese origen) + el PUNTAJE
+// (que dispara el premium de las variedades top/exóticas). Ajustá estos números.
+export const NIVEL_ORIGEN = {
+  Honduras:12.5, Brasil:11.5, Colombia:15.0, 'Perú':13.4, Bolivia:13.0,
+  Guatemala:13.5, 'Costa Rica':15.0, 'Panamá':16.0, 'Etiopía':16.0, 'México':13.0,
+  Nicaragua:12.5, Ecuador:14.0, Vietnam:9.0,
+};
+export const NIVEL_ORIGEN_DEF = 13.0;
+export const PVP_EST = { refScore:83, slopeUp:1.0, exoFrom:86, slopeExo:2.5, slopeDn:0.55, sensKC:0.45 };
+
+// PVP estimado para un lote NUEVO (sin precio de catálogo): origen + puntaje.
+// El tier (trazabilidad) NO entra acá — es etiqueta de categoría, no precio.
+export function pvpEstimado(lot, feeds){
+  const kc = (feeds && feeds.kc) || KC_REF;
+  const c = PVP_EST;
+  const base = (NIVEL_ORIGEN[lot.origen] ?? NIVEL_ORIGEN_DEF) * (1 + c.sensKC*(kc/KC_REF - 1));
+  const s = lot.score ?? c.refScore;
+  const premio  = Math.max(0, s - c.refScore)*c.slopeUp + Math.max(0, s - c.exoFrom)*c.slopeExo; // convexo (exóticos)
+  const castigo = Math.max(0, c.refScore - s)*c.slopeDn;                                          // cola baja
+  return +(base + premio - castigo).toFixed(2);
+}
+
 // === Cálculo completo del lote ===
 export function calcular(lot, feeds, cfg = {}){
   const kc = feeds.kc, tc = feeds.tc;

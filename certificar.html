@@ -176,7 +176,7 @@ table.liq td.n{font-family:var(--mono);text-align:right;white-space:nowrap}
           </div>
         </div>
         <div class="fld"><label>Productor</label><input id="productor" placeholder="Finca / cooperativa / exportador"></div>
-        <div class="fld"><label>Tier de mercado <span class="hint" style="display:inline">(define el precio · NO es el puntaje)</span></label>
+        <div class="fld"><label>Categoría / trazabilidad <span class="hint" style="display:inline">(etiqueta de la ficha · el precio sale de origen + puntaje)</span></label>
           <select id="tier"><option value="regional">Regional / comercial</option><option value="especialidad">Especialidad (Gesha · premium)</option><option value="exotico">Exótico</option></select></div>
         <div class="row2">
           <div class="fld"><label>Variedad</label><input id="variedad" placeholder="Caturra, Gesha…"></div>
@@ -385,7 +385,7 @@ function evaluar(){
 
   if(r.viable){
     const score=r.scoreProvisorio, tier=($('tier').value||'regional');
-    const precio=PE.pvpSugerido({tier,score}, feeds.kc);
+    const precio=PE.pvpEstimado({origen:inp.ficha.origen, score}, feeds);  // precio = origen + puntaje
     $('cTier').textContent=TIER_LBL[tier];
     $('cPrecio').textContent=usd(precio)+' /kg';
     renderLiq(inp, tier, score, precio);
