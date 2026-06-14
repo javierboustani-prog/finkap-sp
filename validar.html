@@ -337,6 +337,14 @@ function test(group, name, pass, detail){ TESTS.push({ group, name, pass:!!pass,
   const cR=PE.calcular({...lb('Brasil','regional',82),kg:1000,T:6,pago:'contado'},feeds,{usarCostoReal:true});
   test(G,'calcular() propaga: costo puesto real > mercado (Brasil)',
        (cR.fob+cR.landing+cR.carry) > (cM.fob+cM.landing+cM.carry), f4(cM.fob)+' → '+f4(cR.fob));
+  // capital extra (garantías/intermediario) — solo modo real
+  test(G,'Capital trabado Bolivia ≈ 0,65/kg', approx(PE.capitalExtra('Bolivia'),0.65,1e-9));
+  test(G,'Capital extra solo en orígenes con condiciones (Brasil = 0)', PE.capitalExtra('Brasil')===0);
+  const boL={origen:'Bolivia',tier:'regional',proceso:'Lavado',score:85,kg:1000,T:6,pago:'d30',pvpReal:12.90};
+  const boReal=PE.calcular(boL,feeds,{usarCostoReal:true});
+  const boRealSinCap={...PE.calcular(boL,feeds,{usarCostoReal:true})};
+  test(G,'El capital trabado entra al carry en modo real (Bolivia)',
+       approx(boReal.carry, ((boReal.fob*PE.COSTOS.rate+PE.COSTOS.storage)*(6/2))+PE.capitalExtra('Bolivia'), 1e-9), f4(boReal.carry));
 })();
 
 /* ============================================================

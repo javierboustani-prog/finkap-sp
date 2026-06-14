@@ -46,6 +46,14 @@ export const COSTO_REAL_ORIGEN = {
 };
 export function fobRealOrigen(origen){ return COSTO_REAL_ORIGEN[origen] ? COSTO_REAL_ORIGEN[origen].fobKg : null; }
 
+// === Costo de CAPITAL extra por origen (USD/kg, solo modo real) ===
+// Más allá del carry de tránsito: capital propio inmovilizado (garantías) y/o
+// financiación del intermediario, amortizado sobre el volumen del embarque.
+// Bolivia: USD 66.826 de garantías personales (26.826 saldo 2025 + 40.000 emb. 2026)
+//   × 33% TNA × ~6 meses / 17.010 kg ≈ 0,65/kg.
+export const CAPITAL_EXTRA = { Bolivia:0.65 };
+export function capitalExtra(origen){ return CAPITAL_EXTRA[origen] ?? 0; }
+
 // Castigo flat por "cobrar rápido": Finkap/el inversor compra y financia el contrato.
 // Escala con (1-phi): full al adelantar todo, 0 si el productor banca la espera.
 export const CASH_HAIRCUT = 0.05;
@@ -148,7 +156,8 @@ export function calcular(lot, feeds, cfg = {}){
   const F   = fob(lot, kc, cfg);                               // cfg.usarCostoReal → costo Lakaut
   const aranRate = cfg.arancel ?? arancelRate(lot.origen);     // por país (FOB)
   const landing = costos.freight + aranRate * F;
-  const carry   = (F*costos.rate + costos.storage) * (lot.T/2);
+  let   carry   = (F*costos.rate + costos.storage) * (lot.T/2);
+  if(cfg.usarCostoReal) carry += capitalExtra(lot.origen);     // capital propio trabado / intermediario
   // PVP: usá el real del catálogo si está; si no, el sugerido
   const pvp = lot.pvpReal ?? pvpSugerido(lot, kc);
   const volDisc = lot.volDisc ?? 0;
