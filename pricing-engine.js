@@ -122,13 +122,17 @@ export function pvpSugerido(lot, kc){
 // Calibrado con el catálogo real de Finkap. El precio NO depende del tier de
 // trazabilidad: depende del ORIGEN (a cuánto se coloca ese origen) + el PUNTAJE
 // (que dispara el premium de las variedades top/exóticas). Ajustá estos números.
+// Calibrado con el catálogo real de Finkap (jun 2026): Honduras 13,3 · Brasil 11,9 ·
+// Bolivia 12,9 · Perú 13,5 · Colombia regional 15 (los Geshas vuelan por el puntaje) ·
+// robusta Vietnam ~8 a su nivel de score. Editá estos números cuando cambie el mercado.
 export const NIVEL_ORIGEN = {
-  Honduras:12.5, Brasil:11.5, Colombia:15.0, 'Perú':13.4, Bolivia:13.0,
+  Honduras:13.3, Brasil:11.9, Colombia:15.0, 'Perú':13.5, Bolivia:12.9,
   Guatemala:13.5, 'Costa Rica':15.0, 'Panamá':16.0, 'Etiopía':16.0, 'México':13.0,
-  Nicaragua:12.5, Ecuador:14.0, Vietnam:9.0,
+  Nicaragua:13.0, Ecuador:14.0, Vietnam:10.0,
 };
 export const NIVEL_ORIGEN_DEF = 13.0;
-export const PVP_EST = { refScore:83, slopeUp:1.0, exoFrom:86, slopeExo:2.5, slopeDn:0.55, sensKC:0.45 };
+// slopeUp suave en la zona comercial (83→86) y slopeExo empinado para exóticos (>86).
+export const PVP_EST = { refScore:83, slopeUp:0.4, exoFrom:86, slopeExo:2.3, slopeDn:0.4, castigoCap:2.5, sensKC:0.45 };
 
 // PVP estimado para un lote NUEVO (sin precio de catálogo): origen + puntaje.
 // El tier (trazabilidad) NO entra acá — es etiqueta de categoría, no precio.
@@ -138,7 +142,7 @@ export function pvpEstimado(lot, feeds){
   const base = (NIVEL_ORIGEN[lot.origen] ?? NIVEL_ORIGEN_DEF) * (1 + c.sensKC*(kc/KC_REF - 1));
   const s = lot.score ?? c.refScore;
   const premio  = Math.max(0, s - c.refScore)*c.slopeUp + Math.max(0, s - c.exoFrom)*c.slopeExo; // convexo (exóticos)
-  const castigo = Math.max(0, c.refScore - s)*c.slopeDn;                                          // cola baja
+  const castigo = Math.min(c.castigoCap ?? Infinity, Math.max(0, c.refScore - s)*c.slopeDn);      // cola baja (con tope)
   return +(base + premio - castigo).toFixed(2);
 }
 

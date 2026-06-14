@@ -362,9 +362,10 @@ function test(group, name, pass, detail){ TESTS.push({ group, name, pass:!!pass,
 (function(){
   const G='Precio estimado por origen + puntaje';
   const e=(o,s)=>PE.pvpEstimado({origen:o,score:s},feeds);
-  test(G,'En refScore (83) = nivel del origen (Bolivia 13,0)', approx(e('Bolivia',83),13.0,1e-9), f4(e('Bolivia',83)));
-  test(G,'Honduras 84 (especialidad finca) ≈ 13,5 (ya no 19,90)', approx(e('Honduras',84),13.5,1e-9), f4(e('Honduras',84)));
-  test(G,'Gesha exótico: Colombia 88 ≈ 25', approx(e('Colombia',88),25.0,1e-9), f4(e('Colombia',88)));
+  test(G,'En refScore (83) = nivel del origen (Bolivia 12,90)', approx(e('Bolivia',83),12.90,1e-9), f4(e('Bolivia',83)));
+  test(G,'Honduras 84 (calibrado al catálogo) = 13,70 (ya no 19,90)', approx(e('Honduras',84),13.70,1e-9), f4(e('Honduras',84)));
+  test(G,'Gesha exótico: Colombia 88 = 21,60', approx(e('Colombia',88),21.60,1e-9), f4(e('Colombia',88)));
+  test(G,'Robusta Vietnam 78 ≈ catálogo (8,00)', approx(e('Vietnam',78),8.00,1e-9), f4(e('Vietnam',78)));
   test(G,'Convexo: el salto 86→88 supera al 84→86', (e('Colombia',88)-e('Colombia',86)) > (e('Colombia',86)-e('Colombia',84)));
   test(G,'Origen sin tabla → nivel default 13,0', approx(PE.pvpEstimado({origen:'Marte',score:83},feeds),13.0,1e-9));
   test(G,'El TIER no cambia el precio (origen+puntaje manda)',
