@@ -176,6 +176,8 @@ table.liq td.n{font-family:var(--mono);text-align:right;white-space:nowrap}
           </div>
         </div>
         <div class="fld"><label>Productor</label><input id="productor" placeholder="Finca / cooperativa / exportador"></div>
+        <div class="fld"><label>Tier de mercado <span class="hint" style="display:inline">(define el precio · NO es el puntaje)</span></label>
+          <select id="tier"><option value="regional">Regional / comercial</option><option value="especialidad">Especialidad (Gesha · premium)</option><option value="exotico">Exótico</option></select></div>
         <div class="row2">
           <div class="fld"><label>Variedad</label><input id="variedad" placeholder="Caturra, Gesha…"></div>
           <div class="fld"><label>Altura (msnm)</label><input id="altura" inputmode="numeric" placeholder="1.650"></div>
@@ -382,7 +384,7 @@ function evaluar(){
   $('vMotivo').textContent = r.motivo;
 
   if(r.viable){
-    const score=r.scoreProvisorio, tier=tierDe(score);
+    const score=r.scoreProvisorio, tier=($('tier').value||'regional');
     const precio=PE.pvpSugerido({tier,score}, feeds.kc);
     $('cTier').textContent=TIER_LBL[tier];
     $('cPrecio').textContent=usd(precio)+' /kg';
@@ -410,7 +412,7 @@ function renderLiq(inp, tier, score, precio){
   const prov={ tier, score, precio };
   const esc=[
     { t:'Coincide con lo declarado', fin:{tier,score} },
-    { t:'Baja 3 puntos (buena fe)',  fin:{tier:tierDe(score-3),score:score-3} },
+    { t:'Baja 3 puntos (buena fe)',  fin:{tier,score:score-3} },
     { t:'No coincide / defecto grave', fin:{tier,score,defectoGrave:true} },
   ];
   $('liqBody').innerHTML = esc.map(e=>{
@@ -461,7 +463,7 @@ function renderContratos(){
 }
 
 /* ---- bind ---- */
-['origen','proceso','variedad','altura','sca','scanScore','humedad','defSec','productor','criba','notas'].forEach(id=>{
+['origen','proceso','tier','variedad','altura','sca','scanScore','humedad','defSec','productor','criba','notas'].forEach(id=>{
   $(id).addEventListener('input', evaluar);
   $(id).addEventListener('change', evaluar);
 });
