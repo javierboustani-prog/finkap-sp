@@ -335,6 +335,28 @@ function test(group, name, pass, detail){ TESTS.push({ group, name, pass:!!pass,
 })();
 
 /* ============================================================
+   I · Descuento de volumen: lo absorbe la capa financiera
+   ============================================================ */
+(function(){
+  const G='Descuento de volumen (lo absorbe inversor+finkap)';
+  const base={origen:'Colombia',tier:'regional',proceso:'Lavado',score:83,pvpReal:13,kg:1000,T:6,pago:'d30'};
+  const r0=PE.calcular(base,feeds);                       // sin descuento
+  const rd=PE.calcular({...base,volDisc:0.10},feeds);     // 10% de descuento por volumen
+  test(G,'Sin descuento, el reparto no cambia (retrocompat)',
+       approx(r0.descVolMonto,0,1e-12) && approx(r0.efectivo,r0.efectivoLista,1e-12));
+  test(G,'Productor NO cambia con el descuento (protegido)',
+       approx(r0.waterfall.productor, rd.waterfall.productor, 1e-9), f4(rd.waterfall.productor));
+  test(G,'Inversor y Finkap sí bajan con el descuento',
+       rd.waterfall.inversor < r0.waterfall.inversor && rd.waterfall.finkap < r0.waterfall.finkap);
+  test(G,'El descuento se reparte 50/50 (inversor = finkap)',
+       approx((r0.waterfall.inversor-rd.waterfall.inversor),(r0.waterfall.finkap-rd.waterfall.finkap),1e-9));
+  test(G,'Conservación con descuento: efectivo = flete + productor + inversor + finkap',
+       approx(rd.efectivo, rd.landing + rd.waterfall.productor + rd.waterfall.inversor + rd.waterfall.finkap, 1e-9));
+  test(G,'El descuento total = lo que ceden inversor + finkap',
+       approx(rd.descVolMonto, (r0.waterfall.inversor-rd.waterfall.inversor)+(r0.waterfall.finkap-rd.waterfall.finkap), 1e-9), f4(rd.descVolMonto));
+})();
+
+/* ============================================================
    RENDER
    ============================================================ */
 (function render(){

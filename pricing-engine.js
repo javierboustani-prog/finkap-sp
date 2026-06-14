@@ -132,21 +132,32 @@ export function calcular(lot, feeds, cfg = {}){
   const pvp = lot.pvpReal ?? pvpSugerido(lot, kc);
   const volDisc = lot.volDisc ?? 0;
   const payMod  = PAGO[lot.pago] ?? 0;
-  const efectivo = pvp * (1 - volDisc) * (1 + payMod);
+  const efectivoLista = pvp * (1 + payMod);            // precio de lista (sin descuento de volumen)
+  const efectivo = efectivoLista * (1 - volDisc);      // realizado (con el descuento aplicado)
+  const descVolMonto = Math.max(0, efectivoLista - efectivo);
   const iva = efectivo*0.21, conIva = efectivo+iva, ars = conIva*tc;
   const taper = Math.min(0.03, Math.floor(Math.max(0, lot.kg-1000)/5000)*0.01);
   const commRate = t.comm - taper;
   const comm = commRate * efectivo;
-  const spread = efectivo - F - landing - carry - comm;
+  const spread = efectivo - F - landing - carry - comm;            // spread realizado (informativo)
   const sp = Math.max(0, spread);
-  // Prima por hold: se vende mes a mes a tostaderos → precio promedio más alto.
   const prima = primaHold(efectivo, lot.T);
+  // === Reparto del descuento de volumen ===
+  // El PRODUCTOR se calcula sobre la LISTA: el descuento de volumen NO lo toca
+  // (vendió su café a un precio, cobra su FOB + 50% del spread de lista). El
+  // descuento lo absorben INVERSOR y FINKAP, a prorrata de su parte del spread
+  // (25/25 → mitad cada uno). El piso duro (piso()/effDisc en la venta) impide
+  // descontar más de lo que ese pool financiero aguanta → nunca se toca al productor.
+  const commLista = commRate * efectivoLista;
+  const spreadLista = efectivoLista - F - landing - carry - commLista;
+  const spL = Math.max(0, spreadLista);
+  const poolShare = (split.inversor + split.finkap) || 1;
   const waterfall = {
-    productor: F + sp*split.productor,
-    inversor:  carry + sp*split.inversor,
-    finkap:    comm + sp*split.finkap,
+    productor: F + spL*split.productor,                                              // protegido (sobre lista)
+    inversor:  carry    + spL*split.inversor - descVolMonto*(split.inversor/poolShare),
+    finkap:    commLista + spL*split.finkap  - descVolMonto*(split.finkap /poolShare),
   };
-  return { fob:F, pvp, efectivo, iva, conIva, ars, landing, carry, arancel:aranRate,
+  return { fob:F, pvp, efectivo, efectivoLista, descVolMonto, iva, conIva, ars, landing, carry, arancel:aranRate,
            commRate, comm, spread, prima, waterfall,
            upliftProductor: waterfall.productor/F - 1,
            markup: efectivo/(F+landing+carry) - 1 };
