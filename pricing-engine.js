@@ -34,6 +34,18 @@ export const ARANCEL = { Brasil:0.03, 'Perú':0.03, Colombia:0.03, 'Panamá':0.0
 export const ARANCEL_DEF = 0.12;
 export function arancelRate(origen){ return ARANCEL[origen] ?? ARANCEL_DEF; }
 
+// === Costo FOB REAL por origen (importaciones Lakaut SRD 2026) ===
+// FOB/kg efectivamente pagado/declarado en los arribos IDA4. Es el ancla del costo
+// real; reemplaza la estimación de mercado cuando se pide cfg.usarCostoReal=true.
+// Fuente: módulo importaciones/data.js (verificado vs Lakaut 13/06/2026).
+export const COSTO_REAL_ORIGEN = {
+  Bolivia:  { fobKg:9.54,  fuente:'Lakaut IDA4002093E',       fecha:'2026-04-09' },
+  Brasil:   { fobKg:7.71,  fuente:'Lakaut IDA4001760E',       fecha:'2026-03-17' },
+  Honduras: { fobKg:7.18,  fuente:'Lakaut IDA4002258H (CFR)', fecha:'2026-04-16' },
+  Colombia: { fobKg:10.23, fuente:'Proforma 282 (Harmony)',   fecha:'2025-12-07' },
+};
+export function fobRealOrigen(origen){ return COSTO_REAL_ORIGEN[origen] ? COSTO_REAL_ORIGEN[origen].fobKg : null; }
+
 // Castigo flat por "cobrar rápido": Finkap/el inversor compra y financia el contrato.
 // Escala con (1-phi): full al adelantar todo, 0 si el productor banca la espera.
 export const CASH_HAIRCUT = 0.05;
@@ -70,11 +82,24 @@ const dScore = s => 12*(s-82) + 6*Math.max(0, s-86)**2;     // convexo
 const nySens = (cw, kc) => cw*(kc/KC_REF) + (1-cw);          // (para % de movimiento; informativo)
 
 // === FOB del productor: NY + diferencial (sin β; Regional < Especialidad < Exótico) ===
-export function fob(lot, kc){
+// cfg.usarCostoReal=true → ancla el costo real del origen (Lakaut) y le suma el
+// premium varietal de mercado, preservando la diferencia por tier/score/proceso.
+export function fob(lot, kc, cfg = {}){
   const dvar = lot.dVar ?? D_VAR_TIER[lot.tier] ?? 0;        // preferí dVar por variedad
   const diff = (D_ORIGEN[lot.origen] ?? 15) + dvar + (D_PROCESO[lot.proceso] ?? 0)
              + dScore(lot.score) + (lot.certClb ?? 0);
-  return (kc + diff) * CONV;
+  const market = (kc + diff) * CONV;
+  if(cfg.usarCostoReal){
+    const real = COSTO_REAL_ORIGEN[lot.origen] ? COSTO_REAL_ORIGEN[lot.origen].fobKg : null;
+    if(real != null){
+      // base de mercado de un regional ref del mismo origen (ancla del promedio importado)
+      const baseDiff = (D_ORIGEN[lot.origen] ?? 15) + D_VAR_TIER.regional
+                     + D_PROCESO.Lavado + dScore(TIER.regional.refScore);
+      const baseMarket = (kc + baseDiff) * CONV;
+      return real + (market - baseMarket);    // costo real del origen + premium varietal
+    }
+  }
+  return market;
 }
 
 // === Índice de Confianza (ProfilePrint) ===
@@ -99,7 +124,7 @@ export function calcular(lot, feeds, cfg = {}){
   const costos = { ...COSTOS, ...cfg.costos };
   const split  = { ...SPLIT,  ...cfg.split  };
   const t = TIER[lot.tier];
-  const F   = fob(lot, kc);
+  const F   = fob(lot, kc, cfg);                               // cfg.usarCostoReal → costo Lakaut
   const aranRate = cfg.arancel ?? arancelRate(lot.origen);     // por país (FOB)
   const landing = costos.freight + aranRate * F;
   const carry   = (F*costos.rate + costos.storage) * (lot.T/2);
@@ -272,4 +297,86 @@ export function liquidar(lot, feeds, prov, final, cfg = {}){
     quita: prov.precio - montoLiq, quitaPct: 1 - payoutPct,
     dScore, bajaTier, grave, ratio, vProv, vFinal, motivo,
   };
+}
+
+// === Certificación provisoria (Compuerta 1) ===
+// Fusiona las tres fuentes que ya usa Finkap en un veredicto AUTOMÁTICO, sin
+// intervención humana: scan de ProfilePrint (ancla objetiva), ficha del productor
+// (declarado) y observación visual de la foto. El puntaje sale de un RUBRO
+// determinista —no de un chat—: mismas entradas → mismo veredicto.
+// Los pesos son placeholders para que los calibre el Q-grader (config, no código).
+//   inp.scan   : { score, humedad } | null      (ProfilePrint; ancla fuerte)
+//   inp.ficha  : { scaDeclarado, origen, proceso, altura?, variedad? }
+//   inp.visual : { defPrimarios, defSecundarios, colorUnif(0..1), uniformidad(0..1) } | null
+// Devuelve: scoreProvisorio, confianza, nivel (certificado|provisorio|rechazado), viable…
+export const CERT = {
+  pesoScan: 0.65, pesoFicha: 0.35,        // mezcla del puntaje base (se renormaliza por fuentes presentes)
+  defPrimario: 2.0, defSecundario: 0.5,   // puntos restados por defecto visible (green grading)
+  penalColor: 1.5, penalUnif: 1.5,        // castigo máx por color/uniformidad pobres (0..1)
+  pisoVendible: 80,                       // ningún lote entra al mercado por debajo de esto
+  minConfianza: 60, minConfProvisorio: 45,// fuerte vs provisorio
+  factorSinScan: 0.6,                     // sin ancla física la confianza vale menos
+};
+const clamp01 = x => Math.max(0, Math.min(1, +x || 0));
+
+export function certificar(inp, cfg = {}){
+  const c = { ...CERT, ...cfg };
+  const ficha = inp.ficha || {};
+  const scan  = inp.scan || null;
+  const vis   = inp.visual || null;
+
+  // 1) puntaje base: scan (ancla) + ficha (declarado), renormalizando por presencia
+  const partes = [];
+  if(scan && scan.score!=null)  partes.push([scan.score, c.pesoScan]);
+  if(ficha.scaDeclarado!=null)  partes.push([ficha.scaDeclarado, c.pesoFicha]);
+  const wTot = partes.reduce((s,[,w])=>s+w,0);
+  const base = wTot>0 ? partes.reduce((s,[v,w])=>s+v*w,0)/wTot : null;
+
+  // 2) la foto RESTA (no suma): defectos + color/uniformidad pobres
+  let deduc = 0;
+  if(vis){
+    deduc += (vis.defPrimarios||0)*c.defPrimario + (vis.defSecundarios||0)*c.defSecundario;
+    if(vis.colorUnif!=null)   deduc += c.penalColor*(1-clamp01(vis.colorUnif));
+    if(vis.uniformidad!=null) deduc += c.penalUnif *(1-clamp01(vis.uniformidad));
+  }
+  const scoreProvisorio = base!=null ? +(base - deduc).toFixed(2) : null;
+
+  // 3) confianza (reusa el índice ProfilePrint del motor)
+  let conf = confianza({
+    declarado: ficha.scaDeclarado ?? base ?? 83,
+    escaneo:   scan?.score ?? ficha.scaDeclarado ?? base ?? 83,
+    humedad:   scan?.humedad ?? 11,
+    visual:    vis ? clamp01(((vis.colorUnif??0.8)+(vis.uniformidad??0.8))/2) : 0.6,
+  });
+  if(!scan) conf *= c.factorSinScan;
+  conf = +conf.toFixed(1);
+
+  // 4) compuerta de viabilidad → entra al marketplace o no
+  const faltan = [];
+  if(!ficha.origen)            faltan.push('origen');
+  if(ficha.scaDeclarado==null) faltan.push('SCA declarado');
+  if(!ficha.proceso)           faltan.push('proceso');
+  const fichaCompleta = faltan.length===0;
+
+  let nivel, motivo, viable;
+  if(scoreProvisorio==null || scoreProvisorio<c.pisoVendible || !fichaCompleta){
+    nivel='rechazado'; viable=false;
+    motivo = !fichaCompleta ? ('Faltan datos de ficha: '+faltan.join(', '))
+           : scoreProvisorio==null ? 'Sin puntaje: cargá un scan de ProfilePrint o el SCA declarado.'
+           : `Puntaje ${scoreProvisorio} por debajo del piso vendible (${c.pisoVendible}).`;
+  } else if(scan && conf>=c.minConfianza){
+    nivel='certificado'; viable=true;
+    motivo='Con ancla física (ProfilePrint) y alta confianza: certificación fuerte.';
+  } else if(conf>=c.minConfProvisorio){
+    nivel='provisorio'; viable=true;
+    motivo = scan ? `Confianza ${conf} en rango provisorio.`
+                  : 'Sólo visual + declarado: provisorio, sujeto a validación física al arribo.';
+  } else {
+    nivel='rechazado'; viable=false;
+    motivo=`Confianza ${conf} por debajo del mínimo (${c.minConfProvisorio}).`;
+  }
+
+  return { scoreProvisorio, confianza:conf, nivel, viable, fichaCompleta, faltan,
+           base: base!=null?+base.toFixed(2):null, deduccion:+deduc.toFixed(2),
+           tieneScan:!!scan, tieneVisual:!!vis, motivo };
 }

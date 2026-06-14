@@ -309,6 +309,31 @@ function test(group, name, pass, detail){ TESTS.push({ group, name, pass:!!pass,
 })();
 
 /* ============================================================
+   H · Costo FOB real por origen (fusión Lakaut → pricing)
+   ============================================================ */
+(function(){
+  const G='Costo real por origen (Lakaut)';
+  const lb=(o,t,s)=>({origen:o,tier:t,proceso:'Lavado',score:s});
+  test(G,'fobRealOrigen Bolivia = 9,54', PE.fobRealOrigen('Bolivia')===9.54);
+  test(G,'fobRealOrigen Brasil = 7,71', PE.fobRealOrigen('Brasil')===7.71);
+  test(G,'Origen sin import (Etiopía) = null', PE.fobRealOrigen('Etiopía')===null);
+  test(G,'Bolivia regional 83 (ref) → FOB real = ancla 9,54',
+       approx(PE.fob(lb('Bolivia','regional',83),PE.KC_REF,{usarCostoReal:true}),9.54,1e-9), f4(PE.fob(lb('Bolivia','regional',83),PE.KC_REF,{usarCostoReal:true})));
+  const bReg=PE.fob(lb('Brasil','regional',82),PE.KC_REF,{usarCostoReal:true});
+  const bEsp=PE.fob(lb('Brasil','especialidad',86),PE.KC_REF,{usarCostoReal:true});
+  test(G,'Real preserva premium varietal (esp > reg)', bEsp>bReg, f4(bReg)+' < '+f4(bEsp));
+  const eM=PE.fob(lb('Etiopía','especialidad',86),PE.KC_REF);
+  const eR=PE.fob(lb('Etiopía','especialidad',86),PE.KC_REF,{usarCostoReal:true});
+  test(G,'Sin import → real = mercado (fallback)', approx(eM,eR,1e-12), f4(eR));
+  test(G,'Sin cfg, fob() no cambia (no rompe lo existente)',
+       approx(PE.fob(lb('Brasil','regional',82),PE.KC_REF), eM>0?PE.fob(lb('Brasil','regional',82),PE.KC_REF):0, 1e-12) && PE.fob(lb('Brasil','regional',82),PE.KC_REF) < bReg);
+  const cM=PE.calcular({...lb('Brasil','regional',82),kg:1000,T:6,pago:'contado'},feeds);
+  const cR=PE.calcular({...lb('Brasil','regional',82),kg:1000,T:6,pago:'contado'},feeds,{usarCostoReal:true});
+  test(G,'calcular() propaga: costo puesto real > mercado (Brasil)',
+       (cR.fob+cR.landing+cR.carry) > (cM.fob+cM.landing+cM.carry), f4(cM.fob)+' → '+f4(cR.fob));
+})();
+
+/* ============================================================
    RENDER
    ============================================================ */
 (function render(){

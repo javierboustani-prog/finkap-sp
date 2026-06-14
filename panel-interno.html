@@ -188,6 +188,13 @@ tfoot td:first-child{text-align:left;font-family:var(--sans)}
         <button data-t="exotico">Exó</button>
       </div>
     </div>
+    <div class="ctl">
+      <label>Costo FOB</label>
+      <div class="seg" id="cCosto">
+        <button data-c="" class="on">Mercado</button>
+        <button data-c="real" title="FOB real importado (Lakaut SRD): Brasil 7,71 · Bolivia 9,54 · Honduras 7,18 · Colombia 10,23">Real · Lakaut</button>
+      </div>
+    </div>
   </div>
 
   <div class="kpis" id="kpis">
@@ -285,6 +292,7 @@ let CATALOG = [];
 let ROWS = [];                       // filas calculadas
 let sortKey = 'markup', sortDir = -1;
 let filterTier = '';
+let usarCostoReal = false;        // toggle: FOB real importado (Lakaut) vs estimación de mercado
 
 /* selects */
 $('cPago').innerHTML = Object.entries(PAGO_LBL).map(([v,l])=>`<option value="${v}"${v==='d30'?' selected':''}>${l}</option>`).join('');
@@ -346,7 +354,7 @@ function compute(){
   const T  = parseFloat(($('cT').value||'').replace(',','.'))||6;
   ROWS = CATALOG.map(p=>{
     const lot = { ...p, kg, T, pago };
-    const r = PE.calcular(lot, feeds);
+    const r = PE.calcular(lot, feeds, { usarCostoReal });
     return { n:p.n, tier:p.tier, score:p.score, origen:p.origen,
       fob:r.fob, costo:r.fob+r.landing+r.carry, pvp:r.pvp, efectivo:r.efectivo,
       piso:(r.fob+r.landing+r.carry)/(1-r.commRate),
@@ -461,6 +469,9 @@ $('tbl').querySelectorAll('thead th[data-k]').forEach(th=>{
     if(sortKey===k){ sortDir*=-1; } else { sortKey=k; sortDir = (k==='n'||k==='tier')?1:-1; }
     render();
   };
+});
+$('cCosto').querySelectorAll('button').forEach(b=>{
+  b.onclick=()=>{ usarCostoReal=b.dataset.c==='real'; $('cCosto').querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b)); compute(); };
 });
 $('cTier').querySelectorAll('button').forEach(b=>{
   b.onclick=()=>{ filterTier=b.dataset.t; $('cTier').querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b)); render(); };
