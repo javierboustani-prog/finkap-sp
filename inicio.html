@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Finkap — Inicio</title>
+<meta name="robots" content="noindex,nofollow">
+<script src="gate.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0d0d0f; --bg2:#131316; --panel:#17171b; --panel2:#1d1d22; --panel3:#222228;
+  --line:#2c2c33; --line2:#3a3a43; --text:#f5f5f7; --muted:#9b9ba6; --muted2:#6f6f7a;
+  --orange:#F97316; --orange-soft:rgba(249,115,22,.12); --orange-line:rgba(249,115,22,.45);
+  --ok:#46d39a; --blue:#7cc4ff; --violet:#b58bff;
+  --radius:16px; --radius-sm:10px;
+  --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  --sans:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+}
+*{box-sizing:border-box} html,body{margin:0;padding:0}
+body{background:radial-gradient(1200px 600px at 85% -10%, rgba(249,115,22,.10), transparent 60%),radial-gradient(900px 500px at -10% 10%, rgba(249,115,22,.05), transparent 55%),var(--bg);color:var(--text);font-family:var(--sans);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased;letter-spacing:-.01em;min-height:100vh}
+a{color:inherit;text-decoration:none}
+.shell{max-width:1080px;margin:0 auto;padding:38px 20px 80px}
+.brand{display:flex;align-items:center;gap:12px;font-weight:800;font-size:26px;letter-spacing:-.03em;margin-bottom:6px}
+.brand .dot{width:38px;height:38px;border-radius:50%;border:3px solid var(--orange);display:grid;place-items:center;color:var(--orange);font-weight:900;font-size:20px}
+.brand sup{color:var(--orange);font-size:12px;font-weight:700}
+.lead{color:var(--muted);margin:0 0 26px;max-width:560px}
+.sec{font-size:11px;text-transform:uppercase;letter-spacing:.9px;color:var(--muted2);font-weight:700;margin:24px 0 12px;display:flex;align-items:center;gap:10px}
+.sec::after{content:"";height:1px;background:var(--line);flex:1}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px}
+.card{display:flex;flex-direction:column;gap:6px;background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:18px;transition:.16s;position:relative;overflow:hidden}
+.card:hover{transform:translateY(-3px);border-color:var(--orange-line);box-shadow:0 12px 32px -14px rgba(0,0,0,.7)}
+.card .ico{width:38px;height:38px;border-radius:10px;display:grid;place-items:center;font-size:19px;margin-bottom:6px;background:var(--panel3);border:1px solid var(--line2)}
+.card h3{margin:0;font-size:16px;font-weight:700}
+.card p{margin:0;font-size:12.5px;color:var(--muted);line-height:1.45}
+.card .go{margin-top:auto;padding-top:10px;font-size:12px;font-weight:700;color:var(--orange)}
+.card.cli .ico{color:var(--ok);border-color:rgba(70,211,154,.4);background:rgba(70,211,154,.1)}
+.card.int .ico{color:var(--orange);border-color:var(--orange-line);background:var(--orange-soft)}
+.card.impo .ico{color:var(--violet);border-color:rgba(181,139,255,.4);background:rgba(181,139,255,.1)}
+.tag{position:absolute;top:12px;right:12px;font-size:8.5px;text-transform:uppercase;letter-spacing:.6px;font-weight:700;padding:2px 7px;border-radius:99px}
+.tag.cli{color:var(--ok);background:rgba(70,211,154,.12)}
+.tag.int{color:var(--muted2);background:var(--panel3)}
+.foot{margin-top:30px;font-size:11px;color:var(--muted2);line-height:1.6}
+.foot a{color:var(--orange)}
+</style>
+</head>
+<body>
+<div class="shell">
+  <div class="brand"><span class="dot">f</span> finkap<sup>®</sup></div>
+  <p class="lead">Tu sistema, todo en un lugar. Elegí una sección — entrás una vez con la clave y navegás libre entre todas.</p>
+
+  <div class="sec">Cara al cliente</div>
+  <div class="grid">
+    <a class="card cli" href="armar-pedido.html"><div class="ico">🛒</div><span class="tag cli">público</span><h3>Venta</h3><p>Armá el pedido de café verde, descuentos por volumen y cotización por WhatsApp.</p><span class="go">Abrir →</span></a>
+    <a class="card cli" href="simulador-productor.html"><div class="ico">🌱</div><span class="tag cli">público</span><h3>Productor</h3><p>Simulador FOB, reparto y adelanto para el productor.</p><span class="go">Abrir →</span></a>
+  </div>
+
+  <div class="sec">Interno · café y precio</div>
+  <div class="grid">
+    <a class="card int" href="certificar.html"><div class="ico">✓</div><span class="tag int">clave</span><h3>Certificar</h3><p>Subí foto + ficha → veredicto y ficha técnica en formato Finkap. Contrato provisorio.</p><span class="go">Abrir →</span></a>
+    <a class="card int" href="indice-maestro.html"><div class="ico">▦</div><span class="tag int">clave</span><h3>Índice maestro</h3><p>Panel de evaluación: cada lote y sus hitos (ficha · foto · scan · informe).</p><span class="go">Abrir →</span></a>
+    <a class="card int" href="panel-interno.html"><div class="ico">📊</div><span class="tag int">clave</span><h3>Panel interno</h3><p>Márgenes, piso, spread y libro financiero. Toggle costo real (Lakaut).</p><span class="go">Abrir →</span></a>
+    <a class="card int" href="validar.html"><div class="ico">🧪</div><span class="tag int">clave</span><h3>Validar motor</h3><p>Batería de auto-test del motor de precios. Todo verde = base sana.</p><span class="go">Abrir →</span></a>
+  </div>
+
+  <div class="sec">Interno · importaciones</div>
+  <div class="grid">
+    <a class="card impo" href="importaciones/index.html"><div class="ico">🚢</div><span class="tag int">clave</span><h3>Torre de Control</h3><p>Embarques, despachos (Lakaut), nacionalización, pagos al exterior, alertas y stock.</p><span class="go">Abrir →</span></a>
+  </div>
+
+  <div class="foot">
+    Acceso con clave del equipo · una sola vez por sesión. El logo <b>finkap</b> de cualquier vista te trae de vuelta acá.
+    <br>¿Cambiar la clave? <a href="set-clave.html">set-clave.html</a>
+  </div>
+</div>
+</body>
+</html>
