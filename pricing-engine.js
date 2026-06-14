@@ -28,9 +28,9 @@ export const COSTOS = { freight:0.45, duty:0.12, rate:0.015, storage:0.03 }; // 
 export const SPLIT  = { productor:0.50, inversor:0.25, finkap:0.25 };
 
 // --- Aranceles de importación a Argentina (% sobre FOB; NO son crédito fiscal) ---
-// Exentos de DIE (solo 3% tasa de estadística): Brasil, Perú, Colombia, Panamá.
+// Exentos de DIE (solo 3% tasa de estadística): Brasil, Perú, Colombia, Panamá, Bolivia (Mercosur/ALADI).
 // Resto: 9% DIE + 3% estadística = 12%.
-export const ARANCEL = { Brasil:0.03, 'Perú':0.03, Colombia:0.03, 'Panamá':0.03 };
+export const ARANCEL = { Brasil:0.03, 'Perú':0.03, Colombia:0.03, 'Panamá':0.03, Bolivia:0.03 };
 export const ARANCEL_DEF = 0.12;
 export function arancelRate(origen){ return ARANCEL[origen] ?? ARANCEL_DEF; }
 
@@ -39,10 +39,10 @@ export function arancelRate(origen){ return ARANCEL[origen] ?? ARANCEL_DEF; }
 // real; reemplaza la estimación de mercado cuando se pide cfg.usarCostoReal=true.
 // Fuente: módulo importaciones/data.js (verificado vs Lakaut 13/06/2026).
 export const COSTO_REAL_ORIGEN = {
-  Bolivia:  { fobKg:9.54,  fuente:'Lakaut IDA4002093E',       fecha:'2026-04-09' },
-  Brasil:   { fobKg:7.71,  fuente:'Lakaut IDA4001760E',       fecha:'2026-03-17' },
-  Honduras: { fobKg:7.18,  fuente:'Lakaut IDA4002258H (CFR)', fecha:'2026-04-16' },
-  Colombia: { fobKg:10.23, fuente:'Proforma 282 (Harmony)',   fecha:'2025-12-07' },
+  Bolivia:  { fobKg:9.54,  fuente:'Factura Total Ingredients 00002 (plano)', fecha:'2026-04-09' },
+  Brasil:   { fobKg:7.71,  fuente:'Lakaut IDA4001760E',                      fecha:'2026-03-17' },
+  Honduras: { fobKg:9.00,  fuente:'Precio real acordado (cc Choacapa: factura doc. 7,00-7,50 + concepto Finkap)', fecha:'2026-03-07' },
+  Colombia: { fobKg:10.23, fuente:'Proforma 282 (Harmony)',                  fecha:'2025-12-07' },
 };
 export function fobRealOrigen(origen){ return COSTO_REAL_ORIGEN[origen] ? COSTO_REAL_ORIGEN[origen].fobKg : null; }
 
@@ -82,24 +82,17 @@ const dScore = s => 12*(s-82) + 6*Math.max(0, s-86)**2;     // convexo
 const nySens = (cw, kc) => cw*(kc/KC_REF) + (1-cw);          // (para % de movimiento; informativo)
 
 // === FOB del productor: NY + diferencial (sin β; Regional < Especialidad < Exótico) ===
-// cfg.usarCostoReal=true → ancla el costo real del origen (Lakaut) y le suma el
-// premium varietal de mercado, preservando la diferencia por tier/score/proceso.
+// cfg.usarCostoReal=true → usa el costo FOB REAL del origen (lo que se pagó, plano:
+// la factura no diferencia por variedad/puntaje). Si no hay dato real, cae al mercado.
 export function fob(lot, kc, cfg = {}){
+  if(cfg.usarCostoReal){
+    const real = COSTO_REAL_ORIGEN[lot.origen] ? COSTO_REAL_ORIGEN[lot.origen].fobKg : null;
+    if(real != null) return real;                            // costo real plano por origen
+  }
   const dvar = lot.dVar ?? D_VAR_TIER[lot.tier] ?? 0;        // preferí dVar por variedad
   const diff = (D_ORIGEN[lot.origen] ?? 15) + dvar + (D_PROCESO[lot.proceso] ?? 0)
              + dScore(lot.score) + (lot.certClb ?? 0);
-  const market = (kc + diff) * CONV;
-  if(cfg.usarCostoReal){
-    const real = COSTO_REAL_ORIGEN[lot.origen] ? COSTO_REAL_ORIGEN[lot.origen].fobKg : null;
-    if(real != null){
-      // base de mercado de un regional ref del mismo origen (ancla del promedio importado)
-      const baseDiff = (D_ORIGEN[lot.origen] ?? 15) + D_VAR_TIER.regional
-                     + D_PROCESO.Lavado + dScore(TIER.regional.refScore);
-      const baseMarket = (kc + baseDiff) * CONV;
-      return real + (market - baseMarket);    // costo real del origen + premium varietal
-    }
-  }
-  return market;
+  return (kc + diff) * CONV;
 }
 
 // === Índice de Confianza (ProfilePrint) ===

@@ -156,6 +156,7 @@ function test(group, name, pass, detail){ TESTS.push({ group, name, pass:!!pass,
   test(G,'Perú = 3% (exento DIE)',    PE.arancelRate('Perú')===0.03,    'rate '+PE.arancelRate('Perú'));
   test(G,'Colombia = 3% (exento DIE)',PE.arancelRate('Colombia')===0.03,'rate '+PE.arancelRate('Colombia'));
   test(G,'Panamá = 3% (exento DIE)',  PE.arancelRate('Panamá')===0.03,  'rate '+PE.arancelRate('Panamá'));
+  test(G,'Bolivia = 3% (exenta · Mercosur/ALADI)', PE.arancelRate('Bolivia')===0.03, 'rate '+PE.arancelRate('Bolivia'));
   test(G,'Honduras = 12% (9% DIE + 3%)', PE.arancelRate('Honduras')===0.12, 'rate '+PE.arancelRate('Honduras'));
   test(G,'Origen sin tabla → default 12%', PE.arancelRate('Vietnam')===PE.ARANCEL_DEF, 'rate '+PE.arancelRate('Vietnam'));
 
@@ -318,11 +319,15 @@ function test(group, name, pass, detail){ TESTS.push({ group, name, pass:!!pass,
   test(G,'fobRealOrigen Bolivia = 9,54', PE.fobRealOrigen('Bolivia')===9.54);
   test(G,'fobRealOrigen Brasil = 7,71', PE.fobRealOrigen('Brasil')===7.71);
   test(G,'Origen sin import (Etiopía) = null', PE.fobRealOrigen('Etiopía')===null);
-  test(G,'Bolivia regional 83 (ref) → FOB real = ancla 9,54',
-       approx(PE.fob(lb('Bolivia','regional',83),PE.KC_REF,{usarCostoReal:true}),9.54,1e-9), f4(PE.fob(lb('Bolivia','regional',83),PE.KC_REF,{usarCostoReal:true})));
+  test(G,'Bolivia FOB real = 9,54 (cualquier puntaje, plano)',
+       approx(PE.fob(lb('Bolivia','regional',83),PE.KC_REF,{usarCostoReal:true}),9.54,1e-9) &&
+       approx(PE.fob(lb('Bolivia','especialidad',88),PE.KC_REF,{usarCostoReal:true}),9.54,1e-9));
+  test(G,'Honduras FOB real = 9,00 (precio acordado, no el documentado)',
+       approx(PE.fobRealOrigen('Honduras'),9.00,1e-9));
   const bReg=PE.fob(lb('Brasil','regional',82),PE.KC_REF,{usarCostoReal:true});
   const bEsp=PE.fob(lb('Brasil','especialidad',86),PE.KC_REF,{usarCostoReal:true});
-  test(G,'Real preserva premium varietal (esp > reg)', bEsp>bReg, f4(bReg)+' < '+f4(bEsp));
+  test(G,'Costo real es PLANO por origen (no depende de variedad/puntaje)',
+       approx(bEsp,bReg,1e-9) && approx(bReg,7.71,1e-9), f4(bReg));
   const eM=PE.fob(lb('Etiopía','especialidad',86),PE.KC_REF);
   const eR=PE.fob(lb('Etiopía','especialidad',86),PE.KC_REF,{usarCostoReal:true});
   test(G,'Sin import → real = mercado (fallback)', approx(eM,eR,1e-12), f4(eR));
