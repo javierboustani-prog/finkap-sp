@@ -1,0 +1,391 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Importaciones — Finkap · Torre de Control</title>
+<meta name="description" content="Torre de control de importaciones de café verde: embarques, despachos, nacionalización, pagos al exterior, checklist por banco y alertas. KAPSELMAKER.">
+<meta name="robots" content="noindex,nofollow">
+<script src="../gate.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0d0d0f; --bg2:#131316; --panel:#17171b; --panel2:#1d1d22; --panel3:#222228;
+  --line:#2c2c33; --line2:#3a3a43; --text:#f5f5f7; --muted:#9b9ba6; --muted2:#6f6f7a;
+  --orange:#F97316; --orange-d:#ea670a; --orange-soft:rgba(249,115,22,.12); --orange-line:rgba(249,115,22,.45);
+  --green:#25D366; --bad:#ef5350; --bad-soft:rgba(239,83,80,.10); --bad-line:rgba(239,83,80,.4);
+  --warn:#f5b942; --warn-soft:rgba(245,185,66,.10); --warn-line:rgba(245,185,66,.4);
+  --ok:#46d39a; --blue:#5b9dff; --violet:#b58bff;
+  --radius:16px; --radius-sm:10px;
+  --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  --sans:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+  --shadow:0 10px 40px -12px rgba(0,0,0,.6);
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:
+    radial-gradient(1200px 600px at 85% -10%, rgba(249,115,22,.10), transparent 60%),
+    radial-gradient(900px 500px at -10% 10%, rgba(249,115,22,.05), transparent 55%),
+    var(--bg);
+  color:var(--text); font-family:var(--sans); font-size:14px; line-height:1.5;
+  -webkit-font-smoothing:antialiased; letter-spacing:-.01em; min-height:100vh;
+}
+.num,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums;letter-spacing:0}
+a{color:inherit;text-decoration:none}
+::selection{background:var(--orange);color:#fff}
+*::-webkit-scrollbar{width:10px;height:10px}
+*::-webkit-scrollbar-thumb{background:var(--line2);border-radius:99px;border:2px solid transparent;background-clip:padding-box}
+*::-webkit-scrollbar-track{background:transparent}
+
+/* topbar */
+.topbar{position:sticky;top:0;z-index:50;backdrop-filter:saturate(140%) blur(14px);background:rgba(13,13,15,.72);border-bottom:1px solid var(--line)}
+.topbar-in{max-width:1380px;margin:0 auto;padding:12px 20px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:20px;letter-spacing:-.03em}
+.brand .dot{width:30px;height:30px;border-radius:50%;border:2.5px solid var(--orange);display:grid;place-items:center;color:var(--orange);font-weight:900;font-size:16px;flex:0 0 auto}
+.brand sup{color:var(--orange);font-size:10px;font-weight:700}
+.priv{font-size:9px;text-transform:uppercase;letter-spacing:.7px;color:var(--bad);border:1px solid var(--bad-line);background:var(--bad-soft);border-radius:99px;padding:2px 8px;font-weight:700}
+.meta-r{margin-left:auto;display:flex;align-items:center;gap:9px;flex-wrap:wrap;font-size:11px;color:var(--muted)}
+.chip{background:var(--panel);border:1px solid var(--line);border-radius:99px;padding:5px 12px;display:flex;align-items:center;gap:7px}
+.chip .lbl{text-transform:uppercase;letter-spacing:.6px;font-size:9px;color:var(--muted2)}
+.chip b{color:var(--text);font-weight:700}
+
+/* layout */
+.shell{max-width:1380px;margin:0 auto;padding:24px 20px 80px}
+.hero{margin:6px 0 18px}
+.hero h1{font-size:clamp(24px,3.5vw,32px);font-weight:800;letter-spacing:-.03em;margin:0 0 4px}
+.hero h1 .ac{color:var(--orange)}
+.hero p{color:var(--muted);max-width:720px;margin:0}
+.sec{margin:26px 0 10px;display:flex;align-items:center;gap:10px}
+.sec h2{font-size:13px;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);margin:0;font-weight:700}
+.sec .ln{height:1px;background:var(--line);flex:1}
+.sec .cnt{font-size:11px;color:var(--muted2);font-family:var(--mono)}
+
+/* KPIs */
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px}
+@media(max-width:900px){.kpis{grid-template-columns:repeat(2,1fr)}}
+.kpi{background:linear-gradient(160deg,var(--panel2),var(--panel));border:1px solid var(--line);border-radius:var(--radius);padding:14px 16px;position:relative;overflow:hidden;display:flex;flex-direction:column;min-height:108px}
+.kpi .k{font-size:9px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted2);min-height:24px;line-height:1.3}
+.kpi .v{font-family:var(--mono);font-size:22px;font-weight:800;margin-top:auto;line-height:1;white-space:nowrap;letter-spacing:-.5px}
+.kpi .s{font-size:10.5px;color:var(--muted);margin-top:5px;line-height:1.2}
+.kpi.accent{border-color:var(--orange-line)}
+.kpi.accent .v{color:var(--orange)}
+.kpi.blue{border-color:rgba(91,157,255,.45)}
+.kpi.blue .v{color:var(--blue)}
+
+/* alertas */
+.alertas{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px}
+.al{border-radius:var(--radius-sm);padding:13px 15px;border:1px solid var(--line);background:var(--panel)}
+.al.danger{border-color:var(--bad-line);background:var(--bad-soft)}
+.al.warn{border-color:var(--warn-line);background:var(--warn-soft)}
+.al .t{font-weight:700;font-size:13px;display:flex;align-items:center;gap:7px}
+.al.danger .t{color:#ff8a87}
+.al.warn .t{color:var(--warn)}
+.al .d{color:var(--muted);font-size:12px;margin-top:4px}
+.al .a{margin-top:7px;font-size:11px;color:var(--text);background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:8px;padding:6px 9px}
+.al .a b{color:var(--orange)}
+
+/* tarjeta clickeable Colombia */
+.colombia-card{display:flex;align-items:center;justify-content:space-between;gap:16px;margin:18px 0 4px;background:linear-gradient(160deg,rgba(245,185,66,.10),var(--panel));border:1px solid rgba(245,185,66,.4);border-radius:var(--radius);padding:16px 20px;transition:border-color .15s,transform .15s;cursor:pointer}
+.colombia-card:hover{border-color:var(--orange-line);transform:translateY(-1px)}
+.colombia-card .cc-left{display:flex;align-items:center;gap:14px}
+.colombia-card .cc-flag{font-size:30px;flex:0 0 auto}
+.colombia-card .cc-t{font-weight:800;font-size:17px}
+.colombia-card .cc-s{color:var(--muted);font-size:12px;max-width:680px;margin-top:2px;line-height:1.4}
+.colombia-card .cc-go{font-weight:700;font-size:13px;color:var(--orange);white-space:nowrap;border:1px solid var(--orange-line);border-radius:99px;padding:8px 16px;background:var(--orange-soft)}
+/* cards proveedores */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius-sm);padding:14px 15px}
+.card.off{opacity:.55}
+.card.link{cursor:pointer;transition:border-color .15s,transform .15s;display:block;text-decoration:none;color:inherit}
+.card.link:hover{border-color:var(--orange-line);transform:translateY(-1px)}
+.card .card-go{margin-top:10px;font-size:11px;font-weight:700;color:var(--orange)}
+.card .top{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.card .pais{font-size:10px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted2)}
+.card .nom{font-weight:800;font-size:16px;margin-top:1px}
+.card .mod{display:inline-block;margin-top:6px;font-size:10px;font-weight:700;color:var(--blue);border:1px solid rgba(91,157,255,.4);background:rgba(91,157,255,.08);border-radius:99px;padding:2px 9px}
+.card .nt{color:var(--muted);font-size:11px;margin-top:8px;line-height:1.45}
+
+/* tablas */
+.tbl-wrap{border:1px solid var(--line);border-radius:var(--radius);overflow-x:auto;background:var(--panel)}
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+th{text-align:left;font-size:9.5px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted2);font-weight:700;padding:11px 12px;background:var(--bg2);border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:rgba(255,255,255,.015)}
+tr.emb-parent td{border-top:2px solid var(--line2)}
+tr.emb-child td:first-child{padding-left:34px}
+.tree{color:var(--violet);margin-right:7px;font-weight:700}
+tr.emb-foot td{font-size:11px;color:var(--muted);padding:6px 12px 9px 34px;background:rgba(91,157,255,.05);border-bottom:none}
+tr.emb-foot:hover td{background:rgba(91,157,255,.05)}
+td.r,th.r{text-align:right}
+.tag{display:inline-block;font-size:9.5px;font-weight:700;border-radius:99px;padding:2px 8px;letter-spacing:.3px;white-space:nowrap}
+.tag.ida4{color:var(--violet);border:1px solid rgba(181,139,255,.4);background:rgba(181,139,255,.1)}
+.tag.ic06{color:var(--ok);border:1px solid rgba(70,211,154,.4);background:rgba(70,211,154,.1)}
+.tag.st{color:var(--muted);border:1px solid var(--line2);background:transparent}
+.tag.dep-fis{color:var(--violet);border:1px solid rgba(181,139,255,.4);background:rgba(181,139,255,.1)}
+.tag.dep-ret{color:var(--muted2);border:1px solid var(--line);background:transparent}
+.kg-note{font-size:11.5px;color:var(--muted);margin:0 2px 11px;line-height:1.55;background:var(--panel);border:1px solid var(--line);border-radius:var(--radius-sm);padding:10px 13px}
+.tag.ok{color:var(--ok);border:1px solid rgba(70,211,154,.4);background:rgba(70,211,154,.1)}
+.tag.pend{color:var(--warn);border:1px solid var(--warn-line);background:var(--warn-soft)}
+.tag.trab{color:var(--bad);border:1px solid var(--bad-line);background:var(--bad-soft)}
+.pend-txt{color:var(--muted2);font-style:italic}
+.dospuntos{font-family:var(--mono);color:var(--text)}
+
+/* bancos */
+.banco{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius-sm);padding:14px 16px}
+.banco .h{display:flex;align-items:center;gap:9px;justify-content:space-between}
+.banco .nm{font-weight:800;font-size:16px}
+.banco .df{font-size:10px;font-weight:700;border-radius:99px;padding:2px 9px}
+.banco .df.facil{color:var(--ok);border:1px solid rgba(70,211,154,.4);background:rgba(70,211,154,.1)}
+.banco .df.buro{color:var(--warn);border:1px solid var(--warn-line);background:var(--warn-soft)}
+.banco .nt{color:var(--muted);font-size:11px;margin:7px 0}
+.banco ul{margin:6px 0 0;padding:0;list-style:none}
+.banco li{font-size:12px;color:var(--text);padding:5px 0 5px 22px;position:relative;border-top:1px dashed var(--line)}
+.banco li:before{content:"";position:absolute;left:2px;top:10px;width:11px;height:11px;border:1.5px solid var(--line2);border-radius:3px}
+
+.note{margin-top:26px;background:linear-gradient(160deg,var(--orange-soft),transparent);border:1px solid var(--orange-line);border-radius:var(--radius);padding:16px 18px}
+.note h3{margin:0 0 5px;font-size:14px;color:var(--orange)}
+.note p{margin:0;color:var(--muted);font-size:12.5px;line-height:1.55}
+.foot{margin-top:30px;color:var(--muted2);font-size:11px;text-align:center}
+.cols-2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:760px){.cols-2{grid-template-columns:1fr}}
+.nav{display:flex;gap:6px;flex-wrap:wrap;margin-left:6px}
+.nav a{font-size:12px;color:var(--muted);padding:5px 11px;border-radius:99px;border:1px solid transparent}
+.nav a:hover{color:var(--text);border-color:var(--line)}
+.nav a.on{color:var(--orange);border-color:var(--orange-line);background:var(--orange-soft)}
+@media(max-width:760px){.nav{order:3;width:100%;margin-left:0}.nav a{flex:1;text-align:center;padding:9px 6px}}
+</style>
+</head>
+<body>
+<div class="topbar"><div class="topbar-in">
+  <div class="brand"><span class="dot">F</span> Finkap <sup>importaciones</sup></div>
+  <span class="priv">Privado</span>
+  <nav class="nav">
+    <a href="../armar-pedido.html">Venta</a>
+    <a href="../simulador-productor.html">Productor</a>
+    <a href="../panel-interno.html">Panel</a>
+    <a href="../certificar.html">Certificar</a>
+    <a href="../indice-maestro.html">Índice</a>
+    <a href="index.html" class="on">Importaciones</a>
+    <a href="../validar.html">Validar</a>
+  </nav>
+  <div class="meta-r" id="metaR"></div>
+</div></div>
+
+<div class="shell">
+  <div class="hero">
+    <h1>Torre de Control de <span class="ac">Importaciones</span></h1>
+    <p id="heroP">Café verde · de origen a góndola. Cada embarque, su nacionalización, sus pagos y los plazos — en una sola pantalla.</p>
+  </div>
+
+  <div class="kpis" id="kpis"></div>
+
+  <div class="sec"><h2>Alertas</h2><div class="ln"></div></div>
+  <div class="alertas" id="alertas"></div>
+
+  <div class="sec"><h2>Proveedores por origen</h2><div class="ln"></div><span class="cnt" id="provCnt"></span></div>
+  <div class="grid" id="proveedores"></div>
+
+  <div class="sec"><h2>Embarques y despachos</h2><div class="ln"></div><span class="cnt" id="embCnt"></span></div>
+  <div class="kg-note" id="kgNote"></div>
+  <div class="tbl-wrap"><table>
+    <thead><tr>
+      <th>Despacho</th><th>Tipo</th><th>Origen · Proveedor</th><th>Depósito</th><th class="r">Kg</th>
+      <th class="r">FOB USD</th><th>Sigea</th><th>Fecha ofic.</th><th>Estado</th>
+    </tr></thead>
+    <tbody id="embBody"></tbody>
+  </table></div>
+
+  <div class="sec"><h2>Stock físico (planilla del equipo)</h2><div class="ln"></div><span class="cnt" id="stockCnt"></span></div>
+  <div class="kg-note" id="stockNote"></div>
+  <div class="tbl-wrap"><table>
+    <thead><tr><th>Origen</th><th class="r">Galpón (local)</th><th class="r">Depósito fiscal</th><th class="r">En depósito (aduana)</th><th>Cruce / modalidad</th></tr></thead>
+    <tbody id="stockBody"></tbody>
+  </table></div>
+
+  <div class="sec"><h2>Pagos al exterior</h2><div class="ln"></div></div>
+  <div class="tbl-wrap"><table>
+    <thead><tr>
+      <th>Proveedor</th><th>Banco</th><th>Condición</th>
+      <th class="r">Factura USD</th><th class="r">Pagado</th><th class="r">Saldo</th><th>Estado</th><th>Doc</th>
+    </tr></thead>
+    <tbody id="pagBody"></tbody>
+  </table></div>
+
+  <div class="sec"><h2>Capital personal a recuperar</h2><div class="ln"></div><span class="cnt" id="garCnt"></span></div>
+  <div class="note" style="background:linear-gradient(160deg,rgba(91,157,255,.10),transparent);border-color:rgba(91,157,255,.4);margin-top:0;margin-bottom:14px">
+    <h3 style="color:var(--blue)">Tu crédito personal, separado de lo técnico</h3>
+    <p>Esto <b>NO</b> es deuda con proveedores: es <b>capital propio</b> que pusiste como garantía líquida y que se te <b>reintegra</b> cuando se cierre toda la parte bancaria. Sirve para ver el <b>timing</b>: terminar de girar lo técnico → recuperar/reinvertir este dinero.</p>
+    <p class="mono" id="garMath" style="margin-top:10px;font-size:13px;color:var(--text)"></p>
+  </div>
+  <div class="grid" id="garantias"></div>
+
+  <div class="sec"><h2>El librito de cada banco</h2><div class="ln"></div></div>
+  <div class="cols-2" id="bancos"></div>
+
+  <div class="note">
+    <h3>↔ Cómo se conecta con Finkap</h3>
+    <p>El <b>costo real landed</b> de cada origen (FOB + flete + nacionalización + costo de financiación) sale de este módulo y alimenta el <b>pricing-engine</b> / simulador. Así el precio de venta refleja lo que de verdad te cuesta traer cada café — no una estimación. El embarque manda; el precio obedece.</p>
+  </div>
+
+  <div class="foot" id="foot"></div>
+</div>
+
+<script>document.write('<script src="data.js?t='+Date.now()+'"><\/script>');</script>
+<script>
+(function(){
+  const D = window.FINKAP_IMPO;
+  const usd = n => n==null ? null : n.toLocaleString("es-AR",{minimumFractionDigits:2,maximumFractionDigits:2});
+  const fecha = s => s==null ? "—" : s.split("-").reverse().join("/");
+  const provById = id => D.proveedores.find(p=>p.id===id);
+  const el = (h)=>{const t=document.createElement("template");t.innerHTML=h.trim();return t.content.firstChild;};
+  const pend = '<span class="pend-txt">por completar</span>';
+
+  // meta
+  document.getElementById("metaR").innerHTML =
+    `<span class="chip"><span class="lbl">Empresa</span><b>${D.meta.empresa}</b></span>`+
+    `<span class="chip"><span class="lbl">Despachante</span><b>${D.meta.despachante}</b></span>`+
+    `<span class="chip"><span class="lbl">Actualizado</span><b>${fecha(D.meta.actualizado)}</b></span>`;
+
+  // KPIs
+  const arr = D.embarques.filter(e=>e.tipo==="IDA4").reduce((s,e)=>s+(e.fob||0),0);
+  const nac = D.embarques.filter(e=>e.tipo==="IC06").reduce((s,e)=>s+(e.fob||0),0);
+  const pagado = D.pagos.reduce((s,p)=>s+(p.pagado||0),0);
+  const saldoExt = D.pagos.reduce((s,p)=>s+(p.saldo||0),0);
+  const garPers = (D.garantias||[]).reduce((s,g)=>s+(g.monto||0),0);
+  const kpis = [
+    {k:"Embarques cargados", v:D.embarques.length, s:"despachos en sistema"},
+    {k:"FOB importado (arribos)", v:"$"+usd(arr), s:"3 embarques 2026"},
+    {k:"FOB nacionalizado", v:"$"+usd(nac), s:"sacado de depósito", a:true},
+    {k:"Pagado al exterior", v:"$"+usd(pagado), s:"giros liquidados"},
+    {k:"Saldo técnico a girar", v:"$"+usd(saldoExt), s:"deuda formal c/ bancos"},
+    {k:"− Capital personal", v:"$"+usd(garPers), s:"garantías tuyas (a recuperar)", cls:'blue'},
+    {k:"= Saldo real a proveedores", v:"$"+usd(saldoExt-garPers), s:"neto de tus garantías", a:true}
+  ];
+  document.getElementById("kpis").innerHTML = kpis.map(x=>
+    `<div class="kpi ${x.a?'accent':''} ${x.cls||''}"><div class="k">${x.k}</div><div class="v">${x.v}</div><div class="s">${x.s}</div></div>`).join("");
+
+  // alertas
+  document.getElementById("alertas").innerHTML = D.alertas.map(a=>
+    `<div class="al ${a.nivel}"><div class="t">${a.nivel==='danger'?'⛔':'⚠️'} ${a.titulo}</div>`+
+    `<div class="d">${a.detalle}</div>`+
+    (a.accion?`<div class="a"><b>Acción →</b> ${a.accion}</div>`:``)+`</div>`).join("");
+
+  // proveedores
+  document.getElementById("provCnt").textContent = D.proveedores.filter(p=>p.activo).length+" activos";
+  document.getElementById("proveedores").innerHTML = D.proveedores.map(p=>{
+    const inner = `<div class="top"><div><div class="pais">${p.pais}</div>`+
+      `<div class="nom">${p.nombre}</div></div></div>`+
+      `<span class="mod">${p.modalidad}</span><div class="nt">${p.nota||""}</div>`+
+      (p.link?`<div class="card-go">Abrir análisis →</div>`:``);
+    return p.link
+      ? `<a class="card link ${p.activo?'':'off'}" href="${p.link}">${inner}</a>`
+      : `<div class="card ${p.activo?'':'off'}">${inner}</div>`;
+  }).join("");
+
+  // embarques
+  document.getElementById("embCnt").textContent = D.embarques.length+" despachos";
+  const kgf = n => n.toLocaleString("es-AR");
+  const kgImp = D.embarques.filter(e=>e.tipo==='IDA4').reduce((s,e)=>s+(e.kg||0),0);
+  const kgRet = D.embarques.filter(e=>e.tipo==='IC06').reduce((s,e)=>s+(e.kg||0),0);
+  document.getElementById("kgNote").innerHTML = `<b>Los kg no se suman entre sí.</b> Los arribos (IDA4 · <span class="tag dep-fis">📦 depósito</span>) son el café que entró; los parciales (IC06 · <span class="tag dep-ret">↳ retiro</span>) son retiros de ese mismo café. → <b style="color:var(--violet)">Importado ${kgf(kgImp)} kg</b> · <b style="color:var(--ok)">retirado/nacionalizado ${kgf(kgRet)} kg</b> · <b style="color:var(--blue)">en depósito ${kgf(kgImp-kgRet)} kg</b>.`;
+  const rowEmb = (e, child) => {
+    const pr = provById(e.proveedorId);
+    const origen = pr ? `${pr.pais} · ${pr.nombre}` : (e.pais? e.pais : pend);
+    const tcls = e.tipo==="IDA4"?"ida4":"ic06";
+    const tlbl = e.tipo==="IDA4"?"IDA4 · arribo a depósito":"IC06 · retiro parcial";
+    const dep = e.tipo==='IDA4'?`<span class="tag dep-fis">📦 ${e.deposito||'Fiscal'}</span>`:`<span class="tag dep-ret">↳ retiro</span>`;
+    return `<tr class="${child?'emb-child':'emb-parent'}">`+
+      `<td class="dospuntos">${child?'<span class="tree">↳</span>':''}${e.despacho}</td>`+
+      `<td><span class="tag ${tcls}">${tlbl}</span></td>`+
+      `<td>${child?`<span style="color:var(--muted2)">${origen}</span>`:origen}</td>`+
+      `<td>${dep}</td>`+
+      `<td class="r">${e.kg!=null?kgf(e.kg):pend}</td>`+
+      `<td class="r dospuntos">${usd(e.fob)}</td>`+
+      `<td class="dospuntos">${e.sigea||'—'}</td>`+
+      `<td>${fecha(e.fechaOfic)}</td>`+
+      `<td><span class="tag st">${e.estadoAfip}</span></td></tr>`;
+  };
+  const grupos = {};
+  D.embarques.forEach(e=>{ const k=e.embarque||e.despacho; (grupos[k]=grupos[k]||[]).push(e); });
+  const ordenGrupos = Object.values(grupos).sort((A,B)=>{
+    const fA=(A.find(x=>x.tipo==='IDA4')||A[0]).fechaOfic, fB=(B.find(x=>x.tipo==='IDA4')||B[0]).fechaOfic;
+    return fA<fB?-1:1;
+  });
+  let embHtml='';
+  ordenGrupos.forEach(g=>{
+    const arribo = g.find(x=>x.tipo==='IDA4');
+    const parc = g.filter(x=>x.tipo==='IC06').sort((a,b)=>a.fechaOfic<b.fechaOfic?-1:1);
+    if(arribo) embHtml += rowEmb(arribo,false);
+    parc.forEach(p=> embHtml += rowEmb(p,true));
+    if(arribo){
+      const ret = parc.reduce((s,p)=>s+(p.kg||0),0);
+      const enDep = (arribo.kg||0)-ret;
+      const pais = (provById(arribo.proveedorId)||{}).pais||'';
+      embHtml += `<tr class="emb-foot"><td colspan="9">↳ <b>${pais}</b>: entró ${kgf(arribo.kg)} kg → retirado <b style="color:var(--ok)">${kgf(ret)}</b> → quedan en depósito <b style="color:var(--blue)">${kgf(enDep)}</b> kg</td></tr>`;
+    }
+  });
+  document.getElementById("embBody").innerHTML = embHtml;
+
+  // pagos
+  const stCls = {ok:"ok",parcial:"pend",pendiente:"pend",trabado:"trab"};
+  document.getElementById("pagBody").innerHTML = D.pagos.map(p=>{
+    const pr = provById(p.proveedorId);
+    return `<tr><td>${pr?pr.nombre:'—'}</td>`+
+      `<td>${p.banco||'—'}</td><td>${p.tipo||'—'}</td>`+
+      `<td class="r dospuntos">${p.facturaTotal!=null?usd(p.facturaTotal):pend}</td>`+
+      `<td class="r dospuntos">${usd(p.pagado||0)}</td>`+
+      `<td class="r dospuntos">${p.saldo!=null?usd(p.saldo):pend}</td>`+
+      `<td><span class="tag ${stCls[p.estado]||'st'}">${p.estado}</span></td>`+
+      `<td>${p.doc||'—'}</td></tr>`;
+  }).join("");
+
+  // bancos
+  document.getElementById("bancos").innerHTML = D.bancos.map(b=>
+    `<div class="banco"><div class="h"><div class="nm">${b.nombre}</div>`+
+    `<span class="df ${b.dificultad==='Fácil'?'facil':'buro'}">${b.dificultad}</span></div>`+
+    `<div class="nt">${b.nota||""}</div><ul>${b.checklist.map(c=>`<li>${c}</li>`).join("")}</ul></div>`).join("");
+
+  // garantías (capital personal a recuperar)
+  if(D.garantias){
+    document.getElementById("garCnt").textContent = "$"+usd(garPers)+" a recuperar";
+    document.getElementById("garMath").innerHTML = "Saldo técnico $"+usd(saldoExt)+"  −  <span style='color:var(--blue)'>Capital personal $"+usd(garPers)+"</span>  =  <b style='color:var(--orange)'>Saldo real a proveedores $"+usd(saldoExt-garPers)+"</b>";
+    document.getElementById("garantias").innerHTML = D.garantias.map(g=>
+      `<div class="card"><div class="top"><div><div class="pais">${g.op}</div>`+
+      `<div class="nom" style="color:var(--blue)">$${usd(g.monto)}</div></div></div>`+
+      `<div class="nt">${g.concepto}</div>`+
+      `<div class="nt" style="color:var(--blue);margin-top:6px">↩ ${g.recupero}</div></div>`).join("");
+  }
+
+  // stock físico (planilla del equipo) + cruce con aduana
+  if(D.stock){
+    const enDepTab = {};
+    D.embarques.forEach(e=>{ const pais=(provById(e.proveedorId)||{}).pais; if(!pais) return; enDepTab[pais]=(enDepTab[pais]||0)+(e.tipo==='IDA4'?(e.kg||0):-(e.kg||0)); });
+    document.getElementById("stockCnt").textContent = "fuente: planilla del equipo";
+    const desf=[];
+    document.getElementById("stockBody").innerHTML = D.stock.porOrigen.map(o=>{
+      const tab = enDepTab[o.origen];
+      let cruce;
+      if(tab==null) cruce = `<span class="tag st">${o.modalidad||'— no importado directo'}</span>`;
+      else if(Math.abs(tab-o.fiscal)<1) cruce = `<span class="tag ok">✓ coincide</span>`;
+      else { const d=Math.abs(tab-o.fiscal); desf.push(o.origen); cruce = `<span class="tag pend">⚠ desfasaje ${kgf(d)} kg</span>`; }
+      return `<tr><td><b>${o.origen}</b></td>`+
+        `<td class="r dospuntos">${kgf(o.local)}</td>`+
+        `<td class="r dospuntos">${o.fiscal==null?'<span style="color:var(--muted2)">—</span>':kgf(o.fiscal)}</td>`+
+        `<td class="r dospuntos">${tab==null?'—':kgf(tab)}</td>`+
+        `<td>${cruce}</td></tr>`;
+    }).join("");
+    const tl=D.stock.porOrigen.reduce((s,o)=>s+(o.local||0),0), tf=D.stock.porOrigen.reduce((s,o)=>s+(o.fiscal||0),0);
+    document.getElementById("stockNote").innerHTML = `<b>Conecta con la importación:</b> el café nacionalizado entra al galpón; lo que el tablero marca "en depósito" debe coincidir con el "depósito fiscal" de la planilla. `+
+      (desf.length ? `⚠ <b style="color:var(--warn)">Desfasaje en ${desf.join(', ')}</b> — ej. Honduras: ya nacionalizado en SRD (10/06) pero la planilla lo tiene aún en depósito fiscal (sin retirar físico).` : `✓ Todo cuadra.`)+
+      ` <span style="color:var(--muted2)">Total: galpón ${kgf(tl)} kg · depósito fiscal ${kgf(tf)} kg · leída ${fecha(D.stock.leida)}.</span>`;
+  }
+
+  document.getElementById("foot").textContent = D.meta.nota;
+})();
+</script>
+</body>
+</html>
