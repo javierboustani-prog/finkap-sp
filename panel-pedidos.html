@@ -1,0 +1,372 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Panel de Pedidos — Finkap</title>
+<meta name="robots" content="noindex,nofollow">
+<script src="supabase-cfg.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0d0d0f;--panel:#17171b;--panel2:#1d1d22;--panel3:#222228;
+  --line:#2c2c33;--line2:#3a3a43;--text:#f5f5f7;--muted:#9b9ba6;--muted2:#6f6f7a;
+  --orange:#F97316;--orange-d:#ea6a0c;--orange-soft:rgba(249,115,22,.12);--orange-line:rgba(249,115,22,.45);
+  --ok:#46d39a;--blue:#7cc4ff;--violet:#b58bff;--red:#ff7a5a;--yellow:#f5c84b;
+  --mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+  --sans:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+}
+*{box-sizing:border-box}html,body{margin:0;padding:0}
+body{background:radial-gradient(1200px 600px at 85% -10%,rgba(249,115,22,.08),transparent 60%),var(--bg);color:var(--text);font-family:var(--sans);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased;letter-spacing:-.01em;min-height:100vh}
+a{color:inherit}
+.mono{font-family:var(--mono);font-feature-settings:"tnum"}
+.shell{max-width:1180px;margin:0 auto;padding:24px 20px 80px}
+.top{display:flex;align-items:center;gap:14px;margin-bottom:8px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:22px;letter-spacing:-.03em}
+.brand .dot{width:32px;height:32px;border-radius:50%;border:3px solid var(--orange);display:grid;place-items:center;color:var(--orange);font-weight:900;font-size:17px}
+.brand a{text-decoration:none}
+.h1{font-size:15px;color:var(--muted);font-weight:600}
+.spacer{flex:1}
+.btn{border:0;border-radius:10px;padding:9px 14px;font-weight:700;cursor:pointer;font-size:13px;display:inline-flex;align-items:center;justify-content:center;gap:7px;transition:.15s;font-family:var(--sans)}
+.btn.primary{background:var(--orange);color:#fff}.btn.primary:hover{background:var(--orange-d)}
+.btn.ghost{background:transparent;border:1px solid var(--line2);color:var(--muted)}.btn.ghost:hover{color:var(--text);border-color:var(--orange-line)}
+.btn.sm{padding:6px 10px;font-size:12px;border-radius:8px}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.fld{width:100%;background:var(--panel2);border:1px solid var(--line2);border-radius:9px;padding:10px 12px;color:var(--text);font-size:14px;font-family:var(--sans)}
+.fld:focus{outline:0;border-color:var(--orange-line)}
+.lbl{font-size:10px;text-transform:uppercase;letter-spacing:.7px;color:var(--muted2);font-weight:700;margin-bottom:4px;display:block}
+
+/* login */
+.login{max-width:380px;margin:8vh auto 0;background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:30px}
+.login h2{margin:0 0 4px;font-size:20px}.login p{margin:0 0 20px;color:var(--muted);font-size:13px}
+.login .fld{margin-bottom:12px}
+.err{color:var(--red);font-size:12.5px;margin-top:8px;min-height:16px}
+
+/* board */
+.toolbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:18px 0 14px}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{padding:6px 12px;border-radius:99px;border:1px solid var(--line2);background:var(--panel);color:var(--muted);font-size:12.5px;font-weight:600;cursor:pointer;transition:.14s}
+.chip.on{background:var(--orange-soft);border-color:var(--orange-line);color:var(--orange)}
+.chip .n{font-family:var(--mono);font-size:11px;opacity:.8;margin-left:5px}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:16px}
+.stat{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+.stat .k{font-size:10.5px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted2);font-weight:700}
+.stat .v{font-family:var(--mono);font-size:19px;font-weight:700;margin-top:2px}
+
+.cards{display:grid;gap:12px}
+.pc{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:0;overflow:hidden}
+.pc.cancel{opacity:.55}
+.pc-head{display:flex;align-items:center;gap:12px;padding:14px 16px;cursor:pointer}
+.pc-head:hover{background:var(--panel2)}
+.ref{font-family:var(--mono);font-weight:700;font-size:13px;color:var(--orange);background:var(--orange-soft);border:1px solid var(--orange-line);padding:3px 8px;border-radius:7px;white-space:nowrap}
+.who{font-weight:700;font-size:14.5px}
+.sub{font-size:12px;color:var(--muted)}
+.tot{font-family:var(--mono);font-weight:700;font-size:15px;text-align:right;white-space:nowrap}
+.tot .ars{font-size:11px;color:var(--muted);font-weight:500}
+.badge{font-size:10.5px;font-weight:700;padding:4px 9px;border-radius:99px;white-space:nowrap;text-transform:uppercase;letter-spacing:.4px}
+.b-nuevo{background:rgba(124,196,255,.14);color:var(--blue)}
+.b-datos_enviados{background:rgba(245,200,75,.14);color:var(--yellow)}
+.b-comprobante{background:rgba(181,139,255,.16);color:var(--violet)}
+.b-confirmado{background:rgba(70,211,154,.14);color:var(--ok)}
+.b-preparado{background:rgba(249,115,22,.14);color:var(--orange)}
+.b-entregado{background:rgba(155,155,166,.16);color:var(--muted)}
+.b-cancelado{background:rgba(255,122,90,.14);color:var(--red)}
+.pc-body{display:none;padding:0 16px 16px;border-top:1px solid var(--line)}
+.pc.open .pc-body{display:block}
+.pc.open .pc-head .caret{transform:rotate(90deg)}
+.caret{color:var(--muted2);transition:.15s}
+.lines{margin:14px 0;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.lrow{display:grid;grid-template-columns:1fr auto auto;gap:10px;padding:9px 12px;font-size:13px;align-items:center}
+.lrow+.lrow{border-top:1px solid var(--line)}
+.lrow .ln{font-weight:600}.lrow .lo{font-size:11px;color:var(--muted)}
+.lrow .lq{font-family:var(--mono);font-size:12px;color:var(--muted)}
+.lrow .lp{font-family:var(--mono);font-weight:700}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin:6px 0 14px}
+.kv{font-size:13px}.kv .k{color:var(--muted2);font-size:11px;text-transform:uppercase;letter-spacing:.5px;font-weight:700}
+.kv .v{font-weight:600}
+.actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:6px}
+.sel{background:var(--panel2);border:1px solid var(--line2);border-radius:9px;padding:8px 10px;color:var(--text);font-size:13px;font-weight:600;font-family:var(--sans)}
+.note{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:12px;color:var(--muted);white-space:pre-wrap;font-family:var(--mono)}
+.empty{text-align:center;color:var(--muted);padding:50px 20px}
+.cfg{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:16px}
+.cfg summary{cursor:pointer;font-weight:700;font-size:13.5px;list-style:none;display:flex;align-items:center;gap:8px}
+.cfg summary::-webkit-details-marker{display:none}
+.cfg[open] summary{margin-bottom:14px}
+.cfg .grid2{margin:0}
+.toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(20px);background:#111;border:1px solid var(--line2);color:var(--text);padding:11px 18px;border-radius:11px;font-size:13px;font-weight:600;opacity:0;pointer-events:none;transition:.25s;z-index:60;box-shadow:0 10px 30px rgba(0,0,0,.5)}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.mask{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;z-index:50;padding:20px}
+.mask.show{display:flex}
+.modal{background:var(--panel);border:1px solid var(--line2);border-radius:16px;max-width:480px;width:100%;padding:22px}
+.modal h3{margin:0 0 4px;font-size:17px}.modal .mref{color:var(--orange);font-family:var(--mono)}
+.paybox{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:14px;margin:14px 0;font-family:var(--mono);font-size:12.5px;line-height:1.7;white-space:pre-wrap}
+@media(max-width:640px){.pc-head{flex-wrap:wrap}.tot{text-align:left}}
+</style>
+</head>
+<body>
+<!-- LOGIN -->
+<div id="loginView" class="login" style="display:none">
+  <div class="brand" style="margin-bottom:18px"><span class="dot">f</span> finkap</div>
+  <h2>Panel de Pedidos</h2>
+  <p>Acceso del equipo. Usá la cuenta de Finkap.</p>
+  <label class="lbl">Email</label>
+  <input id="liMail" class="fld" type="email" autocomplete="username" placeholder="equipo@finkap.net">
+  <label class="lbl">Contraseña</label>
+  <input id="liPass" class="fld" type="password" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
+  <button class="btn primary" style="width:100%;margin-top:6px" id="liBtn" onclick="doLogin()">Entrar</button>
+  <div class="err" id="liErr"></div>
+</div>
+
+<!-- BOARD -->
+<div id="boardView" class="shell" style="display:none">
+  <div class="top">
+    <a href="inicio.html" class="brand"><span class="dot">f</span> finkap</a>
+    <span class="h1">· Panel de Pedidos</span>
+    <span class="spacer"></span>
+    <button class="btn ghost sm" onclick="load()">↻ Actualizar</button>
+    <button class="btn ghost sm" onclick="doLogout()">Salir</button>
+  </div>
+
+  <details class="cfg" id="cfgBox">
+    <summary>⚙️ Datos de transferencia / depósito <span style="color:var(--muted2);font-weight:500">(para generar los datos de pago)</span></summary>
+    <div class="grid2">
+      <div><label class="lbl">Banco</label><input id="cfBanco" class="fld" placeholder="Banco Galicia"></div>
+      <div><label class="lbl">Titular</label><input id="cfTit" class="fld" placeholder="Finkap S.A."></div>
+      <div><label class="lbl">CUIT</label><input id="cfCuit" class="fld" placeholder="30-xxxxxxxx-x"></div>
+      <div><label class="lbl">CBU</label><input id="cfCbu" class="fld" placeholder="0000000000000000000000"></div>
+      <div><label class="lbl">Alias</label><input id="cfAlias" class="fld" placeholder="FINKAP.CAFE.VERDE"></div>
+      <div><label class="lbl">Cuenta USD (opcional)</label><input id="cfUsd" class="fld" placeholder="CBU/alias en USD"></div>
+    </div>
+    <div style="margin-top:12px"><label class="lbl">Nota al pie del mensaje de pago</label><input id="cfNota" class="fld" placeholder="Enviá el comprobante a este mismo número. ¡Gracias!"></div>
+    <button class="btn primary sm" style="margin-top:12px" onclick="saveCfg()">Guardar datos</button>
+  </details>
+
+  <div class="stats" id="stats"></div>
+
+  <div class="toolbar">
+    <div class="chips" id="chips"></div>
+  </div>
+
+  <div class="cards" id="cards"></div>
+</div>
+
+<!-- MODAL DATOS DE PAGO -->
+<div class="mask" id="payMask" onclick="if(event.target===this)closePay()">
+  <div class="modal">
+    <h3>Datos de pago · <span class="mref" id="payRef"></span></h3>
+    <p style="color:var(--muted);font-size:13px;margin:4px 0 0">Copiá y mandáselo al cliente. Marca el pedido como <b>datos enviados</b>.</p>
+    <div class="paybox mono" id="payBox"></div>
+    <div class="actions">
+      <button class="btn primary" onclick="copyPay()">📋 Copiar</button>
+      <a class="btn ghost" id="payWa" target="_blank">WhatsApp al cliente</a>
+      <button class="btn ghost" onclick="closePay()">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const SB=window.FINKAP_SB;
+const $=id=>document.getElementById(id);
+let TOKEN=sessionStorage.getItem("finkap_pedidos_tok")||null;
+let PEDIDOS=[];
+let FILTER="todos";
+
+const ESTADOS=[
+  {k:"nuevo",          t:"Nuevo"},
+  {k:"datos_enviados", t:"Datos enviados"},
+  {k:"comprobante",    t:"Comprobante"},
+  {k:"confirmado",     t:"Pago confirmado"},
+  {k:"preparado",      t:"Preparado"},
+  {k:"entregado",      t:"Entregado"},
+  {k:"cancelado",      t:"Cancelado"}
+];
+const ELABEL=Object.fromEntries(ESTADOS.map(e=>[e.k,e.t]));
+
+const fmtUSD=n=>"USD "+(+n||0).toLocaleString("es-AR",{minimumFractionDigits:2,maximumFractionDigits:2});
+const fmtARS=n=>"ARS "+(+n||0).toLocaleString("es-AR",{minimumFractionDigits:0,maximumFractionDigits:0});
+const fmtN=n=>(+n||0).toLocaleString("es-AR",{maximumFractionDigits:2});
+function toast(m){const t=$("toast");t.textContent=m;t.classList.add("show");clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove("show"),2200);}
+function esc(s){return (s==null?"":String(s)).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c]));}
+
+/* ---------- AUTH ---------- */
+async function doLogin(){
+  const email=$("liMail").value.trim(), password=$("liPass").value;
+  if(!email||!password){ $("liErr").textContent="Completá email y contraseña."; return; }
+  const btn=$("liBtn"); btn.disabled=true; btn.textContent="Entrando…"; $("liErr").textContent="";
+  try{
+    const r=await fetch(`${SB.url}/auth/v1/token?grant_type=password`,{
+      method:"POST",headers:{"apikey":SB.key,"Content-Type":"application/json"},
+      body:JSON.stringify({email,password})
+    });
+    const j=await r.json();
+    if(!r.ok||!j.access_token){ throw new Error(j.error_description||j.msg||j.error||"No se pudo entrar"); }
+    TOKEN=j.access_token;
+    sessionStorage.setItem("finkap_pedidos_tok",TOKEN);
+    showBoard();
+  }catch(e){ $("liErr").textContent=e.message; }
+  finally{ btn.disabled=false; btn.textContent="Entrar"; }
+}
+function doLogout(){ TOKEN=null; sessionStorage.removeItem("finkap_pedidos_tok"); showLogin(); }
+function showLogin(){ $("loginView").style.display="block"; $("boardView").style.display="none"; }
+function showBoard(){ $("loginView").style.display="none"; $("boardView").style.display="block"; loadCfg(); load(); }
+
+/* ---------- DATA ---------- */
+async function sbGet(path){
+  const r=await fetch(`${SB.url}/rest/v1/${path}`,{headers:{"apikey":SB.key,"Authorization":"Bearer "+TOKEN}});
+  if(r.status===401){ doLogout(); throw new Error("Sesión vencida"); }
+  if(!r.ok) throw new Error("Error "+r.status);
+  return r.json();
+}
+async function sbPatch(id,patch){
+  const r=await fetch(`${SB.url}/rest/v1/pedidos?id=eq.${id}`,{
+    method:"PATCH",
+    headers:{"apikey":SB.key,"Authorization":"Bearer "+TOKEN,"Content-Type":"application/json","Prefer":"return=representation"},
+    body:JSON.stringify(patch)
+  });
+  if(!r.ok) throw new Error("Error "+r.status);
+  return (await r.json())[0];
+}
+async function load(){
+  try{
+    PEDIDOS=await sbGet("pedidos?select=*&order=created_at.desc");
+    render();
+  }catch(e){ toast(e.message); }
+}
+
+/* ---------- RENDER ---------- */
+function render(){
+  // stats
+  const open=PEDIDOS.filter(p=>!["entregado","cancelado"].includes(p.estado));
+  const nuevos=PEDIDOS.filter(p=>p.estado==="nuevo").length;
+  const usdAbiertos=open.reduce((s,p)=>s+(+p.total_usd||0),0);
+  const kg=open.reduce((s,p)=>s+(+p.kg_total||0),0);
+  $("stats").innerHTML=`
+    <div class="stat"><div class="k">Nuevos sin tocar</div><div class="v" style="color:var(--blue)">${nuevos}</div></div>
+    <div class="stat"><div class="k">Pedidos abiertos</div><div class="v">${open.length}</div></div>
+    <div class="stat"><div class="k">USD en juego</div><div class="v mono" style="color:var(--ok)">${fmtUSD(usdAbiertos)}</div></div>
+    <div class="stat"><div class="k">Kg comprometidos</div><div class="v mono">${fmtN(kg)} kg</div></div>`;
+  // chips
+  const counts={todos:PEDIDOS.length};
+  ESTADOS.forEach(e=>counts[e.k]=PEDIDOS.filter(p=>p.estado===e.k).length);
+  $("chips").innerHTML=[{k:"todos",t:"Todos"},...ESTADOS].map(e=>
+    `<div class="chip ${FILTER===e.k?'on':''}" onclick="setFilter('${e.k}')">${e.t}<span class="n">${counts[e.k]||0}</span></div>`).join("");
+  // cards
+  const list=FILTER==="todos"?PEDIDOS:PEDIDOS.filter(p=>p.estado===FILTER);
+  if(!list.length){ $("cards").innerHTML=`<div class="empty">No hay pedidos${FILTER!=='todos'?' en este estado':''}.</div>`; return; }
+  $("cards").innerHTML=list.map(card).join("");
+}
+function setFilter(k){ FILTER=k; render(); }
+
+function card(p){
+  const c=p.cliente||{}, t=p.totales||{};
+  const who=c.empresa||c.nombre||"—";
+  const sub=[c.nombre&&c.empresa?c.nombre:"", c.cuit?("CUIT "+c.cuit):"", c.tel||c.mail||""].filter(Boolean).join(" · ");
+  const items=(p.items||[]);
+  const when=new Date(p.created_at).toLocaleString("es-AR",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"});
+  const lines=items.map(it=>`
+    <div class="lrow">
+      <div><span class="ln">${esc(it.n)}</span> <span class="lo">${esc(it.origen||"")}${it.proc?" · "+esc(it.proc):""}</span></div>
+      <div class="lq">${fmtN(it.q)}×${fmtN(it.b)}kg = ${fmtN(it.kg)}kg${it.desc?` · -${it.desc}%`:""}</div>
+      <div class="lp">${fmtUSD(it.p)}/kg</div>
+    </div>`).join("");
+  const payTxt=PAYLBL(t.pay);
+  return `
+  <div class="pc ${p.estado==='cancelado'?'cancel':''}" id="pc-${p.id}">
+    <div class="pc-head" onclick="toggle('${p.id}')">
+      <svg class="caret" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
+      <span class="ref">#${esc(p.ref||(p.id||'').slice(0,8).toUpperCase())}</span>
+      <div style="min-width:0">
+        <div class="who">${esc(who)}</div>
+        <div class="sub">${esc(sub)} · ${when}</div>
+      </div>
+      <span class="spacer"></span>
+      <div class="tot">${fmtUSD(p.total_usd)}<div class="ars">${fmtARS(t.totalArs)}</div></div>
+      <span class="badge b-${p.estado}">${esc(ELABEL[p.estado]||p.estado)}</span>
+    </div>
+    <div class="pc-body">
+      <div class="lines">${lines}</div>
+      <div class="grid2">
+        <div class="kv"><div class="k">Forma de pago</div><div class="v">${esc(payTxt)}</div></div>
+        <div class="kv"><div class="k">Total kg</div><div class="v mono">${fmtN(p.kg_total)} kg</div></div>
+        <div class="kv"><div class="k">Neto sin IVA</div><div class="v mono">${fmtUSD(t.neto)}</div></div>
+        <div class="kv"><div class="k">Contacto</div><div class="v">${esc(c.tel||"")} ${c.mail?("· "+esc(c.mail)):""}</div></div>
+      </div>
+      <div class="actions">
+        <label class="lbl" style="margin:0 4px 0 0;align-self:center">Estado</label>
+        <select class="sel" onchange="changeEstado('${p.id}',this.value)">
+          ${ESTADOS.map(e=>`<option value="${e.k}" ${p.estado===e.k?'selected':''}>${e.t}</option>`).join("")}
+        </select>
+        <button class="btn primary sm" onclick="openPay('${p.id}')">💸 Generar datos de pago</button>
+        <button class="btn ghost sm" onclick="copyResumen('${p.id}')">📋 Copiar resumen</button>
+        ${c.tel?`<a class="btn ghost sm" target="_blank" href="https://wa.me/${waNum(c.tel)}">WhatsApp</a>`:""}
+      </div>
+      ${p.resumen?`<div style="margin-top:12px"><label class="lbl">Resumen del cliente</label><div class="note">${esc(p.resumen)}</div></div>`:""}
+    </div>
+  </div>`;
+}
+function PAYLBL(pay){return ({trf:"Contado/Transferencia anticipado (−2,5%)",ch30:"Cheque ≤30d",ch60:"Cheque 60d",ch90:"Cheque 90d",ch120:"Cheque 120d",ch150:"Cheque 150d",ch180:"Cheque 180d",mix:"Plazos combinados"}[pay])||pay||"—";}
+function waNum(t){return (t||"").replace(/[^0-9]/g,"");}
+function toggle(id){ $("pc-"+id).classList.toggle("open"); }
+
+async function changeEstado(id,estado){
+  try{ await sbPatch(id,{estado}); const p=PEDIDOS.find(x=>x.id===id); if(p)p.estado=estado; render(); toast("Estado → "+ELABEL[estado]); }
+  catch(e){ toast(e.message); }
+}
+
+/* ---------- CONFIG DE PAGO ---------- */
+function loadCfg(){
+  const c=JSON.parse(localStorage.getItem("finkap_pago_cfg")||"{}");
+  ["Banco","Tit","Cuit","Cbu","Alias","Usd","Nota"].forEach(k=>{ const el=$("cf"+k); if(el&&c[k]!=null)el.value=c[k]; });
+}
+function saveCfg(){
+  const c={}; ["Banco","Tit","Cuit","Cbu","Alias","Usd","Nota"].forEach(k=>c[k]=$("cf"+k).value.trim());
+  localStorage.setItem("finkap_pago_cfg",JSON.stringify(c)); toast("Datos de pago guardados");
+}
+function payText(p){
+  const c=JSON.parse(localStorage.getItem("finkap_pago_cfg")||"{}");
+  const cli=p.cliente||{};
+  const L=[];
+  L.push(`Hola${cli.nombre?" "+cli.nombre:""}, gracias por tu pedido #${p.ref}.`);
+  L.push(`Total: ${fmtUSD(p.total_usd)}${(p.totales&&p.totales.totalArs)?(" ("+fmtARS(p.totales.totalArs)+")"):""}.`);
+  L.push("");
+  L.push("Datos para la transferencia:");
+  if(c.Banco)L.push("Banco: "+c.Banco);
+  if(c.Tit)L.push("Titular: "+c.Tit);
+  if(c.Cuit)L.push("CUIT: "+c.Cuit);
+  if(c.Cbu)L.push("CBU: "+c.Cbu);
+  if(c.Alias)L.push("Alias: "+c.Alias);
+  if(c.Usd)L.push("Cuenta USD: "+c.Usd);
+  if(c.Nota){ L.push(""); L.push(c.Nota); }
+  return L.join("\n");
+}
+let payP=null;
+function openPay(id){
+  payP=PEDIDOS.find(x=>x.id===id); if(!payP)return;
+  const c=JSON.parse(localStorage.getItem("finkap_pago_cfg")||"{}");
+  if(!c.Cbu&&!c.Alias){ $("cfgBox").open=true; toast("Primero cargá tus datos de transferencia ⬆️"); $("cfBanco").focus(); return; }
+  $("payRef").textContent="#"+payP.ref;
+  const txt=payText(payP);
+  $("payBox").textContent=txt;
+  const tel=(payP.cliente||{}).tel;
+  $("payWa").href=tel?`https://wa.me/${waNum(tel)}?text=${encodeURIComponent(txt)}`:`https://wa.me/?text=${encodeURIComponent(txt)}`;
+  $("payMask").classList.add("show");
+}
+function closePay(){ $("payMask").classList.remove("show"); }
+function copyPay(){
+  navigator.clipboard.writeText(payText(payP)).then(()=>toast("Datos de pago copiados"));
+  if(payP.estado==="nuevo") changeEstado(payP.id,"datos_enviados");
+}
+function copyResumen(id){
+  const p=PEDIDOS.find(x=>x.id===id); if(!p)return;
+  navigator.clipboard.writeText(p.resumen||"").then(()=>toast("Resumen copiado"));
+}
+
+/* ---------- INIT ---------- */
+if(TOKEN){ showBoard(); } else { showLogin(); }
+</script>
+</body>
+</html>

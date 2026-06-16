@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Armá tu pedido — Finkap</title>
 <meta name="description" content="Armá tu pedido de café verde Finkap: elegí variedades, calculá descuentos por volumen, forma de pago y cotizá por WhatsApp.">
+<script src="supabase-cfg.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -217,6 +218,10 @@ select.fld{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns
 .btn.wa:hover{filter:brightness(1.07)}
 .btn.subtle{background:var(--panel3);border:1px solid var(--line2);color:var(--muted)}
 .btn.subtle:hover{color:var(--text)}
+.btn.send{background:var(--orange);color:#fff;box-shadow:0 6px 20px -6px var(--orange);font-size:15px;padding:13px 16px}
+.btn.send:hover{background:var(--orange-d)}
+.sendok{margin-top:10px;padding:12px 14px;border-radius:11px;background:rgba(70,211,154,.1);border:1px solid rgba(70,211,154,.4);color:var(--text);font-size:13px;line-height:1.5}
+.sendok b{color:var(--green)}
 .btn:disabled{opacity:.4;cursor:not-allowed;box-shadow:none}
 
 /* ---------- CALCULATOR ---------- */
@@ -507,11 +512,16 @@ select.fld{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns
         </div>
         <div style="margin-top:8px"><div class="lblup">Email</div><input id="cMail" type="email" class="fld" oninput="recalc()"></div>
         <div style="margin-top:12px"><div class="lblup">Resumen para WhatsApp</div><div class="summary" id="summary">—</div></div>
-        <div class="row2" style="margin-top:12px">
+        <button class="btn send" id="btnSend" onclick="sendPedido()" style="width:100%;margin-top:12px">
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+          Enviar pedido a Finkap
+        </button>
+        <div id="sendOk" class="sendok" style="display:none"></div>
+        <div class="row2" style="margin-top:10px">
           <button class="btn subtle" onclick="resetOrder()">Vaciar</button>
           <button class="btn wa" onclick="sendWA()">
             <svg width="17" height="17" fill="currentColor" viewBox="0 0 24 24"><path d="M17.5 14.4c-.3-.1-1.7-.8-1.9-.9-.3-.1-.5-.1-.7.1-.2.3-.7.9-.9 1.1-.2.2-.3.2-.6.1-1.6-.8-2.6-1.4-3.7-3.2-.3-.5.3-.5.8-1.5.1-.2 0-.4 0-.5 0-.1-.7-1.6-.9-2.2-.2-.6-.5-.5-.7-.5h-.6c-.2 0-.5.1-.8.4-.3.3-1 1-1 2.4s1.1 2.8 1.2 3c.1.2 2.1 3.2 5 4.5 1.8.8 2.5.8 3.4.7.5-.1 1.7-.7 1.9-1.4.2-.7.2-1.2.2-1.4-.1-.1-.3-.2-.6-.3M12 2a10 10 0 0 0-8.6 15l-1.3 4.8 4.9-1.3A10 10 0 1 0 12 2"/></svg>
-            Cotizar por WhatsApp
+            o por WhatsApp
           </button>
         </div>
         <div class="datanote">Catálogo: <b id="srcLabel">datos de ejemplo</b> · <span id="prodCount">0</span> variedades</div>
@@ -1003,7 +1013,9 @@ function recalcPay(neto, gross, kgTot){
   buildSummary({neto,ajustePct,ajusteMonto,iva,totalUsd,totalArs,pay,mixDetalle});
 }
 
+let lastTotals=null;
 function buildSummary(o){
+  lastTotals=o;
   const L=["FINKAP — Solicitud de cotización",""];
   L.push("Variedades:");
   order.forEach(it=>{ const kg=it.q*it.b,d=effDisc(it,kg);
@@ -1035,6 +1047,55 @@ function buildSummary(o){
 function sendWA(){
   if(!order.length){ toast("Agregá al menos una variedad"); return; }
   window.open("https://wa.me/"+CONFIG.WHATSAPP+"?text="+encodeURIComponent($("summary").textContent),"_blank");
+}
+
+async function sendPedido(){
+  if(!order.length){ toast("Agregá al menos una variedad"); return; }
+  const cli={
+    nombre:$("cNom").value.trim(), empresa:$("cEmp").value.trim(),
+    cuit:$("cCuit").value.trim(), tel:$("cTel").value.trim(), mail:$("cMail").value.trim()
+  };
+  if(!cli.nombre && !cli.empresa){ toast("Completá tu nombre o empresa"); $("cNom").focus(); return; }
+  if(!cli.tel && !cli.mail){ toast("Dejá un teléfono o email de contacto"); $("cTel").focus(); return; }
+  const o=lastTotals||{};
+  const items=order.map(it=>{ const kg=it.q*it.b; return {
+    n:it.n, origen:it.origen||"", proc:it.proc||"", cat:it.cat||"",
+    q:it.q, b:it.b, kg:kg, p:it.p, sca:it.sca??it.score??null, desc:+effDisc(it,kg).toFixed(2)
+  };});
+  const row={
+    estado:"nuevo",
+    cliente:cli,
+    items:items,
+    totales:{ neto:o.neto, ajustePct:o.ajustePct, ajusteMonto:o.ajusteMonto, iva:o.iva,
+              totalUsd:o.totalUsd, totalArs:o.totalArs, pay:o.pay, tc:TC, mix:o.mixDetalle||null },
+    kg_total:order.reduce((s,it)=>s+it.q*it.b,0),
+    total_usd:+(o.totalUsd||0).toFixed(2),
+    pago:o.pay||"",
+    nota_cli:"",
+    resumen:$("summary").textContent
+  };
+  const btn=$("btnSend"); btn.disabled=true; const old=btn.innerHTML; btn.textContent="Enviando…";
+  try{
+    if(!window.sbInsert) throw new Error("Sin conexión al backend");
+    const saved=await sbInsert("pedidos", row);
+    const ref=saved.ref||(saved.id||"").slice(0,8).toUpperCase();
+    const ok=$("sendOk");
+    ok.style.display="block";
+    ok.innerHTML=`✅ <b>Pedido enviado.</b> Tu código es <b>#${ref}</b>.<br>`+
+      `Te vamos a contactar con los datos de transferencia. ¿Querés avisarnos también por WhatsApp? `+
+      `<a href="https://wa.me/${CONFIG.WHATSAPP}?text=`+
+      encodeURIComponent("Hola, acabo de enviar el pedido #"+ref+" desde la web.")+
+      `" target="_blank" style="color:var(--green);font-weight:700">Avisar →</a>`;
+    ok.scrollIntoView({behavior:"smooth",block:"center"});
+    order=[]; save();
+    toast("Pedido #"+ref+" recibido");
+  }catch(e){
+    toast("No se pudo enviar — probá por WhatsApp");
+    const ok=$("sendOk"); ok.style.display="block";
+    ok.style.background="rgba(255,120,90,.1)"; ok.style.borderColor="rgba(255,120,90,.45)";
+    ok.innerHTML="No pudimos enviar el pedido automáticamente. Usá el botón de <b>WhatsApp</b> y te respondemos enseguida.";
+    console.error(e);
+  }finally{ btn.disabled=false; btn.innerHTML=old; }
 }
 
 /* ============================================================
