@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Perú · Canje Iván Mulvihill — Finkap</title>
+<meta name="robots" content="noindex,nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0d0d0f;--bg2:#131316;--panel:#17171b;--panel2:#1d1d22;--line:#2c2c33;--line2:#3a3a43;
+  --text:#f5f5f7;--muted:#9b9ba6;--muted2:#6f6f7a;--orange:#F97316;--orange-line:rgba(249,115,22,.45);--orange-soft:rgba(249,115,22,.12);
+  --ok:#46d39a;--bad:#ef5350;--blue:#5b9dff;--violet:#b58bff;--yellow:#f5b942;
+  --radius:16px;--radius-sm:10px;--mono:"JetBrains Mono",ui-monospace,monospace;--sans:"Inter",system-ui,Arial,sans-serif;
+}
+*{box-sizing:border-box}html,body{margin:0;padding:0}
+body{background:radial-gradient(1200px 600px at 85% -10%,rgba(249,115,22,.10),transparent 60%),var(--bg);color:var(--text);font-family:var(--sans);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased;letter-spacing:-.01em;min-height:100vh}
+.num,.mono,.dospuntos{font-family:var(--mono);font-variant-numeric:tabular-nums}
+a{color:inherit;text-decoration:none}
+.topbar{position:sticky;top:0;z-index:50;backdrop-filter:saturate(140%) blur(14px);background:rgba(13,13,15,.72);border-bottom:1px solid var(--line)}
+.topbar-in{max-width:1380px;margin:0 auto;padding:12px 20px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:20px;letter-spacing:-.03em}
+.brand .dot{width:30px;height:30px;border-radius:50%;border:2.5px solid var(--orange);display:grid;place-items:center;color:var(--orange);font-weight:900;font-size:16px}
+.brand sup{color:var(--orange);font-size:10px;font-weight:700}
+.back{margin-left:auto;font-size:12px;color:var(--muted);border:1px solid var(--line);border-radius:99px;padding:6px 13px}
+.back:hover{color:var(--text);border-color:var(--line2)}
+.flag{font-size:10px;font-weight:800;letter-spacing:.5px;border-radius:99px;padding:3px 10px;color:var(--violet);border:1px solid rgba(181,139,255,.4);background:rgba(181,139,255,.1)}
+.shell{max-width:1380px;margin:0 auto;padding:24px 20px 80px}
+.hero h1{font-size:clamp(24px,3.5vw,32px);font-weight:800;letter-spacing:-.03em;margin:6px 0 4px}
+.hero h1 .ac{color:var(--orange)}
+.hero p{color:var(--muted);max-width:760px;margin:0}
+.sec{margin:26px 0 12px;display:flex;align-items:center;gap:10px}
+.sec h2{font-size:13px;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);margin:0;font-weight:700}
+.sec .ln{height:1px;background:var(--line);flex:1}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-top:16px}
+.kpi{background:linear-gradient(160deg,var(--panel2),var(--panel));border:1px solid var(--line);border-radius:var(--radius);padding:14px 16px;display:flex;flex-direction:column;min-height:108px}
+.kpi .k{font-size:9px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted2);min-height:24px;line-height:1.3}
+.kpi .v{font-family:var(--mono);font-size:22px;font-weight:800;margin-top:auto;line-height:1;white-space:nowrap;letter-spacing:-.5px}
+.kpi .s{font-size:10.5px;color:var(--muted);margin-top:5px;line-height:1.2}
+.kpi.out{border-color:rgba(245,185,66,.45)}.kpi.out .v{color:var(--yellow)}
+.kpi.in{border-color:rgba(70,211,154,.45)}.kpi.in .v{color:var(--ok)}
+.kpi.bal{border-color:var(--orange-line)}.kpi.bal .v{color:var(--orange)}
+.chain{display:grid;grid-template-columns:1fr auto 1fr;gap:12px;align-items:stretch;margin-top:8px}
+@media(max-width:760px){.chain{grid-template-columns:1fr}.chain .arrow{transform:rotate(90deg);justify-self:center}}
+.node{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius-sm);padding:15px 17px}
+.node.out{border-color:rgba(245,185,66,.4)}.node.in{border-color:rgba(70,211,154,.4)}
+.node .lbl{font-size:10px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted2)}
+.node .big{font-family:var(--mono);font-size:22px;font-weight:800;margin-top:3px}
+.node.out .big{color:var(--yellow)}.node.in .big{color:var(--ok)}
+.node .sub{font-size:11.5px;color:var(--muted);margin-top:5px;line-height:1.45}
+.arrow{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;color:var(--muted2);font-size:13px}
+.arrow .bal{font-family:var(--mono);font-size:17px;font-weight:800;color:var(--orange)}
+.tbl-wrap{border:1px solid var(--line);border-radius:var(--radius);overflow-x:auto;background:var(--panel)}
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+th{text-align:left;font-size:9.5px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted2);font-weight:700;padding:11px 12px;background:var(--bg2);border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:10px 12px;border-bottom:1px solid var(--line)}tr:last-child td{border-bottom:none}tr:hover td{background:rgba(255,255,255,.015)}
+td.r,th.r{text-align:right}
+tr.tot td{font-weight:800;border-top:2px solid var(--line2);background:rgba(255,255,255,.02)}
+.note{margin-top:16px;background:linear-gradient(160deg,var(--orange-soft),transparent);border:1px solid var(--orange-line);border-radius:var(--radius);padding:16px 18px}
+.note h3{margin:0 0 5px;font-size:14px;color:var(--orange)}.note p{margin:0;color:var(--muted);font-size:12.5px;line-height:1.55}
+.cols-2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:860px){.cols-2{grid-template-columns:1fr}}
+.foot{margin-top:30px;color:var(--muted2);font-size:11px;text-align:center}
+</style>
+</head>
+<body>
+<div class="topbar"><div class="topbar-in">
+  <div class="brand"><span class="dot">F</span> Finkap <sup>canje</sup></div>
+  <span class="flag">🇵🇪 CANJE / INTERCAMBIO</span>
+  <a class="back" href="index.html">← Volver al tablero</a>
+</div></div>
+
+<div class="shell">
+  <div class="hero">
+    <h1>Perú · Canje con <span class="ac" id="socio">Iván Mulvihill</span></h1>
+    <p id="heroP"></p>
+  </div>
+
+  <div class="kpis" id="kpis"></div>
+
+  <div class="sec"><h2>El canje en una mirada</h2><div class="ln"></div></div>
+  <div class="chain" id="chain"></div>
+  <div class="note"><h3>↔ Cómo leerlo</h3><p id="noteP"></p></div>
+
+  <div class="cols-2" style="margin-top:26px">
+    <div>
+      <div class="sec" style="margin-top:0"><h2>➡ Lo que vos entregaste a Iván</h2><div class="ln"></div></div>
+      <div class="tbl-wrap"><table>
+        <thead><tr><th>Café / Origen</th><th class="r">Kg</th><th class="r">USD/kg</th><th class="r">Valor USD</th></tr></thead>
+        <tbody id="outBody"></tbody>
+      </table></div>
+    </div>
+    <div>
+      <div class="sec" style="margin-top:0"><h2>⬅ Lo que Iván te entregó (Perú)</h2><div class="ln"></div></div>
+      <div class="tbl-wrap"><table>
+        <thead><tr><th>Café</th><th class="r">Bolsas</th><th class="r">Kg</th><th class="r">USD/kg</th><th class="r">Valor USD</th></tr></thead>
+        <tbody id="inBody"></tbody>
+      </table></div>
+    </div>
+  </div>
+
+  <div style="text-align:center;margin-top:34px"><a href="index.html" style="display:inline-block;font-weight:700;font-size:14px;color:var(--orange);border:1px solid var(--orange-line);background:var(--orange-soft);border-radius:99px;padding:11px 24px">← Volver al menú principal</a></div>
+  <div class="foot" id="foot"></div>
+</div>
+
+<script>(function(){try{var d=JSON.parse(sessionStorage.getItem('finkap_impo_v1'));if(d){window.FINKAP_IMPO=d;return;}}catch(e){}location.replace('entrar.html');})();</script>
+<script>
+(function(){
+  const C = (window.FINKAP_IMPO||{}).canje;
+  if(!C){ document.getElementById("heroP").textContent="No se encontraron datos del canje."; return; }
+  const usd = n => n==null?"—":n.toLocaleString("es-AR",{minimumFractionDigits:2,maximumFractionDigits:2});
+  const kg  = n => n==null?"—":n.toLocaleString("es-AR");
+  const saldo = C.entregamos.valor - C.recibimos.valor;
+  const aFavor = saldo>=0;
+
+  document.getElementById("socio").textContent = C.socio;
+  document.getElementById("heroP").textContent = C.nota;
+
+  const kpis = [
+    {k:"Le entregaste a Iván", v:"US$ "+usd(C.entregamos.valor), s:kg(C.entregamos.kg)+" kg", cls:"out"},
+    {k:"Iván te entregó", v:"US$ "+usd(C.recibimos.valor), s:kg(C.recibimos.kg)+" kg · "+C.recibimos.bolsas+" bolsas", cls:"in"},
+    {k:(aFavor?"Saldo a TU favor":"Saldo a favor de Iván"), v:"US$ "+usd(Math.abs(saldo)), s:(aFavor?"Iván te debe en café":"le debés en café"), cls:"bal"}
+  ];
+  document.getElementById("kpis").innerHTML = kpis.map(x=>
+    `<div class="kpi ${x.cls||''}"><div class="k">${x.k}</div><div class="v">${x.v}</div><div class="s">${x.s}</div></div>`).join("");
+
+  document.getElementById("chain").innerHTML =
+    `<div class="node out"><div class="lbl">Vos → Iván</div><div class="big">US$ ${usd(C.entregamos.valor)}</div><div class="sub">${kg(C.entregamos.kg)} kg de tu café (Honduras, Brasil, Moka, Bolivia).</div></div>`+
+    `<div class="arrow"><div>saldo</div><div class="bal">US$ ${usd(Math.abs(saldo))}</div><div>${aFavor?'a tu favor':'a favor de Iván'}</div></div>`+
+    `<div class="node in"><div class="lbl">Iván → Vos</div><div class="big">US$ ${usd(C.recibimos.valor)}</div><div class="sub">${kg(C.recibimos.kg)} kg de café peruano (${C.recibimos.bolsas} bolsas).</div></div>`;
+
+  document.getElementById("noteP").innerHTML = `Es un <b>trueque medido en USD</b>: no hay plata de por medio, se compensa por valor de café. Entregaste <b style="color:var(--yellow)">US$ ${usd(C.entregamos.valor)}</b> y recibiste <b style="color:var(--ok)">US$ ${usd(C.recibimos.valor)}</b> → <b style="color:var(--orange)">${aFavor?'Iván te debe US$ '+usd(Math.abs(saldo))+' en café peruano':'le debés US$ '+usd(Math.abs(saldo))}</b>. El café Honduras se revalorizó a USD 13/kg.`;
+
+  document.getElementById("outBody").innerHTML = C.entregamos.items.map(o=>
+    `<tr><td><b>${o.item}</b></td><td class="r dospuntos">${kg(o.kg)}</td><td class="r dospuntos">${usd(o.usdKg)}</td><td class="r dospuntos">${usd(o.valor)}</td></tr>`).join("")+
+    `<tr class="tot"><td>TOTAL</td><td class="r dospuntos">${kg(C.entregamos.kg)}</td><td class="r dospuntos">${usd(C.entregamos.valor/C.entregamos.kg)}</td><td class="r dospuntos">${usd(C.entregamos.valor)}</td></tr>`;
+
+  document.getElementById("inBody").innerHTML = C.recibimos.items.map(o=>
+    `<tr><td><b>${o.item}</b></td><td class="r dospuntos">${o.bolsas}</td><td class="r dospuntos">${kg(o.kg)}</td><td class="r dospuntos">${o.kg?usd(o.valor/o.kg):'—'}</td><td class="r dospuntos">${usd(o.valor)}</td></tr>`).join("")+
+    `<tr class="tot"><td>TOTAL</td><td class="r dospuntos">${C.recibimos.bolsas}</td><td class="r dospuntos">${kg(C.recibimos.kg)}</td><td class="r dospuntos">${usd(C.recibimos.valor/C.recibimos.kg)}</td><td class="r dospuntos">${usd(C.recibimos.valor)}</td></tr>`;
+
+  document.getElementById("foot").textContent = "Canje con "+C.socio+" ("+C.pais+") · café peruano (variedades Penguin) a cambio de tu café de otros orígenes.";
+})();
+</script>
+</body>
+</html>

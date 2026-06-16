@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Colombia · Harmony — Finkap</title>
+<meta name="robots" content="noindex,nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0d0d0f;--bg2:#131316;--panel:#17171b;--panel2:#1d1d22;--line:#2c2c33;--line2:#3a3a43;
+  --text:#f5f5f7;--muted:#9b9ba6;--muted2:#6f6f7a;--orange:#F97316;--orange-line:rgba(249,115,22,.45);--orange-soft:rgba(249,115,22,.12);
+  --green:#25D366;--ok:#46d39a;--bad:#ef5350;--blue:#5b9dff;--violet:#b58bff;--yellow:#f5b942;
+  --radius:16px;--radius-sm:10px;--mono:"JetBrains Mono",ui-monospace,monospace;--sans:"Inter",system-ui,Arial,sans-serif;
+}
+*{box-sizing:border-box}html,body{margin:0;padding:0}
+body{background:radial-gradient(1200px 600px at 85% -10%,rgba(249,115,22,.10),transparent 60%),var(--bg);color:var(--text);font-family:var(--sans);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased;letter-spacing:-.01em;min-height:100vh}
+.num,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+a{color:inherit;text-decoration:none}
+.topbar{position:sticky;top:0;z-index:50;backdrop-filter:saturate(140%) blur(14px);background:rgba(13,13,15,.72);border-bottom:1px solid var(--line)}
+.topbar-in{max-width:1380px;margin:0 auto;padding:12px 20px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:20px;letter-spacing:-.03em}
+.brand .dot{width:30px;height:30px;border-radius:50%;border:2.5px solid var(--orange);display:grid;place-items:center;color:var(--orange);font-weight:900;font-size:16px}
+.brand sup{color:var(--orange);font-size:10px;font-weight:700}
+.back{margin-left:auto;font-size:12px;color:var(--muted);border:1px solid var(--line);border-radius:99px;padding:6px 13px}
+.back:hover{color:var(--text);border-color:var(--line2)}
+.flag{font-size:10px;font-weight:800;letter-spacing:.5px;border-radius:99px;padding:3px 10px;color:var(--yellow);border:1px solid rgba(245,185,66,.4);background:rgba(245,185,66,.1)}
+.shell{max-width:1380px;margin:0 auto;padding:24px 20px 80px}
+.hero h1{font-size:clamp(24px,3.5vw,32px);font-weight:800;letter-spacing:-.03em;margin:6px 0 4px}
+.hero h1 .ac{color:var(--orange)}
+.hero p{color:var(--muted);max-width:760px;margin:0}
+.sec{margin:26px 0 12px;display:flex;align-items:center;gap:10px}
+.sec h2{font-size:13px;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);margin:0;font-weight:700}
+.sec .ln{height:1px;background:var(--line);flex:1}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(165px,1fr));gap:12px;margin-top:16px}
+.kpi{background:linear-gradient(160deg,var(--panel2),var(--panel));border:1px solid var(--line);border-radius:var(--radius);padding:14px 16px;display:flex;flex-direction:column;min-height:108px}
+.kpi .k{font-size:9px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted2);min-height:24px;line-height:1.3}
+.kpi .v{font-family:var(--mono);font-size:22px;font-weight:800;margin-top:auto;line-height:1;white-space:nowrap;letter-spacing:-.5px}
+.kpi .s{font-size:10.5px;color:var(--muted);margin-top:5px;line-height:1.2}
+.kpi.accent{border-color:var(--orange-line)}.kpi.accent .v{color:var(--orange)}
+.kpi.bad{border-color:rgba(239,83,80,.45)}.kpi.bad .v{color:var(--bad)}
+.kpi.blue{border-color:rgba(91,157,255,.45)}.kpi.blue .v{color:var(--blue)}
+/* cadena del negocio */
+.chain{display:grid;grid-template-columns:1fr auto 1fr auto 1fr;gap:10px;align-items:stretch;margin-top:8px}
+@media(max-width:820px){.chain{grid-template-columns:1fr}.chain .arrow{transform:rotate(90deg);justify-self:center}}
+.node{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius-sm);padding:14px 16px}
+.node.fob{border-color:rgba(70,211,154,.4)}.node.harmony{border-color:rgba(245,185,66,.4)}.node.you{border-color:var(--orange-line)}
+.node .lbl{font-size:10px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted2)}
+.node .big{font-family:var(--mono);font-size:20px;font-weight:800;margin-top:3px}
+.node.fob .big{color:var(--ok)}.node.harmony .big{color:var(--yellow)}.node.you .big{color:var(--orange)}
+.node .sub{font-size:11px;color:var(--muted);margin-top:4px;line-height:1.4}
+.arrow{display:flex;align-items:center;color:var(--muted2);font-size:22px;font-weight:800}
+.tbl-wrap{border:1px solid var(--line);border-radius:var(--radius);overflow-x:auto;background:var(--panel)}
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+th{text-align:left;font-size:9.5px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted2);font-weight:700;padding:11px 12px;background:var(--bg2);border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:10px 12px;border-bottom:1px solid var(--line)}tr:last-child td{border-bottom:none}tr:hover td{background:rgba(255,255,255,.015)}
+td.r,th.r{text-align:right}
+.tag{display:inline-block;font-size:9.5px;font-weight:700;border-radius:99px;padding:2px 8px}
+.tag.fact{color:var(--ok);border:1px solid rgba(70,211,154,.4);background:rgba(70,211,154,.1)}
+.tag.pend{color:var(--yellow);border:1px solid rgba(245,185,66,.4);background:rgba(245,185,66,.1)}
+.tag.nd{color:var(--bad);border:1px solid rgba(239,83,80,.4);background:rgba(239,83,80,.1)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius-sm);padding:13px 15px}
+.card .nom{font-weight:700;font-size:13px}
+.card .kg{font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:3px}
+.card .pr{font-family:var(--mono);font-size:16px;font-weight:800;color:var(--ok);margin-top:6px}
+.note{margin-top:16px;background:linear-gradient(160deg,var(--orange-soft),transparent);border:1px solid var(--orange-line);border-radius:var(--radius);padding:16px 18px}
+.note h3{margin:0 0 5px;font-size:14px;color:var(--orange)}.note p{margin:0;color:var(--muted);font-size:12.5px;line-height:1.55}
+.foot{margin-top:30px;color:var(--muted2);font-size:11px;text-align:center}
+.dospuntos{font-family:var(--mono)}
+</style>
+</head>
+<body>
+<div class="topbar"><div class="topbar-in">
+  <div class="brand"><span class="dot">F</span> Finkap <sup>colombia</sup></div>
+  <span class="flag">🇨🇴 COMPRA LOCAL FINANCIADA</span>
+  <a class="back" href="index.html">← Volver al tablero</a>
+</div></div>
+
+<div class="shell">
+  <div class="hero">
+    <h1>Colombia · <span class="ac">Harmony</span></h1>
+    <p id="heroP"></p>
+  </div>
+
+  <div class="kpis" id="kpis"></div>
+
+  <div class="sec"><h2>El negocio en una mirada</h2><div class="ln"></div></div>
+  <div class="chain" id="chain"></div>
+  <div class="note"><h3>↔ Cómo leerlo</h3><p id="noteP"></p></div>
+
+  <div class="sec"><h2>Mercadería por variedad (FOB origen · Growth Haus)</h2><div class="ln"></div></div>
+  <div class="grid" id="variedades"></div>
+
+  <div class="sec"><h2>Etapas de retiro</h2><div class="ln"></div><span class="cnt" id="retCnt" style="font-size:11px;color:var(--muted2);font-family:var(--mono)"></span></div>
+  <div class="tbl-wrap"><table>
+    <thead><tr><th>Etapa</th><th>Ref</th><th class="r">Kg</th><th>Estado</th></tr></thead>
+    <tbody id="retBody"></tbody>
+  </table></div>
+
+  <div class="sec"><h2>Facturas Harmony (pago en $ · medido en USD)</h2><div class="ln"></div></div>
+  <div class="tbl-wrap"><table>
+    <thead><tr>
+      <th>Comprobante</th><th>Fecha</th><th>Venc.</th><th class="r">Kg</th><th class="r">TC</th>
+      <th class="r">Total $ ARS</th><th class="r">USD (s/IVA)</th><th class="r">USD/kg</th>
+    </tr></thead>
+    <tbody id="facBody"></tbody>
+  </table></div>
+
+  <div style="text-align:center;margin-top:34px"><a href="index.html" style="display:inline-block;font-weight:700;font-size:14px;color:var(--orange);border:1px solid var(--orange-line);background:var(--orange-soft);border-radius:99px;padding:11px 24px">← Volver al menú principal</a></div>
+  <div class="foot" id="foot"></div>
+</div>
+
+<script>(function(){try{var d=JSON.parse(sessionStorage.getItem('finkap_impo_v1'));if(d){window.FINKAP_IMPO=d;return;}}catch(e){}location.replace('entrar.html');})();</script>
+<script>
+(function(){
+  const C = (window.FINKAP_IMPO||{}).colombia;
+  if(!C){ document.getElementById("heroP").textContent="No se encontraron datos de Colombia."; return; }
+  const usd = n => n==null?"—":n.toLocaleString("es-AR",{minimumFractionDigits:2,maximumFractionDigits:2});
+  const ars = n => n==null?"—":n.toLocaleString("es-AR",{maximumFractionDigits:0});
+  const kg  = n => n==null?"—":n.toLocaleString("es-AR");
+  const fecha = s => s==null?"—":s.split("-").reverse().join("/");
+
+  const fobKg = C.origen.fobKg, fobTotal = C.origen.fobUsd, kgTotal = C.origen.kg;
+  const facReales = C.facturas.filter(f=>f.kg>0);
+  const kgFact = facReales.reduce((s,f)=>s+f.kg,0);
+  const usdFact = facReales.reduce((s,f)=>s+f.usdEq,0);
+  const harmonyKg = usdFact/kgFact;
+  const recargo = (harmonyKg/fobKg-1)*100;
+  const nd = C.facturas.filter(f=>f.kg===0).reduce((s,f)=>s+f.usdEq,0);
+  const costoDeMas = (harmonyKg-fobKg)*kgFact + nd;
+  const kgPend = kgTotal - kgFact;
+  const arsTotal = C.facturas.reduce((s,f)=>s+f.totalArs,0);
+
+  document.getElementById("heroP").textContent =
+    "Growth Haus (Colombia) vendió a Harmony, que importó, nacionalizó y te revende en pesos financiado. "+C.condicion;
+
+  const kpis = [
+    {k:"FOB origen (Growth Haus)", v:"US$ "+usd(fobTotal), s:kg(kgTotal)+" kg · "+usd(fobKg)+"/kg"},
+    {k:"Recargo Harmony", v:"+"+recargo.toFixed(1)+"%", s:"vs FOB ("+usd(harmonyKg)+" US$/kg)", cls:"accent"},
+    {k:"Facturado a vos", v:"US$ "+usd(usdFact), s:kg(kgFact)+" kg (s/IVA) · $"+ars(arsTotal)},
+    {k:"Costo de más (recargo+int.)", v:"US$ "+usd(costoDeMas), s:"lo que pagaste extra vs FOB", cls:"bad"},
+    {k:"Mercadería pendiente", v:kg(kgPend)+" kg", s:"a retirar en 3 etapas / 55 días", cls:"blue"}
+  ];
+  document.getElementById("kpis").innerHTML = kpis.map(x=>
+    `<div class="kpi ${x.cls||''}"><div class="k">${x.k}</div><div class="v">${x.v}</div><div class="s">${x.s}</div></div>`).join("");
+
+  document.getElementById("chain").innerHTML =
+    `<div class="node fob"><div class="lbl">1 · Origen — Growth Haus 🇨🇴</div><div class="big">US$ ${usd(fobKg)}/kg</div><div class="sub">FOB Cartagena · ${kg(kgTotal)} kg · US$ ${usd(fobTotal)}. El café real.</div></div>`+
+    `<div class="arrow">→</div>`+
+    `<div class="node harmony"><div class="lbl">2 · Harmony importa + revende</div><div class="big">US$ ${usd(harmonyKg)}/kg</div><div class="sub">Pagó el café, nacionalizó y te lo vende financiado. Recargo <b>+${recargo.toFixed(1)}%</b> (markup + costo financiero).</div></div>`+
+    `<div class="arrow">→</div>`+
+    `<div class="node you"><div class="lbl">3 · Vos pagás (en $ pesos)</div><div class="big">+US$ ${usd(costoDeMas)}</div><div class="sub">Cancelás en pesos a TC factura. El sobrecosto financiero se lo quedó Harmony.</div></div>`;
+
+  document.getElementById("noteP").innerHTML = C.nota;
+
+  document.getElementById("variedades").innerHTML = C.origen.variedades.map(v=>
+    `<div class="card"><div class="nom">${v.nombre}</div><div class="kg">${kg(v.kg)} kg · US$ ${usd(v.usd)}</div><div class="pr">US$ ${usd(v.usdKg)} <span style="font-size:11px;color:var(--muted);font-weight:400">/kg FOB</span></div></div>`).join("");
+
+  document.getElementById("retCnt").textContent = kg(kgFact)+" facturados · "+kg(kgPend)+" pendientes";
+  document.getElementById("retBody").innerHTML = C.retiros.map(r=>
+    `<tr><td><b>${r.etapa}</b></td><td>${r.ref}</td><td class="r dospuntos">${kg(r.kg)}</td>`+
+    `<td><span class="tag ${r.estado==='facturado'?'fact':'pend'}">${r.estado}</span></td></tr>`).join("");
+
+  document.getElementById("facBody").innerHTML = C.facturas.map(f=>{
+    const esND = f.kg===0;
+    return `<tr><td>${f.tipo} ${f.nro}${esND?'<br><span style="font-size:10px;color:var(--muted)">'+(f.concepto||'')+'</span>':''}</td>`+
+      `<td>${fecha(f.fecha)}</td><td>${fecha(f.venc)}</td>`+
+      `<td class="r dospuntos">${esND?'—':kg(f.kg)}</td>`+
+      `<td class="r dospuntos">${ars(f.tc)}</td>`+
+      `<td class="r dospuntos">$${ars(f.totalArs)}</td>`+
+      `<td class="r dospuntos">${usd(f.usdEq)}</td>`+
+      `<td class="r dospuntos">${f.usdKg?usd(f.usdKg):'<span class="tag nd">interés</span>'}</td></tr>`;
+  }).join("");
+
+  document.getElementById("foot").textContent = "Importador: "+C.importador+" · Faltan cargar cheques y costo financiero en pesos para el resultado final.";
+})();
+</script>
+</body>
+</html>

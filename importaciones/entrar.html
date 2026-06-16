@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Torre de Control — acceso</title>
+<meta name="robots" content="noindex,nofollow">
+<style>
+body{margin:0;background:#0d0d0f;color:#f5f5f7;font-family:Inter,system-ui,-apple-system,sans-serif;min-height:100vh;display:grid;place-items:center;padding:20px}
+.card{width:320px;max-width:90vw;text-align:center}
+.dot{width:46px;height:46px;border-radius:50%;border:2.5px solid #F97316;display:grid;place-items:center;color:#F97316;font-weight:900;font-size:22px;margin:0 auto 16px}
+h1{font-weight:800;font-size:18px;margin:0 0 4px}
+p{color:#9b9ba6;font-size:12px;margin:0 0 16px;line-height:1.5}
+input{width:100%;padding:11px 12px;border-radius:10px;border:1px solid #3a3a43;background:#222228;color:#f5f5f7;font-size:14px;outline:none;font-family:inherit;margin-bottom:8px}
+input:focus{border-color:rgba(249,115,22,.45)}
+.err{color:#ef5350;font-size:12px;min-height:16px;margin-bottom:8px}
+button{width:100%;padding:11px;border-radius:10px;border:none;background:#F97316;color:#fff;font-weight:700;font-size:14px;cursor:pointer;font-family:inherit}
+button:disabled{opacity:.5}
+.back{display:inline-block;margin-top:14px;color:#9b9ba6;font-size:12px;text-decoration:none}
+.lock{font-size:9px;text-transform:uppercase;letter-spacing:.6px;color:#46d39a;margin-top:12px}
+</style>
+</head>
+<body>
+  <div class="card">
+    <div class="dot">f</div>
+    <h1>Torre de Control</h1>
+    <p>Datos cifrados. Ingresá la clave del equipo para descifrar.</p>
+    <input id="pw" type="password" autocomplete="current-password" placeholder="Clave">
+    <div class="err" id="err"></div>
+    <button id="go">Entrar</button>
+    <div class="lock">🔒 Cifrado AES — sin la clave, ilegible</div>
+    <a class="back" href="../inicio.html">← Volver al inicio</a>
+  </div>
+<script src="data.enc.js"></script>
+<script src="../finkap-cripto.js"></script>
+<script>
+const $=id=>document.getElementById(id);
+const KEY='finkap_impo_v1';
+// si ya hay datos descifrados en esta sesión, entrar directo
+try{ if(JSON.parse(sessionStorage.getItem(KEY))) location.replace('index.html'); }catch(e){}
+
+async function go(){
+  $('err').textContent=''; $('go').disabled=true; $('go').textContent='Descifrando…';
+  try{
+    if(!window.FINKAP_IMPO_ENC) throw new Error('Faltan los datos cifrados (data.enc.js).');
+    const data = await finkapDecrypt(window.FINKAP_IMPO_ENC, $('pw').value);
+    sessionStorage.setItem(KEY, JSON.stringify(data));
+    location.replace('index.html');
+  }catch(e){
+    $('err').textContent = 'Clave incorrecta.';
+    $('go').disabled=false; $('go').textContent='Entrar'; $('pw').value=''; $('pw').focus();
+  }
+}
+$('go').addEventListener('click', go);
+$('pw').addEventListener('keydown', e=>{ if(e.key==='Enter') go(); });
+$('pw').focus();
+</script>
+</body>
+</html>
