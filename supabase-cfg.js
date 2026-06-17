@@ -8,18 +8,20 @@ window.FINKAP_SB = {
   key: "sb_publishable_XjtdOaGjHtpaeopBPWLtPw_vjiw5vZB"
 };
 
-/* Cliente REST minimalista (sin SDK, sin build) ------------- */
-window.sbInsert = async function(table, row){
-  const r = await fetch(`${FINKAP_SB.url}/rest/v1/${table}`, {
+/* Cliente REST minimalista (sin SDK, sin build) -------------
+   El público NO inserta directo en la tabla (RLS lo bloquea):
+   crea pedidos vía la función controlada crear_pedido(), que
+   fuerza estado='nuevo' y devuelve el código de pedido. */
+window.sbRpc = async function(fn, args){
+  const r = await fetch(`${FINKAP_SB.url}/rest/v1/rpc/${fn}`, {
     method:"POST",
     headers:{
       "apikey":FINKAP_SB.key,
       "Authorization":"Bearer "+FINKAP_SB.key,
-      "Content-Type":"application/json",
-      "Prefer":"return=representation"
+      "Content-Type":"application/json"
     },
-    body: JSON.stringify(row)
+    body: JSON.stringify(args||{})
   });
   if(!r.ok){ throw new Error("Supabase "+r.status+": "+await r.text()); }
-  return (await r.json())[0];
+  return r.json();
 };

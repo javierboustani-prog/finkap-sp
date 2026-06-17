@@ -1076,9 +1076,8 @@ async function sendPedido(){
   };
   const btn=$("btnSend"); btn.disabled=true; const old=btn.innerHTML; btn.textContent="Enviando…";
   try{
-    if(!window.sbInsert) throw new Error("Sin conexión al backend");
-    const saved=await sbInsert("pedidos", row);
-    const ref=saved.ref||(saved.id||"").slice(0,8).toUpperCase();
+    if(!window.sbRpc) throw new Error("Sin conexión al backend");
+    const ref=await sbRpc("crear_pedido", {p: row});
     const ok=$("sendOk");
     ok.style.display="block";
     ok.innerHTML=`✅ <b>Pedido enviado.</b> Tu código es <b>#${ref}</b>.<br>`+
