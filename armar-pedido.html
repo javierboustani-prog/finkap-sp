@@ -149,9 +149,10 @@ button{font-family:inherit}
 .pcard.added{border-color:var(--orange);box-shadow:0 0 0 1px var(--orange) inset}
 .pcard.off{opacity:.5;filter:grayscale(.4);cursor:not-allowed}
 .pcard.off:hover{transform:none;border-color:var(--line);box-shadow:none}
-.pthumb{position:relative;height:158px;background:radial-gradient(120% 120% at 50% 0%, #2a1d12, #15110d 75%);display:grid;place-items:center;overflow:hidden}
-.pthumb img{width:100%;height:100%;object-fit:contain;padding:8px;filter:drop-shadow(0 6px 14px rgba(0,0,0,.5))}
-.pthumb .bean{opacity:.5}
+.pthumb{position:relative;height:190px;background:radial-gradient(120% 120% at 50% 0%, #2a1d12, #15110d 75%);display:grid;place-items:center;overflow:hidden}
+.pthumb .thumbbg{position:absolute;inset:0;background-size:cover;background-position:center;filter:blur(22px) brightness(.42) saturate(1.15);transform:scale(1.18);z-index:0}
+.pthumb img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;padding:12px;z-index:1;filter:drop-shadow(0 8px 20px rgba(0,0,0,.6))}
+.pthumb .bean{opacity:.5;z-index:1}
 .pthumb .origin-watermark{position:absolute;bottom:6px;right:10px;font-size:11px;font-weight:800;letter-spacing:.5px;color:rgba(255,255,255,.22);text-transform:uppercase}
 .pbadges{position:absolute;top:8px;left:8px;display:flex;gap:5px;flex-wrap:wrap;z-index:2}
 .badge{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;padding:3px 7px;border-radius:99px;backdrop-filter:blur(6px)}
@@ -298,7 +299,7 @@ select.fld{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns
 @media(max-width:560px){
   .hero h1{font-size:24px}
   .grid{grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
-  .pthumb{height:132px}
+  .pthumb{height:168px}
   .row2{grid-template-columns:1fr}
 }
 .spin{width:34px;height:34px;border:3px solid var(--line2);border-top-color:var(--orange);border-radius:50%;animation:sp 1s linear infinite;margin:40px auto}
@@ -824,7 +825,7 @@ function catClass(c){ const m={"Especialidad":"especialidad","Exótico":"exotico
 const BEAN = '<svg class="bean" width="46" height="46" viewBox="0 0 24 24" fill="none" stroke="#F97316" stroke-width="1.4"><path d="M5 5c6 0 14 8 14 14C13 19 5 11 5 5Z"/><path d="M7.5 7.5C10 10 14 14 16.5 16.5"/></svg>';
 
 function thumbHtml(p){
-  if(p.foto) return `<img src="${p.foto}" alt="${esc(p.n)}" loading="lazy" onerror="this.style.display='none';this.parentNode.classList.add('nofoto')">`;
+  if(p.foto) return `<div class="thumbbg" style="background-image:url('${p.foto}')"></div><img src="${p.foto}" alt="${esc(p.n)}" loading="lazy" onerror="this.style.display='none';this.parentNode.classList.add('nofoto')">`;
   return BEAN + `<span class="origin-watermark">${esc(p.origen)}</span>`;
 }
 function scaHtml(p){
