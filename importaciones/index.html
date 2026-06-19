@@ -145,6 +145,23 @@ td.r,th.r{text-align:right}
 .banco li{font-size:12px;color:var(--text);padding:5px 0 5px 22px;position:relative;border-top:1px dashed var(--line)}
 .banco li:before{content:"";position:absolute;left:2px;top:10px;width:11px;height:11px;border:1.5px solid var(--line2);border-radius:3px}
 
+/* transferencias en curso */
+.trf{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:16px 18px}
+.trf.frenada{border-color:var(--warn-line);background:linear-gradient(160deg,var(--warn-soft),var(--panel))}
+.trf.lista{border-color:rgba(70,211,154,.4)}
+.trf .th{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.trf .nm{font-weight:800;font-size:16px}
+.trf .sub{color:var(--muted);font-size:11px;margin-top:2px;line-height:1.4}
+.trf .det{color:var(--muted2);font-size:10.5px;margin-top:6px;line-height:1.45;font-family:var(--mono)}
+.trf .amt{font-family:var(--mono);font-size:21px;font-weight:800;color:var(--orange);white-space:nowrap;letter-spacing:-.5px}
+.trf ul{list-style:none;margin:12px 0 0;padding:0}
+.trf li{font-size:12px;padding:7px 0 7px 24px;position:relative;border-top:1px dashed var(--line);line-height:1.4}
+.trf li .ic{position:absolute;left:1px;top:7px;font-size:12px;font-weight:800}
+.trf li.ok .ic{color:var(--ok)}
+.trf li.pend .ic{color:var(--warn)}
+.trf li .lnote{display:block;color:var(--muted2);font-size:11px;margin-top:2px}
+.trf .miss{margin-top:12px;font-size:12px;background:rgba(245,185,66,.10);border:1px solid var(--warn-line);border-radius:8px;padding:8px 11px;color:var(--text)}
+.trf .miss b{color:var(--warn)}
 .note{margin-top:26px;background:linear-gradient(160deg,var(--orange-soft),transparent);border:1px solid var(--orange-line);border-radius:var(--radius);padding:16px 18px}
 .note h3{margin:0 0 5px;font-size:14px;color:var(--orange)}
 .note p{margin:0;color:var(--muted);font-size:12.5px;line-height:1.55}
@@ -184,6 +201,9 @@ td.r,th.r{text-align:right}
 
   <div class="sec"><h2>Alertas</h2><div class="ln"></div></div>
   <div class="alertas" id="alertas"></div>
+
+  <div class="sec"><h2>Transferencias al exterior · en curso</h2><div class="ln"></div><span class="cnt" id="transfCnt"></span></div>
+  <div class="grid" id="transferencias"></div>
 
   <div class="sec"><h2>Proveedores por origen</h2><div class="ln"></div><span class="cnt" id="provCnt"></span></div>
   <div class="grid" id="proveedores"></div>
@@ -272,6 +292,26 @@ td.r,th.r{text-align:right}
     `<div class="al ${a.nivel}"><div class="t">${a.nivel==='danger'?'⛔':'⚠️'} ${a.titulo}</div>`+
     `<div class="d">${a.detalle}</div>`+
     (a.accion?`<div class="a"><b>Acción →</b> ${a.accion}</div>`:``)+`</div>`).join("");
+
+  // transferencias en curso
+  if(D.transferencias && D.transferencias.length){
+    const stTag={lista:'<span class="tag ok">✓ lista para presentar</span>',frenada:'<span class="tag pend">⚠ frenada</span>',girada:'<span class="tag ok">✓ girada</span>'};
+    document.getElementById("transfCnt").textContent = D.transferencias.length+" en gestión";
+    document.getElementById("transferencias").innerHTML = D.transferencias.map(t=>{
+      const items = (t.checklist||[]).map(c=>
+        `<li class="${c.estado==='ok'?'ok':'pend'}"><span class="ic">${c.estado==='ok'?'✓':'⚠'}</span>${c.item}`+
+        (c.nota?`<span class="lnote">${c.nota}</span>`:'')+`</li>`).join("");
+      return `<div class="trf ${t.estado}"><div class="th"><div>`+
+        `<div class="nm">${t.proveedor}</div>`+
+        `<div class="sub">${t.pais} · ${t.banco} · ${t.operacion}</div>`+
+        (t.detalle?`<div class="det">${t.detalle}</div>`:'')+
+        `</div><div style="text-align:right"><div class="amt">$${usd(t.monto)}</div>`+
+        `<div style="margin-top:5px">${stTag[t.estado]||''}</div></div></div>`+
+        `<ul>${items}</ul>`+
+        (t.faltante?`<div class="miss"><b>Falta →</b> ${t.faltante}</div>`:'')+
+        `</div>`;
+    }).join("");
+  }
 
   // proveedores
   document.getElementById("provCnt").textContent = D.proveedores.filter(p=>p.activo).length+" activos";
