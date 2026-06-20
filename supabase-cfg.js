@@ -25,3 +25,19 @@ window.sbRpc = async function(fn, args){
   if(!r.ok){ throw new Error("Supabase "+r.status+": "+await r.text()); }
   return r.json();
 };
+
+/* Subir un archivo (foto de grano) al banco de imágenes (Storage).
+   El bucket es privado: el público sube pero no lista/lee las demás. */
+window.sbUpload = async function(bucket, path, file){
+  const r = await fetch(`${FINKAP_SB.url}/storage/v1/object/${bucket}/${path}`, {
+    method:"POST",
+    headers:{
+      "apikey":FINKAP_SB.key,
+      "Authorization":"Bearer "+FINKAP_SB.key,
+      "Content-Type": file.type || "application/octet-stream"
+    },
+    body: file
+  });
+  if(!r.ok){ throw new Error("Storage "+r.status+": "+await r.text()); }
+  return r.json(); // { Key, Id }
+};

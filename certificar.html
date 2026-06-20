@@ -7,6 +7,7 @@
 <meta name="description" content="Pre-certificación automática de café verde Finkap: subí la foto del grano y la ficha, el motor evalúa viabilidad y publica el contrato provisorio, sujeto a validación física al arribo.">
 <meta name="robots" content="noindex,nofollow">
 <script src="gate.js"></script>
+<script src="supabase-cfg.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -272,6 +273,7 @@ const tierDe = s => s>=88 ? 'exotico' : s>=84 ? 'especialidad' : 'regional';
 const TIER_LBL = { regional:'Regional', especialidad:'Especialidad', exotico:'Exótico' };
 
 let visual = null;           // observación automática de la foto
+let fotoFile = null;         // archivo real de la foto (para subir al banco)
 let ultimo = null;           // último cómputo viable (para publicar)
 
 /* ---- análisis automático de la foto (en el navegador, sin subirla) ---- */
@@ -293,6 +295,7 @@ function analizarImagen(img){
 
 $('foto').addEventListener('change', e=>{
   const f=e.target.files[0]; if(!f) return;
+  fotoFile=f;
   const img=new Image();
   img.onload=()=>{
     $('preview').src=img.src; $('preview').style.display='block';
@@ -389,7 +392,7 @@ function evaluar(){
     $('cTier').textContent=TIER_LBL[tier];
     $('cPrecio').textContent=usd(precio)+' /kg';
     renderLiq(inp, tier, score, precio);
-    ultimo={ inp, nivel:r.nivel, score, tier, precio, conf:r.confianza };
+    ultimo={ inp, nivel:r.nivel, score, tier, precio, conf:r.confianza, motivo:r.motivo };
     $('ctrCard').style.display='block';
     $('publicar').disabled=false;
     $('seal').style.display='none';
@@ -428,7 +431,7 @@ function hash(str){ let h=0; for(let i=0;i<str.length;i++){ h=(Math.imul(31,h)+s
 const KEY='finkap_contratos_prov_v1';
 const load = () => { try{ return JSON.parse(localStorage.getItem(KEY)||'[]'); }catch(e){ return []; } };
 
-$('publicar').addEventListener('click', ()=>{
+$('publicar').addEventListener('click', async ()=>{
   if(!ultimo) return;
   const snap={
     origen:ultimo.inp.ficha.origen, proceso:ultimo.inp.ficha.proceso,
@@ -446,6 +449,28 @@ $('publicar').addEventListener('click', ()=>{
   $('seal').innerHTML=`Sellado · <b>#${sello}</b> · ${ultimo.tier} ${ultimo.score.toFixed(2)} · ${usd(ultimo.precio)}/kg<br><span style="color:var(--muted2)">online · negociable · sujeto a validación física</span>`;
   $('publicar').disabled=true;
   renderContratos();
+
+  /* ---- subir foto al banco de imágenes + registrar (cross-device) ---- */
+  if(fotoFile && window.sbUpload){
+    const slug=s=>(s||'lote').toString().toLowerCase().normalize('NFD')
+                  .replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,40)||'lote';
+    const ext=((fotoFile.name||'').split('.').pop()||'jpg').toLowerCase().replace(/[^a-z0-9]/g,'')||'jpg';
+    const path=`${new Date().getFullYear()}/${slug(snap.origen)}-${slug(snap.variedad||snap.origen)}-${sello}-${Date.now().toString(36)}.${ext}`;
+    const tag=document.createElement('div'); tag.style.marginTop='6px'; tag.textContent='📷 subiendo foto al banco…';
+    $('seal').appendChild(tag);
+    try{
+      const up=await sbUpload('fotos-grano', path, fotoFile);
+      await sbRpc('registrar_foto_grano',{p:{
+        lote:snap.variedad||snap.origen, origen:snap.origen, variedad:snap.variedad,
+        productor:ultimo.inp.ficha.productor||null, score:snap.scoreProvisorio, nivel:snap.nivel,
+        tier:snap.tier, precio:snap.precio, sello, veredicto:ultimo.motivo||'', foto_path:up.Key||path
+      }});
+      tag.innerHTML='<span style="color:var(--ok)">📷 Foto en el banco de imágenes — visible para el equipo</span>';
+    }catch(err){
+      tag.innerHTML='<span style="color:#ef9a9a">La foto no se pudo subir al banco (el contrato quedó igual)</span>';
+      console.error(err);
+    }
+  }
 });
 
 function renderContratos(){
