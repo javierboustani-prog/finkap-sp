@@ -28,6 +28,8 @@ button:disabled{opacity:.5}
     <input id="pw" type="password" autocomplete="current-password" placeholder="Clave">
     <div class="err" id="err"></div>
     <button id="go">Entrar</button>
+    <label for="rm" style="display:flex;align-items:center;justify-content:center;gap:7px;margin-top:12px;color:#9b9ba6;font-size:12px;cursor:pointer;user-select:none">
+      <input id="rm" type="checkbox" checked style="width:15px;height:15px;accent-color:#F97316;cursor:pointer">Recordar en este equipo</label>
     <div class="lock">🔒 Cifrado AES — sin la clave, ilegible</div>
     <a class="back" href="../inicio.html">← Volver al inicio</a>
   </div>
@@ -35,16 +37,21 @@ button:disabled{opacity:.5}
 <script src="../finkap-cripto.js"></script>
 <script>
 const $=id=>document.getElementById(id);
-const KEY='finkap_impo_v1';
+const KEY='finkap_impo_v1';        // datos descifrados de esta sesión
+const PKEY='finkap_impo_persist_v1'; // equipo recordado: guarda los datos descifrados en este dispositivo
 // si ya hay datos descifrados en esta sesión, entrar directo
 try{ if(JSON.parse(sessionStorage.getItem(KEY))) location.replace('index.html'); }catch(e){}
+// equipo recordado -> reusar el descifrado guardado y entrar sin pedir clave
+try{ const saved=localStorage.getItem(PKEY); if(saved && JSON.parse(saved)){ sessionStorage.setItem(KEY, saved); location.replace('index.html'); } }catch(e){}
 
 async function go(){
   $('err').textContent=''; $('go').disabled=true; $('go').textContent='Descifrando…';
   try{
     if(!window.FINKAP_IMPO_ENC) throw new Error('Faltan los datos cifrados (data.enc.js).');
     const data = await finkapDecrypt(window.FINKAP_IMPO_ENC, $('pw').value);
-    sessionStorage.setItem(KEY, JSON.stringify(data));
+    const blob = JSON.stringify(data);
+    sessionStorage.setItem(KEY, blob);
+    try{ if($('rm').checked) localStorage.setItem(PKEY, blob); else localStorage.removeItem(PKEY); }catch(e){}
     location.replace('index.html');
   }catch(e){
     $('err').textContent = 'Clave incorrecta.';

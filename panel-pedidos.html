@@ -116,6 +116,8 @@ a{color:inherit}
   <label class="lbl">Contraseña</label>
   <input id="liPass" class="fld" type="password" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
   <button class="btn primary" style="width:100%;margin-top:6px" id="liBtn" onclick="doLogin()">Entrar</button>
+  <label for="liRm" style="display:flex;align-items:center;gap:7px;margin-top:12px;color:#9b9ba6;font-size:12px;cursor:pointer;user-select:none">
+    <input id="liRm" type="checkbox" checked style="width:15px;height:15px;accent-color:#F97316;cursor:pointer">Mantener sesión en este equipo</label>
   <div class="err" id="liErr"></div>
 </div>
 
@@ -193,6 +195,13 @@ function toast(m){const t=$("toast");t.textContent=m;t.classList.add("show");cle
 function esc(s){return (s==null?"":String(s)).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c]));}
 
 /* ---------- AUTH ---------- */
+// access_token en sessionStorage (sesión); refresh_token en localStorage (equipo recordado)
+const RKEY="finkap_pedidos_refresh";
+function saveSession(j,remember){
+  TOKEN=j.access_token;
+  sessionStorage.setItem("finkap_pedidos_tok",TOKEN);
+  if(remember && j.refresh_token){ try{ localStorage.setItem(RKEY,j.refresh_token); }catch(e){} }
+}
 async function doLogin(){
   const email=$("liMail").value.trim(), password=$("liPass").value;
   if(!email||!password){ $("liErr").textContent="Completá email y contraseña."; return; }
@@ -204,20 +213,37 @@ async function doLogin(){
     });
     const j=await r.json();
     if(!r.ok||!j.access_token){ throw new Error(j.error_description||j.msg||j.error||"No se pudo entrar"); }
-    TOKEN=j.access_token;
-    sessionStorage.setItem("finkap_pedidos_tok",TOKEN);
+    saveSession(j, $("liRm") ? $("liRm").checked : true);
     showBoard();
   }catch(e){ $("liErr").textContent=e.message; }
   finally{ btn.disabled=false; btn.textContent="Entrar"; }
 }
-function doLogout(){ TOKEN=null; sessionStorage.removeItem("finkap_pedidos_tok"); showLogin(); }
+// renueva el access_token con el refresh_token guardado (vence ~1h). Devuelve true si pudo.
+async function refreshSession(){
+  let rt=null; try{ rt=localStorage.getItem(RKEY); }catch(e){}
+  if(!rt) return false;
+  try{
+    const r=await fetch(`${SB.url}/auth/v1/token?grant_type=refresh_token`,{
+      method:"POST",headers:{"apikey":SB.key,"Content-Type":"application/json"},
+      body:JSON.stringify({refresh_token:rt})
+    });
+    const j=await r.json();
+    if(!r.ok||!j.access_token) return false;
+    saveSession(j,true);
+    return true;
+  }catch(e){ return false; }
+}
+function doLogout(){ TOKEN=null; sessionStorage.removeItem("finkap_pedidos_tok"); try{ localStorage.removeItem(RKEY); }catch(e){} showLogin(); }
 function showLogin(){ $("loginView").style.display="block"; $("boardView").style.display="none"; }
 function showBoard(){ $("loginView").style.display="none"; $("boardView").style.display="block"; loadCfg(); load(); }
 
 /* ---------- DATA ---------- */
-async function sbGet(path){
+async function sbGet(path,_retried){
   const r=await fetch(`${SB.url}/rest/v1/${path}`,{headers:{"apikey":SB.key,"Authorization":"Bearer "+TOKEN}});
-  if(r.status===401){ doLogout(); throw new Error("Sesión vencida"); }
+  if(r.status===401){
+    if(!_retried && await refreshSession()) return sbGet(path,true);
+    doLogout(); throw new Error("Sesión vencida");
+  }
   if(!r.ok) throw new Error("Error "+r.status);
   return r.json();
 }
@@ -366,7 +392,11 @@ function copyResumen(id){
 }
 
 /* ---------- INIT ---------- */
-if(TOKEN){ showBoard(); } else { showLogin(); }
+(async function(){
+  if(TOKEN){ showBoard(); return; }
+  if(await refreshSession()){ showBoard(); return; }  // equipo recordado: renovar sin pedir clave
+  showLogin();
+})();
 </script>
 </body>
 </html>
