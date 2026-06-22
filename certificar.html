@@ -263,14 +263,15 @@ table.liq td.n{font-family:var(--mono);text-align:right;white-space:nowrap}
 
 <script type="module">
 import * as PE from './pricing-engine.js';
+import * as Cerebro from './grano-cerebro.js';   // conocimiento experto compartido (tier, dossier, descriptores)
 
 const $ = id => document.getElementById(id);
 const feeds = { kc: PE.KC_REF, tc: 1430 };          // determinista
 const clamp01 = x => Math.max(0, Math.min(1, +x||0));
 const num = v => { const n=parseFloat(String(v).replace(',','.')); return isNaN(n)?null:n; };
 const usd = v => 'USD '+(+v).toLocaleString('es-AR',{minimumFractionDigits:2,maximumFractionDigits:2});
-const tierDe = s => s>=88 ? 'exotico' : s>=84 ? 'especialidad' : 'regional';
-const TIER_LBL = { regional:'Regional', especialidad:'Especialidad', exotico:'Exótico' };
+const tierDe = Cerebro.tierDe;        // única definición, vive en el cerebro
+const TIER_LBL = Cerebro.TIER_LBL;
 
 let visual = null;           // observación automática de la foto
 let fotoFile = null;         // archivo real de la foto (para subir al banco)
@@ -323,57 +324,10 @@ function inputs(){
   };
 }
 
-/* ---- ficha técnica en el formato exacto de Jesús (Dossier Técnico Finkap) ----
-   Sin emojis, tono profesional, nunca inventa notas (solo declaradas / "a confirmar"). */
-function nivelTxt(x, alto, medio){ return x==null?'a confirmar':x>=0.75?alto:x>=0.5?medio:'baja'; }
-function fichaFinkap(inp, cert, tier){
-  const f=inp.ficha, sc=inp.scan, vi=inp.visual;
-  const dash = v => (v==null||v==='')?'—':v;
-  const hum = sc?.humedad ?? null;
-  const humRango = hum==null?'':(hum>=9.5&&hum<=12.5?' (dentro de rango óptimo de almacenamiento)':' (fuera de rango óptimo)');
-  const colorTxt = vi? (vi.colorUnif>=0.85?'verde parejo, secado homogéneo':vi.colorUnif>=0.6?'verde con leve variabilidad cromática':'alta variabilidad cromática') : 'a confirmar con la muestra física';
-  const unifTxt  = vi? nivelTxt(vi.uniformidad,'alta','media') : 'a confirmar';
-  const defTxt   = vi? `${vi.defSecundarios||0} defecto(s) secundario(s); sin defectos críticos detectados` : 'a confirmar con grading físico';
-  const tuesteTxt = { regional:'Tueste medio. Priorizar cuerpo y dulzor; perfil clásico versátil para espresso, cápsulas y blends. Desarrollo 11–13% post-crack.',
-                      especialidad:'Tueste medio claro. Resaltar acidez y complejidad; apto filtro y single origin. Desarrollo 9–11% post-crack, control en Maillard.',
-                      exotico:'Tueste claro. Preservar aromáticos y acidez brillante; filtro de especialidad. Curva progresiva, evitar sobre-desarrollo.' }[tier];
-  const espectro = sc ? `Escaneo NIR disponible (puntaje ${sc.score}). Correlación con la ficha del productor para estimar homogeneidad química, azúcares, lípidos y comportamiento térmico esperado. (Lectura fina de la curva: ver scan en ProfilePrint.)`
-                      : 'Pendiente de escaneo ProfilePrint. La certificación es provisoria hasta contar con el espectro NIR.';
-  return [
-`DOSSIER TÉCNICO — FINKAP COFFEE LAB`,
-`Lote: ${dash(f.variedad||f.origen)}`,
-``,
-`DATOS DEL CAFÉ`,
-`Origen: ${dash(f.origen)}`,
-`Productor: ${dash(f.productor)}`,
-`Variedad: ${dash(f.variedad)}`,
-`Altitud: ${f.altura?f.altura+' msnm':'—'}`,
-`Proceso: ${dash(f.proceso)}`,
-`Criba estimada: ${dash(f.criba)}`,
-`Humedad: ${hum!=null?hum+'%':'—'}`,
-`Notas sensoriales: ${f.notas?f.notas+' (declaradas)':'a confirmar en taza'}`,
-`Puntaje SCA promedio (escaneo): ${sc?sc.score:'pendiente de escaneo'}`,
-`Estimación Finkap: ${cert.scoreProvisorio!=null?cert.scoreProvisorio.toFixed(1):'—'}`,
-``,
-`COMENTARIO TÉCNICO`,
-`Grano de proceso ${dash(f.proceso)} con humedad ${hum!=null?hum+'%':'no informada'}${humRango}. Uniformidad ${unifTxt} según análisis visual. Sin signos evidentes de fermentación defectuosa ni oxidación severa. Estructura coherente con la altitud declarada; comportamiento esperado en tueste estable. No se infieren notas sensoriales absolutas: sólo posibles según proceso, variedad y espectro.`,
-``,
-`EVALUACIÓN VISUAL DEL CAFÉ VERDE`,
-`- Tamaño del grano: criba estimada ${dash(f.criba)}`,
-`- Color: ${colorTxt}`,
-`- Uniformidad: ${unifTxt}`,
-`- Defectos: ${defTxt}`,
-``,
-`ANÁLISIS DEL ESPECTRO NIR`,
-espectro,
-``,
-`CONCLUSIÓN`,
-`Coherencia productor–NIR–foto: índice de confianza ${cert.confianza!=null?cert.confianza.toFixed(0):'—'}/100. Estado de certificación: ${cert.nivel}. ${cert.motivo}`,
-``,
-`RECOMENDACIÓN DE TUESTE`,
-tuesteTxt,
-  ].join('\n');
-}
+/* ---- ficha técnica (Dossier Técnico Finkap) ----
+   Consolidada en grano-cerebro.js: un solo dossier para toda la suite, sin
+   divergencia entre herramientas. Sin emojis, nunca inventa notas absolutas. */
+const fichaFinkap = (inp, cert, tier) => Cerebro.dossier(inp, cert, tier);
 
 function evaluar(){
   const inp=inputs();
