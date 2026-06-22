@@ -119,6 +119,38 @@ td.mono{font-family:var(--mono)}
     <p>El punto donde <b>converge toda la IA del café</b>, lote por lote: los <b>scans de ProfilePrint</b>, los <b>cerebros de ChatGPT</b>, el <b>banco de imágenes</b> y nuestro <b>motor</b>. Esta vista muestra la <b>cosecha actual</b> — los 28 lotes escaneados entre marzo y mayo 2026. Los ~200 restantes son cosechas previas, pruebas y muestras: archivados, se traen si hacen falta.</p>
   </div>
 
+  <!-- LOTES EN VIVO (Supabase) — agregado, no toca el resto -->
+  <div id="liveBox" style="background:var(--panel);border:1px solid var(--orange-line);border-radius:var(--radius);padding:16px;margin:0 0 18px">
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px">
+      <b style="font-size:14px">🟢 Lotes en la base — en vivo</b>
+      <span id="liveMeta" class="mono" style="font-size:11px;color:var(--muted2)"></span>
+      <button id="liveLogout" style="display:none;margin-left:auto;font-size:11px;background:var(--panel3);border:1px solid var(--line2);color:var(--muted);border-radius:8px;padding:5px 10px;cursor:pointer">Salir</button>
+    </div>
+    <div id="liveLogin">
+      <div style="font-size:12.5px;color:var(--muted);margin-bottom:8px">Entrá con la cuenta del equipo para ver los lotes reales (foto · ficha · scan · contrato) unidos por la base, desde cualquier dispositivo.</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <input id="liMail" type="email" autocomplete="username" placeholder="equipo@finkap.net" style="flex:1;min-width:160px;background:var(--panel3);border:1px solid var(--line2);border-radius:10px;color:var(--text);font-family:inherit;font-size:13px;padding:9px 11px;outline:none">
+        <input id="liPass" type="password" autocomplete="current-password" placeholder="contraseña" onkeydown="if(event.key==='Enter')document.getElementById('liBtn').click()" style="flex:1;min-width:160px;background:var(--panel3);border:1px solid var(--line2);border-radius:10px;color:var(--text);font-family:inherit;font-size:13px;padding:9px 11px;outline:none">
+        <button id="liBtn" style="background:var(--orange);color:#fff;border:none;border-radius:10px;padding:10px 16px;font-weight:700;font-size:13px;cursor:pointer;font-family:inherit">Entrar</button>
+        <label for="liRm" style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);cursor:pointer"><input id="liRm" type="checkbox" checked style="accent-color:var(--orange)">Mantener sesión</label>
+      </div>
+      <div id="liErr" style="color:var(--bad);font-size:12px;min-height:16px;margin-top:6px"></div>
+    </div>
+    <div id="liveData" style="display:none;overflow:auto">
+      <table style="width:100%;border-collapse:collapse;font-size:13px;min-width:660px">
+        <thead><tr>
+          <th style="text-align:left;padding:9px 11px;font-size:10px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted2);border-bottom:1px solid var(--line)">Lote</th>
+          <th style="text-align:left;padding:9px 11px;font-size:10px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted2);border-bottom:1px solid var(--line)">Origen</th>
+          <th style="text-align:left;padding:9px 11px;font-size:10px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted2);border-bottom:1px solid var(--line)">Puntaje</th>
+          <th style="text-align:left;padding:9px 11px;font-size:10px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted2);border-bottom:1px solid var(--line)" title="Ficha · Foto · Scan · Informe/contrato">Hitos</th>
+          <th style="text-align:left;padding:9px 11px;font-size:10px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted2);border-bottom:1px solid var(--line)">Estado</th>
+          <th style="text-align:left;padding:9px 11px;font-size:10px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted2);border-bottom:1px solid var(--line)">Actualizado</th>
+        </tr></thead>
+        <tbody id="liveTbody"></tbody>
+      </table>
+    </div>
+  </div>
+
   <div class="kpis">
     <div class="kpi"><div class="v" id="kTot">—</div><div class="l">lotes cosecha actual</div></div>
     <div class="kpi ok"><div class="v" id="kCat">—</div><div class="l">ya en catálogo Finkap</div></div>
@@ -302,6 +334,82 @@ document.querySelectorAll('thead th[data-k]').forEach(th=>{
   th.addEventListener('click',()=>{ const k=th.dataset.k; if(sortKey===k) sortDir*=-1; else {sortKey=k;sortDir=1;} render(); });
 });
 render();
+</script>
+<script src="supabase-cfg.js"></script>
+<script>
+/* Panel "Lotes en vivo" — aislado (IIFE), no toca el script de arriba.
+   Lee la vista lote_panel de Supabase con el login del equipo (compartido con
+   Banco de grano). RLS protege los datos: la clave pública no alcanza para leer. */
+(function(){
+  const SB = window.FINKAP_SB; if(!SB) return;
+  const $ = id => document.getElementById(id);
+  const RKEY = "finkap_pedidos_refresh";
+  let TOKEN = sessionStorage.getItem("finkap_pedidos_tok") || null;
+
+  function saveSession(j,remember){
+    TOKEN=j.access_token; sessionStorage.setItem("finkap_pedidos_tok",TOKEN);
+    if(remember && j.refresh_token){ try{ localStorage.setItem(RKEY,j.refresh_token); }catch(e){} }
+  }
+  async function refreshSession(){
+    let rt=null; try{ rt=localStorage.getItem(RKEY); }catch(e){}
+    if(!rt) return false;
+    try{
+      const r=await fetch(`${SB.url}/auth/v1/token?grant_type=refresh_token`,{method:"POST",headers:{apikey:SB.key,"Content-Type":"application/json"},body:JSON.stringify({refresh_token:rt})});
+      const j=await r.json(); if(!r.ok||!j.access_token) return false; saveSession(j,true); return true;
+    }catch(e){ return false; }
+  }
+  function showLogin(){ $('liveLogin').style.display='block'; $('liveData').style.display='none'; $('liveLogout').style.display='none'; $('liveMeta').textContent=''; }
+  function showData(){ $('liveLogin').style.display='none'; $('liveData').style.display='block'; $('liveLogout').style.display='inline-block'; loadLive(); }
+
+  $('liBtn').addEventListener('click', async ()=>{
+    const email=$('liMail').value.trim(), password=$('liPass').value;
+    if(!email||!password){ $('liErr').textContent='Completá email y contraseña.'; return; }
+    const b=$('liBtn'); b.disabled=true; b.textContent='Entrando…'; $('liErr').textContent='';
+    try{
+      const r=await fetch(`${SB.url}/auth/v1/token?grant_type=password`,{method:"POST",headers:{apikey:SB.key,"Content-Type":"application/json"},body:JSON.stringify({email,password})});
+      const j=await r.json(); if(!r.ok||!j.access_token) throw new Error(j.error_description||j.msg||j.error||'No se pudo entrar');
+      saveSession(j, $('liRm').checked); showData();
+    }catch(e){ $('liErr').textContent=e.message; }
+    finally{ b.disabled=false; b.textContent='Entrar'; }
+  });
+  $('liveLogout').addEventListener('click', ()=>{ TOKEN=null; sessionStorage.removeItem("finkap_pedidos_tok"); try{ localStorage.removeItem(RKEY); }catch(e){} showLogin(); });
+
+  const esc = s => (s==null?'':String(s)).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  const hito = (on,letter) => `<span style="display:inline-grid;place-items:center;width:20px;height:20px;border-radius:6px;font-size:10px;font-weight:800;font-family:var(--mono);border:1px solid var(--line2);${on?'background:var(--ok-soft);border-color:rgba(70,211,154,.4);color:var(--ok)':'background:var(--panel3);color:var(--muted2)'}">${letter}</span>`;
+  const fdate = s => { if(!s) return '—'; try{ return new Date(s).toLocaleDateString('es-AR'); }catch(e){ return s; } };
+
+  async function loadLive(_retried){
+    $('liveMeta').textContent='cargando…';
+    try{
+      const r=await fetch(`${SB.url}/rest/v1/lote_panel?select=*&order=updated_at.desc`,{headers:{apikey:SB.key,Authorization:"Bearer "+TOKEN}});
+      if(r.status===401){ if(!_retried && await refreshSession()) return loadLive(true);
+        TOKEN=null; sessionStorage.removeItem("finkap_pedidos_tok"); showLogin(); $('liErr').textContent='Sesión vencida, volvé a entrar.'; return; }
+      if(!r.ok) throw new Error('Error '+r.status);
+      let rows = (await r.json()).filter(x => !(x.slug||'').startsWith('__'));   // saca lotes de prueba
+      $('liveMeta').textContent = rows.length+' lote(s) en la base';
+      const td='padding:9px 11px;border-bottom:1px solid var(--line);white-space:nowrap';
+      $('liveTbody').innerHTML = rows.map(x=>{
+        const score = x.contrato_score!=null ? x.contrato_score : x.scan_score;
+        const nivel = x.contrato_nivel;
+        return `<tr>
+          <td style="${td};white-space:normal;font-weight:600">${esc(x.nombre||x.slug)}${x.variedad&&x.variedad!==x.nombre?` <span style="color:var(--muted2);font-size:11px">${esc(x.variedad)}</span>`:''}</td>
+          <td style="${td}">${esc(x.origen||'—')}</td>
+          <td style="${td};font-family:var(--mono)">${score!=null?(+score).toFixed(1):'—'}</td>
+          <td style="${td}"><span style="display:inline-flex;gap:4px">${hito(true,'F')}${hito(x.n_fotos>0,'P')}${hito(x.scan_score!=null,'S')}${hito(x.ultimo_contrato!=null,'I')}</span></td>
+          <td style="${td}">${nivel?`<span class="chip ${nivel==='certificado'?'certif':'prov'}" style="display:inline-block">${esc(nivel)}</span>`:'<span style="color:var(--muted2)">—</span>'}</td>
+          <td style="${td};font-family:var(--mono);color:var(--muted2)">${fdate(x.updated_at)}</td>
+        </tr>`;
+      }).join('') || `<tr><td colspan="6" style="text-align:center;color:var(--muted2);padding:22px">Todavía no hay lotes en la base. Certificá uno y aparece acá.</td></tr>`;
+    }catch(e){ $('liveMeta').textContent='error: '+e.message; }
+  }
+
+  // si ya hay sesión (compartida con Banco de grano) entra solo
+  (async function(){
+    if(TOKEN){ showData(); return; }
+    if(await refreshSession()){ showData(); return; }
+    showLogin();
+  })();
+})();
 </script>
 </body>
 </html>
