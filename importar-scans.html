@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Finkap — Importar scans (ProfilePrint)</title>
+<meta name="robots" content="noindex,nofollow">
+<script src="gate.js"></script>
+<style>
+:root{--bg:#0d0d0f;--panel:#17171b;--panel2:#1d1d22;--line:#2c2c33;--line2:#3a3a43;--text:#f5f5f7;--muted:#9b9ba6;--muted2:#6f6f7a;--orange:#F97316;--ok:#46d39a;--err:#ef5350;--blue:#7cc4ff;--radius:14px;--mono:"JetBrains Mono",ui-monospace,monospace}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui,-apple-system,sans-serif;font-size:14px;line-height:1.5}
+.shell{max-width:1000px;margin:0 auto;padding:30px 20px 80px}
+.brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:22px;margin-bottom:4px}
+.brand .dot{width:34px;height:34px;border-radius:50%;border:2.5px solid var(--orange);display:grid;place-items:center;color:var(--orange);font-weight:900;font-size:18px}
+.lead{color:var(--muted);margin:0 0 22px;max-width:680px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:18px;margin-bottom:16px}
+.card h2{margin:0 0 10px;font-size:15px}
+textarea{width:100%;min-height:130px;background:#111114;border:1px solid var(--line2);border-radius:10px;color:var(--text);font-family:var(--mono);font-size:12px;padding:10px;resize:vertical}
+input[type=file]{color:var(--muted);font-size:13px}
+.btn{padding:10px 16px;border-radius:10px;border:none;background:var(--orange);color:#fff;font-weight:700;font-size:14px;cursor:pointer;font-family:inherit}
+.btn.ghost{background:var(--panel2);color:var(--text);border:1px solid var(--line2)}
+.btn:disabled{opacity:.5;cursor:default}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:12px}
+.muted{color:var(--muted);font-size:12.5px}
+table{width:100%;border-collapse:collapse;font-size:12.5px;margin-top:6px}
+th,td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line)}
+th{color:var(--muted2);font-weight:600;text-transform:uppercase;font-size:10.5px;letter-spacing:.5px}
+td.mono{font-family:var(--mono)}
+.map{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;margin-top:6px}
+.map label{display:block;font-size:11px;color:var(--muted);margin-bottom:3px}
+.map select{width:100%;background:#111114;border:1px solid var(--line2);border-radius:8px;color:var(--text);padding:7px;font-size:12.5px;font-family:inherit}
+.pill{display:inline-block;font-size:10px;padding:2px 8px;border-radius:99px;font-weight:700}
+.pill.ok{color:var(--ok);background:rgba(70,211,154,.12)}
+.pill.err{color:var(--err);background:rgba(239,83,80,.12)}
+.log{font-family:var(--mono);font-size:12px;max-height:240px;overflow:auto;background:#111114;border:1px solid var(--line);border-radius:10px;padding:10px;margin-top:10px}
+.log .l{padding:2px 0;border-bottom:1px solid #1c1c20}
+a.back{color:var(--muted);font-size:12px;text-decoration:none}
+</style>
+</head>
+<body>
+<div class="shell">
+  <div class="brand"><span class="dot">f</span> Importar scans</div>
+  <p class="lead">Pegá o subí un CSV/JSON de ProfilePrint (o cualquier export de scans). El sistema <b>autodetecta las columnas</b>, las muestra para que confirmes, y crea/actualiza cada lote en Supabase con su scan. Quedan unidos por lote (la llave) y los lee el Núcleo. ProfilePrint todavía no tiene API: este es el puente flexible hasta tenerla.</p>
+
+  <div class="card">
+    <h2>1 · Pegá el CSV/JSON o subí un archivo</h2>
+    <textarea id="raw" placeholder="lote,origen,variedad,score,humedad,fecha
+Supremo Herrera,Colombia,Castillo,84.08,11.2,2026-03-10
+..."></textarea>
+    <div class="row">
+      <input type="file" id="file" accept=".csv,.tsv,.txt,.json">
+      <button class="btn ghost" id="parse">Detectar columnas →</button>
+      <span class="muted" id="parseInfo"></span>
+    </div>
+  </div>
+
+  <div class="card" id="mapCard" style="display:none">
+    <h2>2 · Mapeo de columnas <span class="muted">(corregí si algo quedó mal)</span></h2>
+    <div class="map" id="map"></div>
+    <div class="muted" style="margin-top:10px">Vista previa (primeras filas):</div>
+    <div style="overflow:auto"><table id="preview"></table></div>
+    <div class="row">
+      <button class="btn" id="import">Importar a Supabase</button>
+      <span class="muted" id="importInfo"></span>
+    </div>
+    <div class="log" id="log" style="display:none"></div>
+  </div>
+
+  <a class="back" href="indice-maestro.html">← Volver al Núcleo</a>
+</div>
+
+<script src="supabase-cfg.js"></script>
+<script>
+const $=id=>document.getElementById(id);
+
+// campos destino y sinónimos para autodetección
+const CAMPOS = {
+  nombre:   ['lote','nombre','name','muestra','sample','lot','codigo','código','id'],
+  origen:   ['origen','origin','pais','país','country','procedencia'],
+  variedad: ['variedad','variety','varietal','cultivar'],
+  productor:['productor','producer','finca','farm','exportador','cooperativa','beneficio'],
+  score:    ['score','puntaje','sca','nir','puntos','points','cup','cupping','nota','calificacion','calificación'],
+  humedad:  ['humedad','moisture','humidity','hum','agua','water'],
+  scan_fecha:['fecha','date','scan_date','fecha_scan','fecha_escaneo','scanned'],
+  informe:  ['informe','report','notas','notes','comentario','comentarios','observaciones','descripcion','descripción'],
+};
+const ETIQ = { nombre:'Lote / nombre', origen:'Origen', variedad:'Variedad', productor:'Productor', score:'Puntaje (score)', humedad:'Humedad %', scan_fecha:'Fecha del scan', informe:'Informe / notas' };
+
+const norm = s => (s==null?'':String(s)).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'');
+const slug = norm; // misma regla que finkap_slug() en la base
+
+let HEAD=[], ROWS=[], MAP={};
+
+function detectDelim(line){
+  const c=(line.match(/,/g)||[]).length, sc=(line.match(/;/g)||[]).length, t=(line.match(/\t/g)||[]).length;
+  return t>=c&&t>=sc?'\t':sc>c?';':',';
+}
+// parser CSV simple con comillas
+function parseCSV(text){
+  const lines=text.replace(/\r/g,'').split('\n').filter(l=>l.trim()!=='');
+  if(!lines.length) return {head:[],rows:[]};
+  const d=detectDelim(lines[0]);
+  const split=line=>{
+    const out=[]; let cur='',q=false;
+    for(let i=0;i<line.length;i++){ const ch=line[i];
+      if(q){ if(ch==='"'&&line[i+1]==='"'){cur+='"';i++;} else if(ch==='"'){q=false;} else cur+=ch; }
+      else { if(ch==='"')q=true; else if(ch===d){out.push(cur);cur='';} else cur+=ch; } }
+    out.push(cur); return out.map(x=>x.trim());
+  };
+  const head=split(lines[0]);
+  const rows=lines.slice(1).map(l=>{ const c=split(l); const o={}; head.forEach((h,i)=>o[h]=c[i]??''); return o; });
+  return {head,rows};
+}
+function parseJSON(text){
+  const j=JSON.parse(text); const arr=Array.isArray(j)?j:(j.data||j.rows||j.lotes||[]);
+  if(!arr.length) return {head:[],rows:[]};
+  const head=Object.keys(arr[0]); return {head,rows:arr.map(o=>{const r={};head.forEach(h=>r[h]=o[h]);return r;})};
+}
+
+function autodetect(){
+  MAP={};
+  const used=new Set();
+  for(const campo in CAMPOS){
+    let best='';
+    for(const h of HEAD){ if(used.has(h))continue; const nh=norm(h);
+      if(CAMPOS[campo].some(syn=>nh===norm(syn)||nh.includes(norm(syn)))){ best=h; break; } }
+    if(best){ MAP[campo]=best; used.add(best); } else MAP[campo]='';
+  }
+}
+
+function renderMap(){
+  $('map').innerHTML = Object.keys(CAMPOS).map(campo=>{
+    const opts = ['<option value="">— ninguna —</option>']
+      .concat(HEAD.map(h=>`<option value="${h}" ${MAP[campo]===h?'selected':''}>${h}</option>`)).join('');
+    return `<div><label>${ETIQ[campo]}</label><select data-c="${campo}">${opts}</select></div>`;
+  }).join('');
+  $('map').querySelectorAll('select').forEach(s=>s.addEventListener('change',e=>{ MAP[e.target.dataset.c]=e.target.value; renderPreview(); }));
+}
+function val(row,campo){ const col=MAP[campo]; return col? (row[col]??'').toString().trim() : ''; }
+function num(v){ if(v==null||v==='')return null; const n=parseFloat(String(v).replace(',','.').replace('%','')); return isNaN(n)?null:n; }
+
+function renderPreview(){
+  const cols=['nombre','origen','variedad','productor','score','humedad','scan_fecha'];
+  const head='<tr>'+cols.map(c=>`<th>${ETIQ[c]}</th>`).join('')+'<th>lote (slug)</th></tr>';
+  const body=ROWS.slice(0,6).map(r=>{
+    const nombre=val(r,'nombre')||val(r,'variedad')||val(r,'origen');
+    const s=slug([val(r,'origen'),val(r,'variedad'),val(r,'productor'),nombre].filter(Boolean).join('-'));
+    return '<tr>'+cols.map(c=>`<td class="${c==='score'||c==='humedad'?'mono':''}">${val(r,c)||'—'}</td>`).join('')+`<td class="mono">${s||'—'}</td></tr>`;
+  }).join('');
+  $('preview').innerHTML=head+body;
+}
+
+function doParse(text){
+  const t=text.trim();
+  try{
+    const res = (t[0]==='['||t[0]==='{') ? parseJSON(t) : parseCSV(t);
+    HEAD=res.head; ROWS=res.rows;
+    if(!ROWS.length){ $('parseInfo').textContent='No se detectaron filas.'; return; }
+    autodetect();
+    $('parseInfo').textContent=`${ROWS.length} fila(s), ${HEAD.length} columna(s) detectadas.`;
+    $('mapCard').style.display='block'; renderMap(); renderPreview();
+  }catch(e){ $('parseInfo').textContent='Error al leer: '+e.message; }
+}
+
+$('parse').addEventListener('click',()=>doParse($('raw').value));
+$('file').addEventListener('change',e=>{ const f=e.target.files[0]; if(!f)return; const fr=new FileReader();
+  fr.onload=()=>{ $('raw').value=fr.result; doParse(String(fr.result)); }; fr.readAsText(f); });
+
+// importar: por cada fila -> upsert_lote -> registrar_scan(lote_id)
+$('import').addEventListener('click', async ()=>{
+  if(!ROWS.length) return;
+  const btn=$('import'); btn.disabled=true; btn.textContent='Importando…';
+  const log=$('log'); log.style.display='block'; log.innerHTML='';
+  const line=(t,cls)=>{ const d=document.createElement('div'); d.className='l'; d.innerHTML=cls?`<span class="pill ${cls}">${cls==='ok'?'✓':'×'}</span> ${t}`:t; log.appendChild(d); log.scrollTop=log.scrollHeight; };
+  let ok=0, fail=0;
+  for(let i=0;i<ROWS.length;i++){
+    const r=ROWS[i];
+    const nombre=val(r,'nombre')||val(r,'variedad')||val(r,'origen');
+    const origen=val(r,'origen'), variedad=val(r,'variedad'), productor=val(r,'productor');
+    const s=slug([origen,variedad,productor,nombre].filter(Boolean).join('-'));
+    if(!s){ line(`Fila ${i+1}: sin identidad de lote, salteada`,'err'); fail++; continue; }
+    try{
+      const lid = await sbRpc('upsert_lote', { p:{ slug:s, nombre, origen, variedad, productor } });
+      await sbRpc('registrar_scan', { p:{
+        lote_id: lid, fuente:'csv',
+        score: num(val(r,'score')), humedad: num(val(r,'humedad')),
+        scan_fecha: val(r,'scan_fecha')||null,
+        informe: val(r,'informe')||null,
+        datos: r
+      }});
+      line(`${nombre||s} → score ${val(r,'score')||'—'}`,'ok'); ok++;
+    }catch(e){ line(`${nombre||s}: ${e.message}`,'err'); fail++; }
+  }
+  $('importInfo').textContent=`Listo: ${ok} importado(s), ${fail} con error.`;
+  btn.disabled=false; btn.textContent='Importar a Supabase';
+});
+</script>
+</body>
+</html>
