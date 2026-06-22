@@ -59,6 +59,10 @@ button,input,select,textarea{font-family:inherit}
   .nav a{flex:1;text-align:center;padding:9px 6px;font-size:13px;border-color:var(--line)}
   .feeds{margin-left:auto}
 }
+/* botón de envío en desktop (en mobile manda la barra inferior fija) */
+.send-desktop{display:block;width:100%;margin-top:14px;background:var(--green);color:#06281a;border:none;border-radius:10px;padding:13px;font-size:15px;font-weight:800;cursor:pointer;font-family:inherit;transition:filter .15s}
+.send-desktop:hover{filter:brightness(1.08)}
+@media(max-width:760px){.send-desktop{display:none}}
 /* barra inferior fija (mobile): resumen + acción, siempre visible */
 .mobar{display:none}
 @media(max-width:760px){
@@ -437,6 +441,7 @@ input[type=range]::-moz-range-thumb{width:18px;height:18px;border-radius:50%;bac
             <dt>Foto del grano</dt><dd id="kPhoto">pendiente</dd>
           </dl>
           <div class="legal">Este contrato se firma sujeto a verificación: al llegar el café se escanea el lote y se compara con esta declaración y la foto. Si el puntaje o el perfil verificado es menor, el precio se ajusta para abajo (nunca para arriba). Doble certificación: declaración del productor + escaneo Finkap.</div>
+          <button class="send-desktop" id="sendDesktop">Enviar mi lote por WhatsApp →</button>
         </div>
       </div>
 
@@ -863,6 +868,8 @@ $('fNotas').addEventListener('input', recalc);
 $('fKg').addEventListener('input', recalc);
 $('mbInfo').addEventListener('click', verDetalle);
 $('mbSend').addEventListener('click', onSend);
+// desktop: el contrato ya está a la vista, así que envío directo (un solo click)
+const _sd = $('sendDesktop'); if(_sd) _sd.addEventListener('click', enviarLote);
 // si el productor cambia algo del lote, el botón vuelve a "Enviar mi lote"
 ['fOrigen','fProceso','fVar','fVarManual','fNotas','fKg','fEspera'].forEach(id=>{
   const el=$(id); if(el) el.addEventListener('input', ()=>{ if(sendArmed) disarmSend(); });

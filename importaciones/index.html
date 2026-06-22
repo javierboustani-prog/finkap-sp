@@ -254,9 +254,21 @@ td.r,th.r{text-align:right}
 </div>
 
 <script>
+// red de seguridad: si algo del render falla, mostrar un cartel en vez de quedar a medio pintar (crash mudo)
+window.addEventListener('error', function(){
+  if(document.getElementById('impo-err')) return;
+  var d=document.createElement('div'); d.id='impo-err';
+  d.style.cssText='position:fixed;left:0;right:0;bottom:0;z-index:9999;background:#3a1414;border-top:1px solid #ef5350;color:#ffd7d7;padding:12px 16px;font:13px Inter,system-ui,sans-serif;text-align:center';
+  d.innerHTML='⚠️ No se pudieron mostrar todos los datos (el paquete cifrado puede estar incompleto o desactualizado). '+
+    '<a href="entrar.html" style="color:#ffb3b3;font-weight:700">Volver a descifrar →</a>';
+  (document.body||document.documentElement).appendChild(d);
+});
 (function(){
   const D = (function(){ try{ var d=JSON.parse(sessionStorage.getItem('finkap_impo_v1')); if(d) return d; }catch(e){} location.replace('entrar.html'); return null; })();
   if(!D) return;   // sin sesión descifrada → va a entrar.html
+  // defaults: que falten claves no rompa el render (antes tiraba TypeError mudo)
+  D.embarques=D.embarques||[]; D.pagos=D.pagos||[]; D.proveedores=D.proveedores||[];
+  D.alertas=D.alertas||[]; D.bancos=D.bancos||[]; D.meta=D.meta||{};
   const usd = n => n==null ? null : n.toLocaleString("es-AR",{minimumFractionDigits:2,maximumFractionDigits:2});
   const fecha = s => s==null ? "—" : s.split("-").reverse().join("/");
   const provById = id => D.proveedores.find(p=>p.id===id);

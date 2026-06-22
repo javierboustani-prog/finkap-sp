@@ -177,8 +177,8 @@ table.liq td.n{font-family:var(--mono);text-align:right;white-space:nowrap}
           </div>
         </div>
         <div class="fld"><label>Productor</label><input id="productor" placeholder="Finca / cooperativa / exportador"></div>
-        <div class="fld"><label>Categoría / trazabilidad <span class="hint" style="display:inline">(etiqueta de la ficha · el precio sale de origen + puntaje)</span></label>
-          <select id="tier"><option value="regional">Regional / comercial</option><option value="especialidad">Especialidad (Gesha · premium)</option><option value="exotico">Exótico</option></select></div>
+        <div class="fld"><label>Categoría / trazabilidad <span class="hint" style="display:inline">(etiqueta automática · se deriva del puntaje, no toca el precio)</span></label>
+          <select id="tier" disabled title="Se calcula solo a partir del puntaje: <84 Regional · 84–87 Especialidad · ≥88 Exótico"><option value="regional">Regional / comercial</option><option value="especialidad">Especialidad (Gesha · premium)</option><option value="exotico">Exótico</option></select></div>
         <div class="row2">
           <div class="fld"><label>Variedad</label><input id="variedad" placeholder="Caturra, Gesha…"></div>
           <div class="fld"><label>Altura (msnm)</label><input id="altura" inputmode="numeric" placeholder="1.650"></div>
@@ -387,7 +387,8 @@ function evaluar(){
   $('vMotivo').textContent = r.motivo;
 
   if(r.viable){
-    const score=r.scoreProvisorio, tier=($('tier').value||'regional');
+    const score=r.scoreProvisorio, tier=tierDe(score);   // etiqueta derivada del puntaje (no del select manual)
+    $('tier').value=tier;                                  // sincronizar el campo para que no contradiga al contrato
     const precio=PE.pvpEstimado({origen:inp.ficha.origen, score}, feeds);  // precio = origen + puntaje
     $('cTier').textContent=TIER_LBL[tier];
     $('cPrecio').textContent=usd(precio)+' /kg';
