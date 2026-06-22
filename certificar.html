@@ -405,6 +405,29 @@ $('publicar').addEventListener('click', async ()=>{
   $('publicar').disabled=true;
   renderContratos();
 
+  /* ---- unir todo por LOTE (lote_id) en Supabase: lote + scan + contrato ---- */
+  let loteId=null;
+  if(window.sbRpc){
+    const slugDe = s => (s||'').toString().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'');
+    const f=ultimo.inp.ficha, cosecha=String(new Date().getFullYear());
+    const loteSlug=slugDe([snap.origen,snap.variedad,f.productor,cosecha].filter(Boolean).join('-'));
+    try{
+      loteId = await sbRpc('upsert_lote',{p:{
+        slug:loteSlug, nombre:(snap.variedad||snap.origen), origen:snap.origen, variedad:snap.variedad,
+        proceso:snap.proceso, productor:f.productor||null, altura:f.altura||null, criba:f.criba||null,
+        cosecha, notas:f.notas||null }});
+      if(ultimo.inp.scan && ultimo.inp.scan.score!=null){   // scan físico/manual, si lo cargaron
+        await sbRpc('registrar_scan',{p:{ lote_id:loteId, fuente:'manual',
+          score:ultimo.inp.scan.score, humedad:ultimo.inp.scan.humedad??null }});
+      }
+      await sbRpc('registrar_contrato',{p:{                 // contrato cross-device (antes solo localStorage)
+        lote_id:loteId, sello, score_prov:snap.scoreProvisorio, tier:snap.tier, precio:snap.precio,
+        confianza:snap.conf, nivel:snap.nivel, sca_declarado:snap.scaDeclarado??null,
+        humedad:(ultimo.inp.scan&&ultimo.inp.scan.humedad)??null, altura:snap.altura||null,
+        kc_ref:snap.kcRef, veredicto:ultimo.motivo||'', snapshot:snap }});
+    }catch(err){ console.warn('No se pudo unir por lote (¿migración v2 aplicada?):', err); }
+  }
+
   /* ---- subir foto al banco de imágenes + registrar (cross-device) ---- */
   if(fotoFile && window.sbUpload){
     const slug=s=>(s||'lote').toString().toLowerCase().normalize('NFD')
@@ -416,7 +439,7 @@ $('publicar').addEventListener('click', async ()=>{
     try{
       const up=await sbUpload('fotos-grano', path, fotoFile);
       await sbRpc('registrar_foto_grano',{p:{
-        lote:snap.variedad||snap.origen, origen:snap.origen, variedad:snap.variedad,
+        lote_id:loteId, lote:snap.variedad||snap.origen, origen:snap.origen, variedad:snap.variedad,
         productor:ultimo.inp.ficha.productor||null, score:snap.scoreProvisorio, nivel:snap.nivel,
         tier:snap.tier, precio:snap.precio, sello, veredicto:ultimo.motivo||'', foto_path:up.Key||path
       }});
