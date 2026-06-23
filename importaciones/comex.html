@@ -26,31 +26,39 @@ input:focus,select:focus{border-color:var(--orange)}
 .btn.ghost{background:var(--panel3);color:var(--text);border:1px solid var(--line2)}
 .btn:disabled{opacity:.5;cursor:default}
 .mini{font-size:11px;color:var(--muted2)}
+.grpH{font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted2);font-weight:700;margin:12px 0 6px}
+.dchk{display:flex;align-items:center;gap:10px;padding:8px 10px;border:1px solid var(--line);border-radius:9px;margin-bottom:6px;background:var(--panel2);cursor:pointer}
+.dchk.dis{opacity:.4;cursor:not-allowed}
+.dchk input{width:17px;height:17px;accent-color:var(--orange);flex:0 0 auto}
+.dchk .c{font-family:var(--mono);font-weight:700;font-size:12.5px}
+.dchk .m{margin-left:auto;font-family:var(--mono);font-size:12.5px;color:var(--muted)}
+.dchk .x{font-size:11px;color:var(--muted2)}
+.sumbar{display:flex;justify-content:space-between;gap:10px;align-items:center;margin-top:10px;padding:10px 12px;border:1px solid var(--orange-line,rgba(249,115,22,.45));border-radius:9px;background:rgba(249,115,22,.08)}
+.sumbar b{font-family:var(--mono)}
 .dato{display:flex;justify-content:space-between;gap:10px;font-size:13px;padding:5px 0;border-bottom:1px solid var(--line)}
 .dato .l{color:var(--muted)}.dato .v{font-family:var(--mono);text-align:right}
 .checks{list-style:none;margin:8px 0 0;padding:0}
 .checks li{display:flex;gap:8px;align-items:flex-start;font-size:13px;padding:3px 0}
-.checks .ico{flex:0 0 auto}
 .ok{color:var(--ok)}.bad{color:var(--bad)}.warn{color:var(--warn)}
 .paquete{background:#0b0b0d;border:1px solid var(--line);border-radius:10px;padding:14px;font-family:var(--mono);font-size:12.5px;white-space:pre-wrap;color:#d7d7df;margin-top:10px}
 .actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
-.tag{display:inline-block;font-size:10px;padding:2px 8px;border-radius:99px;font-weight:700}
-.tag.mulc{color:var(--blue);background:rgba(124,196,255,.12)}
-.tag.usdt{color:var(--ok);background:rgba(70,211,154,.12)}
 .note{font-size:11.5px;color:var(--muted2);margin-top:8px;line-height:1.5}
 </style>
 </head>
 <body>
 <div class="shell">
   <div class="brand"><span class="dot">f</span> COMEX</div>
-  <p class="lead">Armá la transferencia para pagarle a un proveedor del exterior. Toma los datos del despacho (Torre) + el banco del proveedor, valida todo, y te deja el paquete listo para cargar en el home banking. <b>Nada se envía solo</b> — esto arma y valida; vos cargás el pago.</p>
+  <p class="lead">Armá la transferencia para pagarle a un proveedor del exterior. Podés pagar <b>uno, varios o todos</b> los despachos del mismo proveedor en un solo giro. Toma los datos de la Torre, valida todo, y te deja el paquete listo para el home banking. <b>Nada se envía solo.</b></p>
   <a class="back" href="index.html">← Volver a la Torre</a>
 
-  <!-- 1) DESPACHO -->
+  <!-- 1) DESPACHOS -->
   <div class="card" style="margin-top:14px">
-    <h2><span class="step">1</span>Despacho / factura a pagar</h2>
-    <select id="selEmb"><option value="">— elegí un despacho —</option></select>
-    <div id="embDatos" style="display:none;margin-top:12px"></div>
+    <h2><span class="step">1</span>Despachos a pagar <span class="mini" style="text-transform:none;letter-spacing:0">(marcá uno o varios del mismo proveedor)</span></h2>
+    <div id="lista"></div>
+    <div class="sumbar" id="sumbar" style="display:none">
+      <span><b id="sumN">0</b> despacho(s) seleccionado(s)</span>
+      <span>Total FOB: <b id="sumFob">USD 0,00</b></span>
+    </div>
   </div>
 
   <!-- 2) BENEFICIARIO -->
@@ -78,9 +86,10 @@ input:focus,select:focus{border-color:var(--orange)}
       <div class="fld"><label>Moneda</label><select id="pMoneda"><option>USD</option><option>EUR</option></select></div>
       <div class="fld"><label>Vía</label><select id="pVia"><option value="MULC">MULC (banco formal)</option><option value="USDT">Stablecoin (USDT)</option></select></div>
     </div>
+    <div class="mini" id="montoHint" style="margin:-4px 0 10px"></div>
     <div class="row">
       <div class="fld"><label>Código operación cambiaria (BCRA)</label><input id="pCod" placeholder="B06 — pago import. de bienes"></div>
-      <div class="fld"><label>Referencia</label><input id="pRef" placeholder="auto: despacho + factura"></div>
+      <div class="fld"><label>Referencia</label><input id="pRef" placeholder="auto: despachos + factura"></div>
     </div>
     <details style="margin-top:4px"><summary style="cursor:pointer;font-size:12px;color:var(--muted)">Datos del ordenante (Finkap)</summary>
       <div class="row3" style="margin-top:10px">
@@ -109,104 +118,115 @@ input:focus,select:focus{border-color:var(--orange)}
 
 <script>
 const $=id=>document.getElementById(id);
-// datos descifrados de la Torre (los pone entrar.html en sessionStorage)
 const D=(function(){ try{ const d=JSON.parse(sessionStorage.getItem('finkap_impo_v1')); if(d) return d; }catch(e){} location.replace('entrar.html'); return null; })();
 if(!D) throw new Error('sin sesión');
-const EMB = (D.embarques||[]);
-const PROV = (D.proveedores||[]);
-const provById = id => PROV.find(p=>p.id===id) || {};
-
-// almacenamiento local (esta PC)
-const BANCOS = (()=>{ try{ return JSON.parse(localStorage.getItem('finkap_comex_bancos')||'{}'); }catch(e){ return {}; } })();
-const ORD = (()=>{ try{ return JSON.parse(localStorage.getItem('finkap_comex_ordenante')||'{}'); }catch(e){ return {}; } })();
-const PAGADOS = (()=>{ try{ return JSON.parse(localStorage.getItem('finkap_comex_paquetes')||'[]'); }catch(e){ return []; } })();
+const EMB=(D.embarques||[]); const PROV=(D.proveedores||[]);
+const provById=id=>PROV.find(p=>p.id===id)||{};
+const BANCOS=(()=>{ try{ return JSON.parse(localStorage.getItem('finkap_comex_bancos')||'{}'); }catch(e){ return {}; } })();
+const ORD=(()=>{ try{ return JSON.parse(localStorage.getItem('finkap_comex_ordenante')||'{}'); }catch(e){ return {}; } })();
+const PAGADOS=(()=>{ try{ return JSON.parse(localStorage.getItem('finkap_comex_paquetes')||'[]'); }catch(e){ return []; } })();
 const saveBancos=()=>localStorage.setItem('finkap_comex_bancos',JSON.stringify(BANCOS));
 const saveOrd=()=>localStorage.setItem('finkap_comex_ordenante',JSON.stringify(ORD));
+const usd=n=>(n==null?'—':(+n).toLocaleString('es-AR',{minimumFractionDigits:2,maximumFractionDigits:2}));
+const esc=s=>(s==null?'':String(s)).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 
-const usd = n => (n==null?'—':(+n).toLocaleString('es-AR',{minimumFractionDigits:2,maximumFractionDigits:2}));
-let cur=null; // embarque seleccionado
+// ---- Step 1: lista de despachos por proveedor con checkboxes ----
+const grupos={};
+EMB.forEach((e,i)=>{ const k=e.proveedorId||'(sin proveedor)'; (grupos[k]=grupos[k]||[]).push(i); });
+let html='';
+for(const k in grupos){
+  const p=provById(k);
+  html+=`<div class="grpH">${esc(p.nombre||k)} · ${esc(p.pais||'')}</div>`;
+  grupos[k].forEach(i=>{ const e=EMB[i];
+    html+=`<label class="dchk" data-i="${i}" data-prov="${esc(e.proveedorId||'')}">
+      <input type="checkbox" class="dcb" value="${i}">
+      <span><span class="c">${esc(e.despacho)}</span> <span class="x">· ${esc(e.tipo||'')} ${e.factura?'· '+esc(e.factura):''}</span></span>
+      <span class="m">USD ${usd(e.fob)}</span></label>`;
+  });
+}
+$('lista').innerHTML=html;
 
-// llenar select
-EMB.forEach((e,i)=>{ const p=provById(e.proveedorId);
-  const o=document.createElement('option'); o.value=i;
-  o.textContent=`${e.despacho} · ${p.nombre||e.proveedorId||''} (${e.pais||''}) · FOB ${usd(e.fob)}${e.factura?' · '+e.factura:''}`;
-  $('selEmb').appendChild(o);
-});
+let sel=[]; // embarques seleccionados
+function provSel(){ const ps=[...new Set(sel.map(e=>e.proveedorId))]; return ps.length===1?ps[0]:null; }
 
-// ordenante precargado
-$('oNom').value=ORD.nom||''; $('oCuit').value=ORD.cuit||''; $('oBco').value=ORD.bco||'';
-['oNom','oCuit','oBco'].forEach(id=>$(id).addEventListener('input',()=>{ ORD.nom=$('oNom').value; ORD.cuit=$('oCuit').value; ORD.bco=$('oBco').value; saveOrd(); }));
-
-$('selEmb').addEventListener('change',()=>{
-  const i=$('selEmb').value; if(i===''){ ['embDatos','cardBenef','cardPago','cardOut'].forEach(x=>$(x).style.display='none'); return; }
-  cur=EMB[+i];
-  const p=provById(cur.proveedorId);
-  $('embDatos').style.display='block';
-  $('embDatos').innerHTML=`
-    <div class="dato"><span class="l">Proveedor</span><span class="v">${p.nombre||cur.proveedorId||'—'}</span></div>
-    <div class="dato"><span class="l">País / tipo</span><span class="v">${cur.pais||'—'} · ${cur.tipo||''}</span></div>
-    <div class="dato"><span class="l">FOB (factura)</span><span class="v">USD ${usd(cur.fob)}</span></div>
-    <div class="dato"><span class="l">Kg</span><span class="v">${cur.kg?(+cur.kg).toLocaleString('es-AR'):'—'}</span></div>
-    <div class="dato"><span class="l">Factura</span><span class="v">${cur.factura||'—'}</span></div>`;
-  // beneficiario: precargar del proveedor guardado
-  const b=BANCOS[cur.proveedorId]||{};
-  $('benefProv').textContent='Proveedor: '+(p.nombre||cur.proveedorId||'');
-  $('bNombre').value=b.nombre||p.nombre||''; $('bBanco').value=b.banco||''; $('bSwift').value=b.swift||'';
-  $('bIban').value=b.iban||''; $('bInter').value=b.inter||'';
-  // pago defaults
-  $('pMonto').value=cur.fob||''; $('pMoneda').value='USD';
-  $('pCod').value=(b.cod||'B06');
-  $('pRef').value=`${cur.despacho}${cur.factura?' · '+cur.factura:''}`;
-  ['cardBenef','cardPago','cardOut'].forEach(x=>$(x).style.display='block');
+document.querySelectorAll('.dcb').forEach(cb=>cb.addEventListener('change',onSel));
+function onSel(){
+  sel=[...document.querySelectorAll('.dcb:checked')].map(cb=>EMB[+cb.value]);
+  // limitar a un solo proveedor: deshabilitar los de otros si ya hay seleccion
+  const ps=[...new Set(sel.map(e=>e.proveedorId))];
+  const lock = ps.length>=1 ? ps[0] : null;
+  document.querySelectorAll('.dchk').forEach(l=>{
+    const otra = lock && l.dataset.prov!==lock;
+    const cb=l.querySelector('.dcb');
+    if(otra && !cb.checked){ cb.disabled=true; l.classList.add('dis'); } else { cb.disabled=false; l.classList.remove('dis'); }
+  });
+  const totFob=sel.reduce((s,e)=>s+(+e.fob||0),0);
+  $('sumbar').style.display = sel.length?'flex':'none';
+  $('sumN').textContent=sel.length; $('sumFob').textContent='USD '+usd(totFob);
+  if(sel.length){
+    const pid=provSel(); const p=provById(pid);
+    const b=BANCOS[pid]||{};
+    $('benefProv').textContent='Proveedor: '+(p.nombre||pid||'');
+    $('bNombre').value=b.nombre||p.nombre||''; $('bBanco').value=b.banco||''; $('bSwift').value=b.swift||'';
+    $('bIban').value=b.iban||''; $('bInter').value=b.inter||'';
+    $('pMonto').value=totFob.toFixed(2); $('pCod').value=(b.cod||'B06');
+    const facturas=[...new Set(sel.map(e=>e.factura).filter(Boolean))];
+    $('pRef').value=sel.map(e=>e.despacho).join(' + ')+(facturas.length?(' · '+facturas.join(' / ')):'');
+    ['cardBenef','cardPago','cardOut'].forEach(x=>$(x).style.display='block');
+  } else {
+    ['cardBenef','cardPago','cardOut'].forEach(x=>$(x).style.display='none');
+  }
+  $('paqueteWrap').style.display='none';
   revalidar();
-});
+}
 
-$('bSave').addEventListener('click',()=>{
-  if(!cur) return;
-  BANCOS[cur.proveedorId]={ nombre:$('bNombre').value.trim(), banco:$('bBanco').value.trim(), swift:$('bSwift').value.trim().toUpperCase(), iban:$('bIban').value.trim(), inter:$('bInter').value.trim(), cod:$('pCod').value.trim() };
+$('oNom').value=ORD.nom||''; $('oCuit').value=ORD.cuit||''; $('oBco').value=ORD.bco||'';
+['oNom','oCuit','oBco'].forEach(id=>$(id).addEventListener('input',()=>{ ORD.nom=$('oNom').value;ORD.cuit=$('oCuit').value;ORD.bco=$('oBco').value;saveOrd(); }));
+
+$('bSave').addEventListener('click',()=>{ const pid=provSel(); if(!pid) return;
+  BANCOS[pid]={ nombre:$('bNombre').value.trim(),banco:$('bBanco').value.trim(),swift:$('bSwift').value.trim().toUpperCase(),iban:$('bIban').value.trim(),inter:$('bInter').value.trim(),cod:$('pCod').value.trim() };
   saveBancos(); $('bSave').textContent='✓ Guardado'; setTimeout(()=>$('bSave').textContent='💾 Guardar datos de este proveedor',1500);
 });
-
 ['bNombre','bBanco','bSwift','bIban','bInter','pMonto','pMoneda','pCod','pRef','pVia'].forEach(id=>$(id).addEventListener('input',revalidar));
+$('pVia').addEventListener('change',revalidar);
 
 function revalidar(){
-  if(!cur){ return; }
+  if(!sel.length){ $('gen').disabled=true; $('checks').innerHTML=''; return; }
+  const totFob=sel.reduce((s,e)=>s+(+e.fob||0),0);
   const monto=parseFloat(String($('pMonto').value).replace(',','.'));
-  const swift=$('bSwift').value.trim().toUpperCase();
-  const iban=$('bIban').value.trim();
-  const nombre=$('bNombre').value.trim();
-  const via=$('pVia').value;
-  const yaPagado=PAGADOS.some(x=>x.despacho===cur.despacho && Math.abs((x.monto||0)-(monto||0))<0.01);
+  const swift=$('bSwift').value.trim().toUpperCase(); const iban=$('bIban').value.trim();
+  const nombre=$('bNombre').value.trim(); const via=$('pVia').value; const unProv=provSel();
+  const codigos=sel.map(e=>e.despacho);
+  const yaPagado=PAGADOS.some(x=>JSON.stringify((x.despachos||[]).slice().sort())===JSON.stringify(codigos.slice().sort()) && Math.abs((x.monto||0)-(monto||0))<0.01);
+  $('montoHint').textContent=`Total FOB de los ${sel.length} despacho(s): USD ${usd(totFob)} (podés pagar parcial).`;
   const checks=[
+    { ok:!!unProv, txt:'Todos los despachos del mismo proveedor (un giro = un beneficiario)' },
     { ok:(monto>0), txt:'Monto mayor a cero' },
-    { ok:(monto>0 && monto<=(+cur.fob+0.01)), txt:`Monto ≤ FOB del despacho (USD ${usd(cur.fob)})` },
-    { ok:!!$('pMoneda').value, txt:'Moneda definida' },
+    { ok:(monto>0 && monto<=totFob+0.01), txt:`Monto ≤ suma de FOB seleccionada (USD ${usd(totFob)})` },
     { ok:!!nombre, txt:'Beneficiario cargado' },
-    { ok:(via==='USDT')|| /^[A-Z0-9]{8}([A-Z0-9]{3})?$/.test(swift), txt: via==='USDT'?'SWIFT no requerido (vía USDT)':'SWIFT válido (8 u 11 caracteres)' },
-    { ok:(via==='USDT')|| iban.length>=6, txt: via==='USDT'?'IBAN/cuenta no requerido (vía USDT)':'IBAN / N° de cuenta cargado' },
-    { ok:!yaPagado, txt:'Sin pago previo por el mismo monto (anti-duplicado)', warn:yaPagado },
+    { ok:(via==='USDT')||/^[A-Z0-9]{8}([A-Z0-9]{3})?$/.test(swift), txt:via==='USDT'?'SWIFT no requerido (vía USDT)':'SWIFT válido (8 u 11 caracteres)' },
+    { ok:(via==='USDT')||iban.length>=6, txt:via==='USDT'?'IBAN/cuenta no requerido (vía USDT)':'IBAN / N° de cuenta cargado' },
+    { ok:!yaPagado, warn:yaPagado, txt:'Sin pago previo idéntico (anti-duplicado)' },
   ];
-  $('checks').innerHTML=checks.map(c=>{
-    const cls=c.ok?'ok':(c.warn?'warn':'bad'); const ic=c.ok?'✓':(c.warn?'⚠':'✕');
-    return `<li><span class="ico ${cls}">${ic}</span><span>${c.txt}</span></li>`;
-  }).join('');
-  const duros=checks.filter(c=>!c.warn);
-  $('gen').disabled = !duros.every(c=>c.ok);
+  $('checks').innerHTML=checks.map(c=>{ const cls=c.ok?'ok':(c.warn?'warn':'bad'); const ic=c.ok?'✓':(c.warn?'⚠':'✕'); return `<li><span class="${cls}">${ic}</span><span>${c.txt}</span></li>`; }).join('');
+  $('gen').disabled=!checks.filter(c=>!c.warn).every(c=>c.ok);
 }
 
 function paqueteTexto(){
   const monto=parseFloat(String($('pMonto').value).replace(',','.'));
-  const via=$('pVia').value;
+  const via=$('pVia').value; const totFob=sel.reduce((s,e)=>s+(+e.fob||0),0);
+  const p=provById(provSel());
+  const lineasDesp=sel.map(e=>`  · ${e.despacho}  (${e.tipo||''})  FOB USD ${usd(e.fob)}${e.factura?'  ·  '+e.factura:''}`);
   return [
 `PAQUETE DE PAGO AL EXTERIOR — FINKAP COMEX`,
-`Vía: ${via==='USDT'?'STABLECOIN (USDT)':'MULC · transferencia bancaria'}`,
+`Via: ${via==='USDT'?'STABLECOIN (USDT)':'MULC · transferencia bancaria'}`,
 ``,
 `ORDENANTE`,
 `  ${$('oNom').value||'Kapselmaker SA'}  ·  CUIT ${$('oCuit').value||'—'}`,
 `  Cuenta origen: ${$('oBco').value||'—'}`,
 ``,
 `BENEFICIARIO`,
-`  ${$('bNombre').value}`,
+`  ${$('bNombre').value}  (${p.pais||''})`,
 `  Banco: ${$('bBanco').value||'—'}`,
 via==='USDT'?`  (USDT — coordinar wallet/red con la contraparte)`:`  SWIFT/BIC: ${$('bSwift').value.toUpperCase()||'—'}`,
 via==='USDT'?'':`  IBAN/Cuenta: ${$('bIban').value||'—'}`,
@@ -214,33 +234,34 @@ via==='USDT'?'':`  Banco intermediario: ${$('bInter').value||'—'}`,
 ``,
 `PAGO`,
 `  Monto: ${$('pMoneda').value} ${usd(monto)}`,
-`  Código op. cambiaria: ${$('pCod').value||'—'}`,
+`  Codigo op. cambiaria: ${$('pCod').value||'—'}`,
 `  Referencia: ${$('pRef').value}`,
 ``,
-`DESPACHO`,
-`  Código: ${cur.despacho}  ·  ${cur.pais||''}  ·  ${cur.tipo||''}`,
-`  FOB factura: USD ${usd(cur.fob)}  ·  ${cur.factura||''}`,
-`  Café: ${cur.cafe||'—'}`,
+`DESPACHOS CUBIERTOS (${sel.length})`,
+...lineasDesp,
+`  ----`,
+`  Total FOB seleccionado: USD ${usd(totFob)}`,
 ``,
 `Generado en Finkap COMEX. Revisar antes de cargar en el home banking.`,
   ].filter(x=>x!=='').join('\n');
 }
 
 $('gen').addEventListener('click',()=>{
-  const txt=paqueteTexto();
-  $('paquete').textContent=txt; $('paqueteWrap').style.display='block';
+  $('paquete').textContent=paqueteTexto(); $('paqueteWrap').style.display='block';
   const monto=parseFloat(String($('pMonto').value).replace(',','.'));
-  PAGADOS.push({ despacho:cur.despacho, monto, via:$('pVia').value, fecha:new Date().toISOString() });
-  localStorage.setItem('finkap_comex_paquetes',JSON.stringify(PAGADOS));
-  revalidar();
+  PAGADOS.push({ despachos:sel.map(e=>e.despacho), monto, via:$('pVia').value, fecha:new Date().toISOString() });
+  localStorage.setItem('finkap_comex_paquetes',JSON.stringify(PAGADOS)); revalidar();
 });
 $('copy').addEventListener('click',()=>{ navigator.clipboard.writeText($('paquete').textContent).then(()=>{$('copy').textContent='✓ Copiado';setTimeout(()=>$('copy').textContent='📋 Copiar',1200);}); });
-$('print').addEventListener('click',()=>{ const w=window.open('','_blank'); w.document.write('<pre style="font:13px monospace;white-space:pre-wrap">'+$('paquete').textContent.replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]))+'</pre>'); w.document.close(); w.print(); });
+$('print').addEventListener('click',()=>{ const w=window.open('','_blank'); w.document.write('<pre style="font:13px monospace;white-space:pre-wrap">'+esc($('paquete').textContent)+'</pre>'); w.document.close(); w.print(); });
 $('json').addEventListener('click',()=>{
-  const monto=parseFloat(String($('pMonto').value).replace(',','.'));
-  const obj={ ordenante:{nom:$('oNom').value,cuit:$('oCuit').value,cuenta:$('oBco').value}, beneficiario:{nombre:$('bNombre').value,banco:$('bBanco').value,swift:$('bSwift').value.toUpperCase(),iban:$('bIban').value,intermediario:$('bInter').value}, pago:{monto,moneda:$('pMoneda').value,via:$('pVia').value,codOp:$('pCod').value,referencia:$('pRef').value}, despacho:{codigo:cur.despacho,pais:cur.pais,tipo:cur.tipo,fob:cur.fob,factura:cur.factura} };
+  const monto=parseFloat(String($('pMonto').value).replace(',','.')); const p=provById(provSel());
+  const obj={ ordenante:{nom:$('oNom').value,cuit:$('oCuit').value,cuenta:$('oBco').value},
+    beneficiario:{nombre:$('bNombre').value,pais:p.pais,banco:$('bBanco').value,swift:$('bSwift').value.toUpperCase(),iban:$('bIban').value,intermediario:$('bInter').value},
+    pago:{monto,moneda:$('pMoneda').value,via:$('pVia').value,codOp:$('pCod').value,referencia:$('pRef').value},
+    despachos:sel.map(e=>({codigo:e.despacho,tipo:e.tipo,fob:e.fob,factura:e.factura,pais:e.pais})) };
   const blob=new Blob([JSON.stringify(obj,null,2)],{type:'application/json'}); const a=document.createElement('a');
-  a.href=URL.createObjectURL(blob); a.download=`pago_${cur.despacho}.json`; a.click();
+  a.href=URL.createObjectURL(blob); a.download=`pago_${sel.length>1?sel.length+'despachos':sel[0].despacho}.json`; a.click();
 });
 </script>
 </body>
