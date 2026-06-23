@@ -214,8 +214,8 @@ table.liq td.n{font-family:var(--mono);text-align:right;white-space:nowrap}
 
     <!-- DERECHA: VEREDICTO + CONTRATO -->
     <div>
-      <div class="verdict rech" id="verdict">
-        <span class="badge" id="vBadge">—</span>
+      <div class="verdict" id="verdict">
+        <span class="badge" id="vBadge">— Completá la ficha</span>
         <div class="vbig">
           <div class="score" id="vScore">—<small>/100</small></div>
           <div class="conf">confianza <b id="vConf">—</b>/100</div>
@@ -333,8 +333,10 @@ function evaluar(){
   const inp=inputs();
   const r=PE.certificar(inp);
   const v=$('verdict');
-  v.className='verdict '+(r.nivel==='certificado'?'cert':r.nivel==='provisorio'?'prov':'rech');
-  $('vBadge').textContent = r.nivel==='certificado'?'✓ Certificado':r.nivel==='provisorio'?'≈ Provisorio':'✕ No viable';
+  const incompleta = !r.fichaCompleta;   // faltan datos básicos -> estado NEUTRO, no rojo de rechazo
+  v.className='verdict '+(incompleta?'':(r.nivel==='certificado'?'cert':r.nivel==='provisorio'?'prov':'rech'));
+  $('vBadge').textContent = incompleta ? '— Completá la ficha'
+    : (r.nivel==='certificado'?'✓ Certificado':r.nivel==='provisorio'?'≈ Provisorio':'✕ No viable');
   $('vScore').innerHTML = (r.scoreProvisorio!=null?r.scoreProvisorio.toFixed(2):'—')+'<small>/100</small>';
   $('vConf').textContent = r.confianza!=null?r.confianza.toFixed(0):'—';
   $('vBar').style.width = Math.max(0,Math.min(100, r.scoreProvisorio||0))+'%';
