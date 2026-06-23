@@ -29,6 +29,8 @@ input:focus,select:focus{border-color:var(--orange)}
 .grpH{font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted2);font-weight:700;margin:12px 0 6px}
 .dchk{display:flex;align-items:center;gap:10px;padding:8px 10px;border:1px solid var(--line);border-radius:9px;margin-bottom:6px;background:var(--panel2);cursor:pointer}
 .dchk.dis{opacity:.4;cursor:not-allowed}
+.dchk.paid{border-color:rgba(70,211,154,.4);background:rgba(70,211,154,.08)}
+.ptag{color:var(--ok);font-size:10px;font-weight:700;margin-left:6px}
 .dchk input{width:17px;height:17px;accent-color:var(--orange);flex:0 0 auto}
 .dchk .c{font-family:var(--mono);font-weight:700;font-size:12.5px}
 .dchk .m{margin-left:auto;font-family:var(--mono);font-size:12.5px;color:var(--muted)}
@@ -53,7 +55,8 @@ input:focus,select:focus{border-color:var(--orange)}
 
   <!-- 1) DESPACHOS -->
   <div class="card" style="margin-top:14px">
-    <h2><span class="step">1</span>Despachos a pagar <span class="mini" style="text-transform:none;letter-spacing:0">(marcá uno o varios del mismo proveedor)</span></h2>
+    <h2><span class="step">1</span>Despachos a pagar <span class="mini" style="text-transform:none;letter-spacing:0">(marcá uno o varios del mismo proveedor · los pagados van en verde)</span></h2>
+    <div class="mini" style="margin-bottom:8px"><span id="paidCount" class="ok"></span><a id="clearPaid" href="#" style="color:var(--muted);display:none;margin-left:8px">borrar registro de pagos (esta PC)</a></div>
     <div id="lista"></div>
     <div class="sumbar" id="sumbar" style="display:none">
       <span><b id="sumN">0</b> despacho(s) seleccionado(s)</span>
@@ -130,36 +133,38 @@ const saveOrd=()=>localStorage.setItem('finkap_comex_ordenante',JSON.stringify(O
 const usd=n=>(n==null?'—':(+n).toLocaleString('es-AR',{minimumFractionDigits:2,maximumFractionDigits:2}));
 const esc=s=>(s==null?'':String(s)).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 
-// ---- Step 1: lista de despachos por proveedor con checkboxes ----
-const grupos={};
-EMB.forEach((e,i)=>{ const k=e.proveedorId||'(sin proveedor)'; (grupos[k]=grupos[k]||[]).push(i); });
-let html='';
-for(const k in grupos){
-  const p=provById(k);
-  html+=`<div class="grpH">${esc(p.nombre||k)} · ${esc(p.pais||'')}</div>`;
-  grupos[k].forEach(i=>{ const e=EMB[i];
-    html+=`<label class="dchk" data-i="${i}" data-prov="${esc(e.proveedorId||'')}">
-      <input type="checkbox" class="dcb" value="${i}">
-      <span><span class="c">${esc(e.despacho)}</span> <span class="x">· ${esc(e.tipo||'')} ${e.factura?'· '+esc(e.factura):''}</span></span>
-      <span class="m">USD ${usd(e.fob)}</span></label>`;
-  });
-}
-$('lista').innerHTML=html;
-
+// ---- Step 1: lista de despachos (checkboxes), con marca verde de "ya pagado" ----
 let sel=[]; // embarques seleccionados
 function provSel(){ const ps=[...new Set(sel.map(e=>e.proveedorId))]; return ps.length===1?ps[0]:null; }
-
-document.querySelectorAll('.dcb').forEach(cb=>cb.addEventListener('change',onSel));
+function paidInfo(){ const m={}; PAGADOS.forEach(x=>(x.despachos||[]).forEach(c=>{ if(!m[c]||x.fecha>m[c]) m[c]=x.fecha; })); return m; }
+function applyLock(){ const lock=sel.length?sel[0].proveedorId:null;
+  document.querySelectorAll('.dchk').forEach(l=>{ const cb=l.querySelector('.dcb'); const otra=lock&&l.dataset.prov!==lock;
+    if(otra&&!cb.checked){ cb.disabled=true; l.classList.add('dis'); } else { cb.disabled=false; l.classList.remove('dis'); } });
+}
+function renderLista(){
+  const paid=paidInfo(); const selCodes=new Set(sel.map(e=>e.despacho));
+  const grupos={}; EMB.forEach((e,i)=>{ const k=e.proveedorId||'(sin proveedor)'; (grupos[k]=grupos[k]||[]).push(i); });
+  let html=''; let nPaid=0;
+  for(const k in grupos){ const p=provById(k);
+    html+=`<div class="grpH">${esc(p.nombre||k)} · ${esc(p.pais||'')}</div>`;
+    grupos[k].forEach(i=>{ const e=EMB[i]; const pg=paid[e.despacho]; if(pg)nPaid++;
+      const f=pg?new Date(pg).toLocaleDateString('es-AR'):'';
+      html+=`<label class="dchk ${pg?'paid':''}" data-i="${i}" data-prov="${esc(e.proveedorId||'')}">
+        <input type="checkbox" class="dcb" value="${i}" ${selCodes.has(e.despacho)?'checked':''}>
+        <span><span class="c">${esc(e.despacho)}</span> <span class="x">· ${esc(e.tipo||'')} ${e.factura?'· '+esc(e.factura):''}</span>${pg?` <span class="ptag">✓ pagado ${f}</span>`:''}</span>
+        <span class="m">USD ${usd(e.fob)}</span></label>`;
+    });
+  }
+  $('lista').innerHTML=html;
+  document.querySelectorAll('.dcb').forEach(cb=>cb.addEventListener('change',onSel));
+  applyLock();
+  $('paidCount').textContent=nPaid?`✓ ${nPaid} despacho(s) con pago ya armado`:'';
+  $('clearPaid').style.display=nPaid?'inline':'none';
+}
+$('clearPaid').addEventListener('click',ev=>{ ev.preventDefault(); if(confirm('¿Borrar el registro de pagos de esta PC? (no afecta tus archivos ni la Torre)')){ PAGADOS.length=0; localStorage.setItem('finkap_comex_paquetes','[]'); renderLista(); revalidar(); } });
 function onSel(){
   sel=[...document.querySelectorAll('.dcb:checked')].map(cb=>EMB[+cb.value]);
-  // limitar a un solo proveedor: deshabilitar los de otros si ya hay seleccion
-  const ps=[...new Set(sel.map(e=>e.proveedorId))];
-  const lock = ps.length>=1 ? ps[0] : null;
-  document.querySelectorAll('.dchk').forEach(l=>{
-    const otra = lock && l.dataset.prov!==lock;
-    const cb=l.querySelector('.dcb');
-    if(otra && !cb.checked){ cb.disabled=true; l.classList.add('dis'); } else { cb.disabled=false; l.classList.remove('dis'); }
-  });
+  applyLock();
   const totFob=sel.reduce((s,e)=>s+(+e.fob||0),0);
   $('sumbar').style.display = sel.length?'flex':'none';
   $('sumN').textContent=sel.length; $('sumFob').textContent='USD '+usd(totFob);
@@ -250,7 +255,7 @@ $('gen').addEventListener('click',()=>{
   $('paquete').textContent=paqueteTexto(); $('paqueteWrap').style.display='block';
   const monto=parseFloat(String($('pMonto').value).replace(',','.'));
   PAGADOS.push({ despachos:sel.map(e=>e.despacho), monto, via:$('pVia').value, fecha:new Date().toISOString() });
-  localStorage.setItem('finkap_comex_paquetes',JSON.stringify(PAGADOS)); revalidar();
+  localStorage.setItem('finkap_comex_paquetes',JSON.stringify(PAGADOS)); renderLista(); revalidar();
 });
 $('copy').addEventListener('click',()=>{ navigator.clipboard.writeText($('paquete').textContent).then(()=>{$('copy').textContent='✓ Copiado';setTimeout(()=>$('copy').textContent='📋 Copiar',1200);}); });
 $('print').addEventListener('click',()=>{ const w=window.open('','_blank'); w.document.write('<pre style="font:13px monospace;white-space:pre-wrap">'+esc($('paquete').textContent)+'</pre>'); w.document.close(); w.print(); });
@@ -263,6 +268,8 @@ $('json').addEventListener('click',()=>{
   const blob=new Blob([JSON.stringify(obj,null,2)],{type:'application/json'}); const a=document.createElement('a');
   a.href=URL.createObjectURL(blob); a.download=`pago_${sel.length>1?sel.length+'despachos':sel[0].despacho}.json`; a.click();
 });
+
+renderLista();   // pintar la lista (con los pagados en verde) al cargar
 </script>
 </body>
 </html>
