@@ -1,0 +1,222 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Centro de mando — Finkap</title>
+<meta name="description" content="Tablero de bancos, ARCA y organismos en una sola pantalla. Cotizaciones en vivo.">
+<meta name="robots" content="noindex,nofollow">
+<script src="gate.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0d0d0f; --bg2:#131316; --panel:#17171b; --panel2:#1d1d22; --panel3:#222228;
+  --line:#2c2c33; --line2:#3a3a43; --text:#f5f5f7; --muted:#9b9ba6; --muted2:#6f6f7a;
+  --orange:#F97316; --orange-soft:rgba(249,115,22,.12); --orange-line:rgba(249,115,22,.45);
+  --ok:#46d39a; --ok-soft:rgba(70,211,154,.1); --bad:#ef5350; --warn:#e0a44e; --blue:#7cc4ff; --violet:#b58bff;
+  --radius:16px; --radius-sm:10px;
+  --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  --sans:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+}
+*{box-sizing:border-box} html,body{margin:0;padding:0}
+body{background:radial-gradient(1200px 600px at 85% -10%, rgba(249,115,22,.10), transparent 60%),radial-gradient(900px 500px at -10% 10%, rgba(249,115,22,.05), transparent 55%),var(--bg);color:var(--text);font-family:var(--sans);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased;letter-spacing:-.01em;min-height:100vh}
+a{color:inherit;text-decoration:none}
+.num,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums;letter-spacing:0}
+::selection{background:var(--orange);color:#fff}
+
+.topbar{position:sticky;top:0;z-index:50;backdrop-filter:saturate(140%) blur(14px);background:rgba(13,13,15,.72);border-bottom:1px solid var(--line)}
+.topbar-in{max-width:1280px;margin:0 auto;padding:12px 20px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:20px;letter-spacing:-.03em}
+.brand .dot{width:30px;height:30px;border-radius:50%;border:2.5px solid var(--orange);display:grid;place-items:center;color:var(--orange);font-weight:900;font-size:16px;flex:0 0 auto}
+.brand sup{color:var(--orange);font-size:10px;font-weight:700}
+.priv{font-size:9px;text-transform:uppercase;letter-spacing:.7px;color:var(--bad);border:1px solid rgba(239,83,80,.4);background:rgba(239,83,80,.08);border-radius:99px;padding:2px 8px;font-weight:700}
+.clock{margin-left:auto;font-size:12px;color:var(--muted);font-family:var(--mono)}
+.nav{display:flex;gap:6px;flex-wrap:wrap}
+.nav a{font-size:12px;color:var(--muted);padding:5px 11px;border-radius:99px;border:1px solid transparent}
+.nav a:hover{color:var(--text);border-color:var(--line)}
+.nav a.on{color:var(--orange);border-color:var(--orange-line);background:var(--orange-soft)}
+
+.shell{max-width:1280px;margin:0 auto;padding:22px 20px 80px}
+.hero{margin:4px 0 16px}
+.hero h1{font-size:clamp(22px,3vw,30px);font-weight:800;letter-spacing:-.03em;margin:0 0 3px}
+.hero h1 .ac{color:var(--orange)}
+.hero p{color:var(--muted);max-width:720px;margin:0}
+
+/* cotizaciones */
+.saldos{display:grid;grid-template-columns:repeat(auto-fill,minmax(165px,1fr));gap:10px;margin:14px 0 6px}
+.scard{background:linear-gradient(160deg,var(--panel2),var(--panel));border:1px solid var(--line);border-radius:var(--radius);padding:13px 15px}
+.scard .k{font-size:9px;text-transform:uppercase;letter-spacing:.7px;color:var(--muted2)}
+.scard .v{font-family:var(--mono);font-size:23px;font-weight:800;margin-top:4px;line-height:1.05}
+.scard .s{font-size:10.5px;color:var(--muted);margin-top:2px}
+.scard .v.live{color:var(--ok)} .scard .v.dim{color:var(--muted2)}
+.scard.accent{border-color:var(--orange-line)} .scard.accent .v{color:var(--orange)}
+.saldos-note{font-size:11px;color:var(--muted2);margin:2px 0 4px}
+.saldos-note b{color:var(--muted)}
+
+.sec{font-size:11px;text-transform:uppercase;letter-spacing:.9px;color:var(--muted2);font-weight:700;margin:26px 0 12px;display:flex;align-items:center;gap:10px}
+.sec::after{content:"";height:1px;background:var(--line);flex:1}
+.sec .hint{font-size:10px;text-transform:none;letter-spacing:0;color:var(--warn);font-weight:600}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(225px,1fr));gap:12px}
+.card{display:flex;align-items:center;gap:12px;background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:14px 16px;transition:.15s;position:relative}
+.card:hover{transform:translateY(-2px);border-color:var(--orange-line);box-shadow:0 12px 28px -16px rgba(0,0,0,.7)}
+.card .ico{width:36px;height:36px;border-radius:10px;display:grid;place-items:center;font-size:18px;flex:0 0 auto;background:var(--panel3);border:1px solid var(--line2)}
+.card .tx{min-width:0}
+.card h3{margin:0;font-size:14.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.card p{margin:1px 0 0;font-size:11.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.card .ext{margin-left:auto;font-size:13px;color:var(--muted2);flex:0 0 auto}
+.card.bank .ico{color:var(--blue);border-color:rgba(124,196,255,.35);background:rgba(124,196,255,.08)}
+.card.bolsa .ico{color:var(--ok);border-color:rgba(70,211,154,.35);background:var(--ok-soft)}
+.card.pay .ico{color:var(--warn);border-color:rgba(224,164,78,.35);background:rgba(224,164,78,.1)}
+.card.arca .ico{color:var(--orange);border-color:var(--orange-line);background:var(--orange-soft)}
+.card.gov .ico{color:var(--violet);border-color:rgba(181,139,255,.35);background:rgba(181,139,255,.1)}
+.card.todo{border-style:dashed;opacity:.75}
+.card.todo .ext{color:var(--warn)}
+.foot{margin-top:30px;font-size:11px;color:var(--muted2);line-height:1.7;max-width:880px}
+.foot b{color:var(--muted)} .foot a{color:var(--orange)} .foot code{color:var(--muted);font-family:var(--mono)}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-in">
+    <a href="inicio.html" class="brand" title="Inicio Finkap"><span class="dot">f</span> finkap<sup>®</sup></a>
+    <span class="priv">centro de mando</span>
+    <nav class="nav">
+      <a href="centro.html" class="on">Centro</a>
+      <a href="panel-interno.html">Panel</a>
+      <a href="indice-maestro.html">Núcleo</a>
+      <a href="importaciones/index.html">Importaciones</a>
+    </nav>
+    <span class="clock" id="clock">—</span>
+  </div>
+</div>
+
+<div class="shell">
+  <div class="hero">
+    <h1>Centro de <span class="ac">mando</span></h1>
+    <p>Bancos, ARCA y organismos en una sola pantalla. Fijá esta página como inicio del Chrome y abrí cada cosa en su pestaña. Arriba, el dólar y el café en vivo.</p>
+  </div>
+
+  <!-- ===== COTIZACIONES EN VIVO ===== -->
+  <div class="saldos">
+    <div class="scard accent"><div class="k">Dólar oficial · venta</div><div class="v dim" id="sOf">—</div><div class="s" id="sOfS">BNA</div></div>
+    <div class="scard"><div class="k">Dólar mayorista</div><div class="v dim" id="sMay">—</div><div class="s">comex / importación</div></div>
+    <div class="scard"><div class="k">Dólar MEP</div><div class="v dim" id="sMep">—</div><div class="s">bolsa</div></div>
+    <div class="scard"><div class="k">Café · Coffee C (NY)</div><div class="v dim" id="sKC">—</div><div class="s">¢/lb · ICE</div></div>
+  </div>
+  <div class="saldos-note"><b>En vivo</b> desde dolarapi.com + ICE. Se actualiza al abrir la página.</div>
+
+  <!-- ===== BANCOS ===== -->
+  <div class="sec">Bancos</div>
+  <div class="grid" id="gBancos"></div>
+
+  <!-- ===== BOLSA / INVERSIONES ===== -->
+  <div class="sec">Bolsa e inversiones</div>
+  <div class="grid" id="gBolsa"></div>
+
+  <!-- ===== COBROS / MEDIOS DE PAGO ===== -->
+  <div class="sec">Cobros y pagos</div>
+  <div class="grid" id="gPay"></div>
+
+  <!-- ===== ARCA ===== -->
+  <div class="sec">ARCA <span style="color:var(--muted2);font-weight:400;text-transform:none;letter-spacing:0">(ex-AFIP)</span> <span class="hint">· login único: entrás 1 vez por el Portal y el resto abre directo</span></div>
+  <div class="grid" id="gArca"></div>
+
+  <!-- ===== ORGANISMOS ===== -->
+  <div class="sec">Organismos</div>
+  <div class="grid" id="gOrg"></div>
+
+  <div class="foot">
+    <b>Bancos:</b> no tienen API de home banking — entrás con un click y ponés tu clave. Si querés que <b>lea el saldo</b> después de loguearte, decímelo.<br>
+    <b>ARCA:</b> usa <b>Clave Fiscal con login único (SSO)</b>: abrí primero el <b>Portal</b>, logueate, y los demás servicios abren sin volver a pedir clave. Si algún link te manda al menú en vez del servicio, es por eso — reemplazá la URL por la exacta de tu historial, o <b>decime y la corrijo leyéndola de tu Chrome</b>.<br>
+    <b>Editar:</b> todas las URLs están en el array <code>LINKS</code> arriba del script, en un solo lugar y comentadas.
+  </div>
+</div>
+
+<script>
+/* ===================================================================
+   LINKS — editá acá las URLs. {h:título, d:descripción, u:URL, i:emoji}
+   u:"" => sale como "pendiente" (slot para completar).
+   =================================================================== */
+const LINKS = {
+  bancos: [
+    { i:"🏦", h:"Banco Provincia · BIP", d:"Banca Internet Provincia (empresa)", u:"https://www.bancoprovincia.bancainternet.com.ar/spa/" },
+    { i:"🏦", h:"BBVA · Net Cash",       d:"Banca empresas BBVA",                u:"https://netcash.bbva.com.ar/local_pibee/SolicitarCredenciales.html?20262704" },
+    { i:"🏦", h:"Galicia · Office",      d:"Office Banking empresas",             u:"https://empresas.bancogalicia.com.ar/inicio" },
+    { i:"🏦", h:"Banco Nación",          d:"BNA Digital · empresas",             u:"https://digital.bna.com.ar/loginStep1" },
+    { i:"🏦", h:"Supervielle · Empresas", d:"Online Banking Empresas",           u:"https://empresas.supervielle.com.ar/obe/login" },
+  ],
+  bolsa: [
+    { i:"📈", h:"Caja de Valores · ePyme", d:"Cheques y pagarés PyME en el mercado", u:"http://epyme.cajadevalores.com.ar" },
+    { i:"💹", h:"Balanz",                d:"Bróker · inversiones y cuenta comitente", u:"https://clientes.balanz.com" },
+  ],
+  pay: [
+    { i:"💳", h:"Mercado Pago",          d:"Cobros, dinero en cuenta y QR",      u:"https://www.mercadopago.com.ar/" },
+    { i:"💳", h:"Nave Negocios",         d:"Cuenta y cobros de negocios (Naranja X)", u:"https://www.navenegocios.com/login-ofb" },
+    { i:"💳", h:"Payway",                d:"Procesador de pagos con tarjeta",    u:"https://mi.payway.com.ar/ms/ui-login/login/" },
+    { i:"💳", h:"Openpay",               d:"Pasarela de cobros",                 u:"https://www.openpayargentina.com.ar/" },
+  ],
+  arca: [
+    { i:"🔑", h:"Portal ARCA · Clave Fiscal", d:"Entrada única (SSO) · desde acá elegís cualquier servicio", u:"https://auth.afip.gob.ar/contribuyente_/login.xhtml" },
+    { i:"🧾", h:"Mis Comprobantes",      d:"Facturas emitidas y recibidas",      u:"https://servicioscf.afip.gob.ar/publico/misComprobantes/default.aspx" },
+    { i:"📊", h:"Cuentas Tributarias",   d:"Sistema de Cuentas Tributarias (SCT) · DDJJ y saldos", u:"https://serviciostelematicos.afip.gob.ar/sct/" },
+    { i:"🚢", h:"Aduana · Mis Operaciones", d:"Comex · SIM/Malvina se opera por Lakaut (despachante)", u:"https://auth.afip.gob.ar/contribuyente_/login.xhtml" },
+    { i:"🌎", h:"Relevamiento Act./Pas. exterior", d:"Régimen BCRA · se entra por Clave Fiscal ARCA", u:"https://www.bcra.gob.ar/SistemasFinancierosYdePagos/Relevamiento_activos_pasivos_externos.asp" },
+  ],
+  org: [
+    { i:"📄", h:"TAD · Nacional",        d:"Trámites a Distancia (Nación)",      u:"https://tramitesadistancia.gob.ar/" },
+    { i:"🏙️", h:"TAD · Ciudad (CABA)",   d:"Trámites a Distancia — Bs As Ciudad", u:"https://tad.buenosaires.gob.ar/" },
+    { i:"🏦", h:"BCRA · Central deudores", d:"Situación crediticia",             u:"https://www.bcra.gob.ar/BCRAyVos/Situacion_Crediticia.asp" },
+    { i:"🧾", h:"BCRA · Cheques rechazados", d:"Consulta de cheques denunciados", u:"https://www.bcra.gob.ar/BCRAyVos/Cheques_denunciados.asp" },
+  ],
+};
+const KIND = { bancos:"bank", bolsa:"bolsa", pay:"pay", arca:"arca", org:"gov" };
+const INTERNAL = u => u && !/^https?:\/\//.test(u);
+
+function card(it, kind){
+  if(!it.u){
+    return `<div class="card ${kind} todo" title="Falta la URL — editá LINKS en centro.html">
+      <div class="ico">${it.i}</div>
+      <div class="tx"><h3>${it.h}</h3><p>${it.d}</p></div>
+      <span class="ext">⌫</span></div>`;
+  }
+  const t = INTERNAL(it.u) ? '' : ' target="_blank" rel="noopener"';
+  const arrow = INTERNAL(it.u) ? '→' : '↗';
+  return `<a class="card ${kind}" href="${it.u}"${t}>
+    <div class="ico">${it.i}</div>
+    <div class="tx"><h3>${it.h}</h3><p>${it.d}</p></div>
+    <span class="ext">${arrow}</span></a>`;
+}
+const render = (id, key) => document.getElementById(id).innerHTML = LINKS[key].map(it=>card(it, KIND[key])).join('');
+render('gBancos','bancos'); render('gBolsa','bolsa'); render('gPay','pay'); render('gArca','arca'); render('gOrg','org');
+
+/* reloj */
+function tick(){
+  const d = new Date();
+  document.getElementById('clock').textContent =
+    d.toLocaleDateString('es-AR',{weekday:'short',day:'2-digit',month:'short'}) + ' · ' +
+    d.toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'});
+}
+tick(); setInterval(tick, 30000);
+
+/* cotizaciones en vivo */
+const fmt = (v,d=0)=> (v==null||isNaN(v))?'—':(+v).toLocaleString('es-AR',{minimumFractionDigits:d,maximumFractionDigits:d});
+async function dolar(tipo){
+  const r = await fetch("https://dolarapi.com/v1/dolares/"+tipo,{cache:'no-store'}); return r.json();
+}
+(async ()=>{
+  try{ const j=await dolar('oficial'); const e=document.getElementById('sOf'); e.textContent='$'+fmt(j.venta); e.classList.replace('dim','live'); document.getElementById('sOfS').textContent='BNA · compra $'+fmt(j.compra); }catch(e){ document.getElementById('sOfS').textContent='sin conexión'; }
+  try{ const j=await dolar('mayorista'); const e=document.getElementById('sMay'); e.textContent='$'+fmt(j.venta); e.classList.replace('dim','live'); }catch(e){}
+  try{ const j=await dolar('bolsa'); const e=document.getElementById('sMep'); e.textContent='$'+fmt(j.venta); e.classList.replace('dim','live'); }catch(e){}
+  try{
+    const u="https://query1.finance.yahoo.com/v8/finance/chart/KC=F";
+    const r=await fetch("https://corsproxy.io/?url="+encodeURIComponent(u),{cache:'no-store'});
+    const j=await r.json(); const kc=j.chart.result[0].meta.regularMarketPrice;
+    if(kc>0){ const e=document.getElementById('sKC'); e.textContent=fmt(kc,2); e.classList.replace('dim','live'); }
+  }catch(e){}
+})();
+</script>
+</body>
+</html>

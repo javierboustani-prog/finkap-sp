@@ -157,7 +157,8 @@ tr.tot td{font-weight:800;border-top:2px solid var(--line2);background:rgba(255,
 
   document.getElementById("arsPill").textContent = arsAFavorNuestro?'a favor nuestro':'a favor de Modo';
 
-  document.getElementById("notePusd").innerHTML = `<b>Café (USD):</b> entre la devolución de Honduras (1.840 kg) y la liquidación de lo vendido en Finkap (276 kg), el saldo a favor de Martín es <b style="color:var(--yellow)">US$ ${usd(usdTot)}</b> en café/valor.`;
+  const usdDesc = usdItems.map(i=>i.concepto.toLowerCase()+(i.kg?` (${kg(i.kg)} kg)`:'')).join(" y ");
+  document.getElementById("notePusd").innerHTML = `<b>Café (USD):</b> entre ${usdDesc}, el saldo a favor de ${C.usd.aFavorDe||'Martín'} es <b style="color:var(--yellow)">US$ ${usd(usdTot)}</b> en café/valor.`;
   document.getElementById("notePars").innerHTML = `<b>Pesos (facturas):</b> nosotros le debemos la <b>${(C.ars.nosotrosDebemos||[]).map(f=>f.doc).join(", ")}</b> (${ars(debemos)}) y Modo nos debe la <b>${(C.ars.ellosDeben||[]).map(f=>f.doc).join(", ")}</b> (${ars(nosDeben)}) → saldo ${arsAFavorNuestro?'<b style="color:var(--ok)">a favor nuestro</b>':'a favor de Modo'} de <b style="color:var(--orange)">${ars(Math.abs(saldoArs))}</b> para compensar.`;
 
   document.getElementById("foot").textContent = "Cuenta cruzada con "+C.socio+" (MODO) · café en USD + facturas en pesos · actualizado "+(C.actualizado||"");
