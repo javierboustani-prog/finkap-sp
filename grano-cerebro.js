@@ -96,6 +96,8 @@ export const PROCESOS = {
   'Honey':       'Intermedio: más cuerpo y dulzor que el lavado, acidez redondeada.',
   'Natural':     'Frutal e intenso, cuerpo alto, dulzor a fruta madura; riesgo de fermento si está mal secado.',
   'Anaeróbico':  'Fermentación controlada: notas exóticas/funky, alta complejidad aromática.',
+  'Carbónico':   'Maceración carbónica (CO₂): perfil intenso y de autor, frutal-vínico, muy aromático.',
+  'Wet-hulled':  'Despulpado húmedo (giling basah, Sumatra): cuerpo alto, terroso-herbal, baja acidez.',
   'Nitro':       'Maceración con CO₂/nitrógeno: aromáticos intensos, perfil de autor.',
 };
 export const procesoInfo = p => PROCESOS[p] || null;

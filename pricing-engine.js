@@ -10,7 +10,7 @@ export const D_ORIGEN = { Colombia:25, Honduras:12, Brasil:5, Guatemala:28, 'Cos
   'Panamá':45, 'Perú':10, 'México':14, Nicaragua:12, 'El Salvador':20, Ecuador:30, Bolivia:22, Vietnam:-40,
   'Etiopía':32, Kenia:45 };   // estimados (origen premium) · calibrar con compras reales
 
-export const D_PROCESO = { Lavado:0, Washed:0, Honey:10, Natural:18, 'Anaeróbico':40, Nitro:25 };
+export const D_PROCESO = { Lavado:0, Washed:0, Honey:10, Natural:18, 'Anaeróbico':40, 'Carbónico':45, 'Wet-hulled':-3, Nitro:25 };
 
 // d_variedad: idealmente por VARIEDAD (ver sección 8). Fallback por tier:
 export const D_VAR_TIER = { regional:0, especialidad:40, exotico:250 };
