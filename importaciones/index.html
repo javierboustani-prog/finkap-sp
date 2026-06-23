@@ -200,7 +200,7 @@ td.r,th.r{text-align:right}
 
   <div class="kpis" id="kpis"></div>
 
-  <div class="sec"><h2>Alertas</h2><div class="ln"></div></div>
+  <div class="sec"><h2>Alertas</h2><div class="ln"></div><a id="alToggle" href="#" style="font-size:11px;color:var(--muted);text-decoration:none;display:none"></a></div>
   <div class="alertas" id="alertas"></div>
 
   <div class="sec"><h2>Transferencias al exterior · en curso</h2><div class="ln"></div><span class="cnt" id="transfCnt"></span></div>
@@ -304,11 +304,37 @@ window.addEventListener('error', function(){
   document.getElementById("kpis").innerHTML = kpis.map(x=>
     `<div class="kpi ${x.a?'accent':''} ${x.cls||''}"><div class="k">${x.k}</div><div class="v">${x.v}</div><div class="s">${x.s}</div></div>`).join("");
 
-  // alertas
-  document.getElementById("alertas").innerHTML = D.alertas.map(a=>
-    `<div class="al ${a.nivel}"><div class="t">${a.nivel==='danger'?'⛔':'⚠️'} ${a.titulo}</div>`+
-    `<div class="d">${a.detalle}</div>`+
-    (a.accion?`<div class="a"><b>Acción →</b> ${a.accion}</div>`:``)+`</div>`).join("");
+  // alertas (con opción de resolver/descartar; se guarda en este equipo)
+  var alShowDismissed=false;
+  function alKey(a){ var s=(a.titulo||'')+'|'+(a.detalle||''); var h=0; for(var i=0;i<s.length;i++){ h=(Math.imul(31,h)+s.charCodeAt(i))|0; } return (h>>>0).toString(36); }
+  function alOcultas(){ try{ return JSON.parse(localStorage.getItem('finkap_alertas_ocultas')||'[]'); }catch(e){ return []; } }
+  function alSet(arr){ localStorage.setItem('finkap_alertas_ocultas', JSON.stringify(arr)); }
+  function renderAlertas(){
+    var oc=alOcultas();
+    var activas=D.alertas.filter(function(a){ return oc.indexOf(alKey(a))<0; });
+    var desc=D.alertas.filter(function(a){ return oc.indexOf(alKey(a))>=0; });
+    var lista=alShowDismissed?desc:activas;
+    var btnTxt=alShowDismissed?'↩ restaurar':'✓ resolver';
+    var act=alShowDismissed?'restore':'dismiss';
+    document.getElementById("alertas").innerHTML = lista.length ? lista.map(function(a){ var k=alKey(a);
+      return '<div class="al '+a.nivel+'"><div class="t">'+(a.nivel==='danger'?'⛔':'⚠️')+' '+a.titulo+
+        ' <button class="al-x" data-k="'+k+'" data-act="'+act+'" style="float:right;font-size:10.5px;background:transparent;border:1px solid var(--line2);color:var(--muted);border-radius:6px;padding:2px 8px;cursor:pointer">'+btnTxt+'</button></div>'+
+        '<div class="d">'+a.detalle+'</div>'+
+        (a.accion?'<div class="a"><b>Acción →</b> '+a.accion+'</div>':'')+'</div>';
+    }).join("") : '<div class="note" style="margin:0">'+(alShowDismissed?'No hay alertas descartadas.':'No hay alertas activas. 🎉')+'</div>';
+    var t=document.getElementById('alToggle');
+    if(alShowDismissed){ t.textContent='← ver activas'; t.style.display='inline'; }
+    else if(desc.length){ t.textContent='ver descartadas ('+desc.length+')'; t.style.display='inline'; }
+    else { t.style.display='none'; }
+  }
+  document.getElementById("alertas").addEventListener('click', function(ev){
+    var b=ev.target.closest && ev.target.closest('.al-x'); if(!b) return;
+    var k=b.getAttribute('data-k'); var oc=alOcultas();
+    if(b.getAttribute('data-act')==='dismiss'){ if(oc.indexOf(k)<0) oc.push(k); } else { oc=oc.filter(function(x){ return x!==k; }); }
+    alSet(oc); renderAlertas();
+  });
+  document.getElementById('alToggle').addEventListener('click', function(ev){ ev.preventDefault(); alShowDismissed=!alShowDismissed; renderAlertas(); });
+  renderAlertas();
 
   // transferencias en curso
   if(D.transferencias && D.transferencias.length){
