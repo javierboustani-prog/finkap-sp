@@ -1,0 +1,247 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>COMEX — Armar pago al exterior · Finkap</title>
+<meta name="robots" content="noindex,nofollow">
+<style>
+:root{--bg:#0d0d0f;--panel:#17171b;--panel2:#1d1d22;--panel3:#222228;--line:#2c2c33;--line2:#3a3a43;--text:#f5f5f7;--muted:#9b9ba6;--muted2:#6f6f7a;--orange:#F97316;--ok:#46d39a;--bad:#ef5350;--warn:#e0a44e;--blue:#7cc4ff;--mono:"JetBrains Mono",ui-monospace,monospace}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui,-apple-system,sans-serif;font-size:14px;line-height:1.5}
+.shell{max-width:920px;margin:0 auto;padding:26px 18px 80px}
+.brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:22px;margin-bottom:2px}
+.brand .dot{width:34px;height:34px;border-radius:50%;border:2.5px solid var(--orange);display:grid;place-items:center;color:var(--orange);font-weight:900;font-size:18px}
+.lead{color:var(--muted);margin:0 0 18px;font-size:13px}
+a.back{color:var(--muted);font-size:12px;text-decoration:none}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px 18px;margin-bottom:14px}
+.card h2{margin:0 0 12px;font-size:13px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted2);font-weight:700}
+.card h2 .step{display:inline-grid;place-items:center;width:20px;height:20px;border-radius:50%;background:var(--orange);color:#fff;font-size:11px;margin-right:8px}
+label{display:block;font-size:11px;color:var(--muted);margin:0 0 4px;font-weight:600}
+input,select{width:100%;background:#111114;border:1px solid var(--line2);border-radius:9px;color:var(--text);font-size:13.5px;padding:9px 11px;outline:none;font-family:inherit}
+input:focus,select:focus{border-color:var(--orange)}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.fld{margin-bottom:10px}
+.btn{padding:10px 16px;border-radius:10px;border:none;background:var(--orange);color:#fff;font-weight:700;font-size:14px;cursor:pointer;font-family:inherit}
+.btn.ghost{background:var(--panel3);color:var(--text);border:1px solid var(--line2)}
+.btn:disabled{opacity:.5;cursor:default}
+.mini{font-size:11px;color:var(--muted2)}
+.dato{display:flex;justify-content:space-between;gap:10px;font-size:13px;padding:5px 0;border-bottom:1px solid var(--line)}
+.dato .l{color:var(--muted)}.dato .v{font-family:var(--mono);text-align:right}
+.checks{list-style:none;margin:8px 0 0;padding:0}
+.checks li{display:flex;gap:8px;align-items:flex-start;font-size:13px;padding:3px 0}
+.checks .ico{flex:0 0 auto}
+.ok{color:var(--ok)}.bad{color:var(--bad)}.warn{color:var(--warn)}
+.paquete{background:#0b0b0d;border:1px solid var(--line);border-radius:10px;padding:14px;font-family:var(--mono);font-size:12.5px;white-space:pre-wrap;color:#d7d7df;margin-top:10px}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.tag{display:inline-block;font-size:10px;padding:2px 8px;border-radius:99px;font-weight:700}
+.tag.mulc{color:var(--blue);background:rgba(124,196,255,.12)}
+.tag.usdt{color:var(--ok);background:rgba(70,211,154,.12)}
+.note{font-size:11.5px;color:var(--muted2);margin-top:8px;line-height:1.5}
+</style>
+</head>
+<body>
+<div class="shell">
+  <div class="brand"><span class="dot">f</span> COMEX</div>
+  <p class="lead">Armá la transferencia para pagarle a un proveedor del exterior. Toma los datos del despacho (Torre) + el banco del proveedor, valida todo, y te deja el paquete listo para cargar en el home banking. <b>Nada se envía solo</b> — esto arma y valida; vos cargás el pago.</p>
+  <a class="back" href="index.html">← Volver a la Torre</a>
+
+  <!-- 1) DESPACHO -->
+  <div class="card" style="margin-top:14px">
+    <h2><span class="step">1</span>Despacho / factura a pagar</h2>
+    <select id="selEmb"><option value="">— elegí un despacho —</option></select>
+    <div id="embDatos" style="display:none;margin-top:12px"></div>
+  </div>
+
+  <!-- 2) BENEFICIARIO -->
+  <div class="card" id="cardBenef" style="display:none">
+    <h2><span class="step">2</span>Banco del beneficiario (proveedor)</h2>
+    <div class="mini" id="benefProv" style="margin-bottom:10px"></div>
+    <div class="fld"><label>Beneficiario (razón social)</label><input id="bNombre" placeholder="Total Ingredients SpA"></div>
+    <div class="row">
+      <div class="fld"><label>Banco beneficiario</label><input id="bBanco" placeholder="Banco / país"></div>
+      <div class="fld"><label>SWIFT / BIC</label><input id="bSwift" placeholder="BANKUS33" maxlength="11" style="text-transform:uppercase"></div>
+    </div>
+    <div class="row">
+      <div class="fld"><label>IBAN o N° de cuenta</label><input id="bIban" placeholder="IBAN / cuenta"></div>
+      <div class="fld"><label>Banco intermediario (SWIFT corresponsal)</label><input id="bInter" placeholder="opcional (clave en USD)"></div>
+    </div>
+    <button class="btn ghost" id="bSave" style="margin-top:4px">💾 Guardar datos de este proveedor</button>
+    <div class="note">Los datos bancarios quedan guardados en esta PC (por proveedor) para no recargarlos. Para producción conviene moverlos al módulo cifrado de la Torre.</div>
+  </div>
+
+  <!-- 3) PAGO -->
+  <div class="card" id="cardPago" style="display:none">
+    <h2><span class="step">3</span>Datos del pago</h2>
+    <div class="row3">
+      <div class="fld"><label>Monto</label><input id="pMonto" inputmode="decimal"></div>
+      <div class="fld"><label>Moneda</label><select id="pMoneda"><option>USD</option><option>EUR</option></select></div>
+      <div class="fld"><label>Vía</label><select id="pVia"><option value="MULC">MULC (banco formal)</option><option value="USDT">Stablecoin (USDT)</option></select></div>
+    </div>
+    <div class="row">
+      <div class="fld"><label>Código operación cambiaria (BCRA)</label><input id="pCod" placeholder="B06 — pago import. de bienes"></div>
+      <div class="fld"><label>Referencia</label><input id="pRef" placeholder="auto: despacho + factura"></div>
+    </div>
+    <details style="margin-top:4px"><summary style="cursor:pointer;font-size:12px;color:var(--muted)">Datos del ordenante (Finkap)</summary>
+      <div class="row3" style="margin-top:10px">
+        <div class="fld"><label>Razón social</label><input id="oNom" placeholder="Kapselmaker SA"></div>
+        <div class="fld"><label>CUIT</label><input id="oCuit" placeholder="30-..."></div>
+        <div class="fld"><label>Banco / cuenta origen</label><input id="oBco" placeholder="Galicia / cuenta"></div>
+      </div>
+    </details>
+  </div>
+
+  <!-- 4) VALIDACION + PAQUETE -->
+  <div class="card" id="cardOut" style="display:none">
+    <h2><span class="step">4</span>Validación y paquete de pago</h2>
+    <ul class="checks" id="checks"></ul>
+    <button class="btn" id="gen" style="margin-top:12px" disabled>Generar paquete de pago</button>
+    <div id="paqueteWrap" style="display:none">
+      <div class="paquete" id="paquete"></div>
+      <div class="actions">
+        <button class="btn ghost" id="copy">📋 Copiar</button>
+        <button class="btn ghost" id="print">🖨️ Imprimir</button>
+        <button class="btn ghost" id="json">⬇️ JSON</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+// datos descifrados de la Torre (los pone entrar.html en sessionStorage)
+const D=(function(){ try{ const d=JSON.parse(sessionStorage.getItem('finkap_impo_v1')); if(d) return d; }catch(e){} location.replace('entrar.html'); return null; })();
+if(!D) throw new Error('sin sesión');
+const EMB = (D.embarques||[]);
+const PROV = (D.proveedores||[]);
+const provById = id => PROV.find(p=>p.id===id) || {};
+
+// almacenamiento local (esta PC)
+const BANCOS = (()=>{ try{ return JSON.parse(localStorage.getItem('finkap_comex_bancos')||'{}'); }catch(e){ return {}; } })();
+const ORD = (()=>{ try{ return JSON.parse(localStorage.getItem('finkap_comex_ordenante')||'{}'); }catch(e){ return {}; } })();
+const PAGADOS = (()=>{ try{ return JSON.parse(localStorage.getItem('finkap_comex_paquetes')||'[]'); }catch(e){ return []; } })();
+const saveBancos=()=>localStorage.setItem('finkap_comex_bancos',JSON.stringify(BANCOS));
+const saveOrd=()=>localStorage.setItem('finkap_comex_ordenante',JSON.stringify(ORD));
+
+const usd = n => (n==null?'—':(+n).toLocaleString('es-AR',{minimumFractionDigits:2,maximumFractionDigits:2}));
+let cur=null; // embarque seleccionado
+
+// llenar select
+EMB.forEach((e,i)=>{ const p=provById(e.proveedorId);
+  const o=document.createElement('option'); o.value=i;
+  o.textContent=`${e.despacho} · ${p.nombre||e.proveedorId||''} (${e.pais||''}) · FOB ${usd(e.fob)}${e.factura?' · '+e.factura:''}`;
+  $('selEmb').appendChild(o);
+});
+
+// ordenante precargado
+$('oNom').value=ORD.nom||''; $('oCuit').value=ORD.cuit||''; $('oBco').value=ORD.bco||'';
+['oNom','oCuit','oBco'].forEach(id=>$(id).addEventListener('input',()=>{ ORD.nom=$('oNom').value; ORD.cuit=$('oCuit').value; ORD.bco=$('oBco').value; saveOrd(); }));
+
+$('selEmb').addEventListener('change',()=>{
+  const i=$('selEmb').value; if(i===''){ ['embDatos','cardBenef','cardPago','cardOut'].forEach(x=>$(x).style.display='none'); return; }
+  cur=EMB[+i];
+  const p=provById(cur.proveedorId);
+  $('embDatos').style.display='block';
+  $('embDatos').innerHTML=`
+    <div class="dato"><span class="l">Proveedor</span><span class="v">${p.nombre||cur.proveedorId||'—'}</span></div>
+    <div class="dato"><span class="l">País / tipo</span><span class="v">${cur.pais||'—'} · ${cur.tipo||''}</span></div>
+    <div class="dato"><span class="l">FOB (factura)</span><span class="v">USD ${usd(cur.fob)}</span></div>
+    <div class="dato"><span class="l">Kg</span><span class="v">${cur.kg?(+cur.kg).toLocaleString('es-AR'):'—'}</span></div>
+    <div class="dato"><span class="l">Factura</span><span class="v">${cur.factura||'—'}</span></div>`;
+  // beneficiario: precargar del proveedor guardado
+  const b=BANCOS[cur.proveedorId]||{};
+  $('benefProv').textContent='Proveedor: '+(p.nombre||cur.proveedorId||'');
+  $('bNombre').value=b.nombre||p.nombre||''; $('bBanco').value=b.banco||''; $('bSwift').value=b.swift||'';
+  $('bIban').value=b.iban||''; $('bInter').value=b.inter||'';
+  // pago defaults
+  $('pMonto').value=cur.fob||''; $('pMoneda').value='USD';
+  $('pCod').value=(b.cod||'B06');
+  $('pRef').value=`${cur.despacho}${cur.factura?' · '+cur.factura:''}`;
+  ['cardBenef','cardPago','cardOut'].forEach(x=>$(x).style.display='block');
+  revalidar();
+});
+
+$('bSave').addEventListener('click',()=>{
+  if(!cur) return;
+  BANCOS[cur.proveedorId]={ nombre:$('bNombre').value.trim(), banco:$('bBanco').value.trim(), swift:$('bSwift').value.trim().toUpperCase(), iban:$('bIban').value.trim(), inter:$('bInter').value.trim(), cod:$('pCod').value.trim() };
+  saveBancos(); $('bSave').textContent='✓ Guardado'; setTimeout(()=>$('bSave').textContent='💾 Guardar datos de este proveedor',1500);
+});
+
+['bNombre','bBanco','bSwift','bIban','bInter','pMonto','pMoneda','pCod','pRef','pVia'].forEach(id=>$(id).addEventListener('input',revalidar));
+
+function revalidar(){
+  if(!cur){ return; }
+  const monto=parseFloat(String($('pMonto').value).replace(',','.'));
+  const swift=$('bSwift').value.trim().toUpperCase();
+  const iban=$('bIban').value.trim();
+  const nombre=$('bNombre').value.trim();
+  const via=$('pVia').value;
+  const yaPagado=PAGADOS.some(x=>x.despacho===cur.despacho && Math.abs((x.monto||0)-(monto||0))<0.01);
+  const checks=[
+    { ok:(monto>0), txt:'Monto mayor a cero' },
+    { ok:(monto>0 && monto<=(+cur.fob+0.01)), txt:`Monto ≤ FOB del despacho (USD ${usd(cur.fob)})` },
+    { ok:!!$('pMoneda').value, txt:'Moneda definida' },
+    { ok:!!nombre, txt:'Beneficiario cargado' },
+    { ok:(via==='USDT')|| /^[A-Z0-9]{8}([A-Z0-9]{3})?$/.test(swift), txt: via==='USDT'?'SWIFT no requerido (vía USDT)':'SWIFT válido (8 u 11 caracteres)' },
+    { ok:(via==='USDT')|| iban.length>=6, txt: via==='USDT'?'IBAN/cuenta no requerido (vía USDT)':'IBAN / N° de cuenta cargado' },
+    { ok:!yaPagado, txt:'Sin pago previo por el mismo monto (anti-duplicado)', warn:yaPagado },
+  ];
+  $('checks').innerHTML=checks.map(c=>{
+    const cls=c.ok?'ok':(c.warn?'warn':'bad'); const ic=c.ok?'✓':(c.warn?'⚠':'✕');
+    return `<li><span class="ico ${cls}">${ic}</span><span>${c.txt}</span></li>`;
+  }).join('');
+  const duros=checks.filter(c=>!c.warn);
+  $('gen').disabled = !duros.every(c=>c.ok);
+}
+
+function paqueteTexto(){
+  const monto=parseFloat(String($('pMonto').value).replace(',','.'));
+  const via=$('pVia').value;
+  return [
+`PAQUETE DE PAGO AL EXTERIOR — FINKAP COMEX`,
+`Vía: ${via==='USDT'?'STABLECOIN (USDT)':'MULC · transferencia bancaria'}`,
+``,
+`ORDENANTE`,
+`  ${$('oNom').value||'Kapselmaker SA'}  ·  CUIT ${$('oCuit').value||'—'}`,
+`  Cuenta origen: ${$('oBco').value||'—'}`,
+``,
+`BENEFICIARIO`,
+`  ${$('bNombre').value}`,
+`  Banco: ${$('bBanco').value||'—'}`,
+via==='USDT'?`  (USDT — coordinar wallet/red con la contraparte)`:`  SWIFT/BIC: ${$('bSwift').value.toUpperCase()||'—'}`,
+via==='USDT'?'':`  IBAN/Cuenta: ${$('bIban').value||'—'}`,
+via==='USDT'?'':`  Banco intermediario: ${$('bInter').value||'—'}`,
+``,
+`PAGO`,
+`  Monto: ${$('pMoneda').value} ${usd(monto)}`,
+`  Código op. cambiaria: ${$('pCod').value||'—'}`,
+`  Referencia: ${$('pRef').value}`,
+``,
+`DESPACHO`,
+`  Código: ${cur.despacho}  ·  ${cur.pais||''}  ·  ${cur.tipo||''}`,
+`  FOB factura: USD ${usd(cur.fob)}  ·  ${cur.factura||''}`,
+`  Café: ${cur.cafe||'—'}`,
+``,
+`Generado en Finkap COMEX. Revisar antes de cargar en el home banking.`,
+  ].filter(x=>x!=='').join('\n');
+}
+
+$('gen').addEventListener('click',()=>{
+  const txt=paqueteTexto();
+  $('paquete').textContent=txt; $('paqueteWrap').style.display='block';
+  const monto=parseFloat(String($('pMonto').value).replace(',','.'));
+  PAGADOS.push({ despacho:cur.despacho, monto, via:$('pVia').value, fecha:new Date().toISOString() });
+  localStorage.setItem('finkap_comex_paquetes',JSON.stringify(PAGADOS));
+  revalidar();
+});
+$('copy').addEventListener('click',()=>{ navigator.clipboard.writeText($('paquete').textContent).then(()=>{$('copy').textContent='✓ Copiado';setTimeout(()=>$('copy').textContent='📋 Copiar',1200);}); });
+$('print').addEventListener('click',()=>{ const w=window.open('','_blank'); w.document.write('<pre style="font:13px monospace;white-space:pre-wrap">'+$('paquete').textContent.replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]))+'</pre>'); w.document.close(); w.print(); });
+$('json').addEventListener('click',()=>{
+  const monto=parseFloat(String($('pMonto').value).replace(',','.'));
+  const obj={ ordenante:{nom:$('oNom').value,cuit:$('oCuit').value,cuenta:$('oBco').value}, beneficiario:{nombre:$('bNombre').value,banco:$('bBanco').value,swift:$('bSwift').value.toUpperCase(),iban:$('bIban').value,intermediario:$('bInter').value}, pago:{monto,moneda:$('pMoneda').value,via:$('pVia').value,codOp:$('pCod').value,referencia:$('pRef').value}, despacho:{codigo:cur.despacho,pais:cur.pais,tipo:cur.tipo,fob:cur.fob,factura:cur.factura} };
+  const blob=new Blob([JSON.stringify(obj,null,2)],{type:'application/json'}); const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob); a.download=`pago_${cur.despacho}.json`; a.click();
+});
+</script>
+</body>
+</html>
