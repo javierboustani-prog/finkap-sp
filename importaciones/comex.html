@@ -30,7 +30,9 @@ input:focus,select:focus{border-color:var(--orange)}
 .dchk{display:flex;align-items:center;gap:10px;padding:8px 10px;border:1px solid var(--line);border-radius:9px;margin-bottom:6px;background:var(--panel2);cursor:pointer}
 .dchk.dis{opacity:.4;cursor:not-allowed}
 .dchk.paid{border-color:rgba(70,211,154,.4);background:rgba(70,211,154,.08)}
+.dchk.partial{border-color:rgba(224,164,78,.45);background:rgba(224,164,78,.08)}
 .ptag{color:var(--ok);font-size:10px;font-weight:700;margin-left:6px}
+.stag{color:var(--warn);font-size:10px;font-weight:700;margin-left:6px}
 .dchk input{width:17px;height:17px;accent-color:var(--orange);flex:0 0 auto}
 .dchk .c{font-family:var(--mono);font-weight:700;font-size:12.5px}
 .dchk .m{margin-left:auto;font-family:var(--mono);font-size:12.5px;color:var(--muted)}
@@ -60,7 +62,8 @@ input:focus,select:focus{border-color:var(--orange)}
     <div id="lista"></div>
     <div class="sumbar" id="sumbar" style="display:none">
       <span><b id="sumN">0</b> despacho(s) seleccionado(s)</span>
-      <span>Total FOB: <b id="sumFob">USD 0,00</b></span>
+      <span>FOB: <b id="sumFob">USD 0,00</b></span>
+      <span>Saldo a pagar: <b id="sumSaldo">USD 0,00</b></span>
     </div>
   </div>
 
@@ -136,45 +139,54 @@ const esc=s=>(s==null?'':String(s)).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;
 // ---- Step 1: lista de despachos (checkboxes), con marca verde de "ya pagado" ----
 let sel=[]; // embarques seleccionados
 function provSel(){ const ps=[...new Set(sel.map(e=>e.proveedorId))]; return ps.length===1?ps[0]:null; }
-function paidInfo(){ const m={}; PAGADOS.forEach(x=>(x.despachos||[]).forEach(c=>{ if(!m[c]||x.fecha>m[c]) m[c]=x.fecha; })); return m; }
+function fobDe(c){ const e=EMB.find(x=>x.despacho===c); return e?(+e.fob||0):0; }
+function paidByDespacho(){ const m={};
+  PAGADOS.forEach(pk=>{ if(pk.alloc){ for(const c in pk.alloc){ m[c]=(m[c]||0)+(+pk.alloc[c]||0); } }
+    else { const sum=(pk.despachos||[]).reduce((a,c)=>a+fobDe(c),0)||1; (pk.despachos||[]).forEach(c=>{ m[c]=(m[c]||0)+(+pk.monto||0)*(fobDe(c)/sum); }); } });
+  return m; }
 function applyLock(){ const lock=sel.length?sel[0].proveedorId:null;
   document.querySelectorAll('.dchk').forEach(l=>{ const cb=l.querySelector('.dcb'); const otra=lock&&l.dataset.prov!==lock;
     if(otra&&!cb.checked){ cb.disabled=true; l.classList.add('dis'); } else { cb.disabled=false; l.classList.remove('dis'); } });
 }
 function renderLista(){
-  const paid=paidInfo(); const selCodes=new Set(sel.map(e=>e.despacho));
+  const PAID=paidByDespacho(); const selCodes=new Set(sel.map(e=>e.despacho));
   const grupos={}; EMB.forEach((e,i)=>{ const k=e.proveedorId||'(sin proveedor)'; (grupos[k]=grupos[k]||[]).push(i); });
-  let html=''; let nPaid=0;
+  let html=''; let nTot=0, nPar=0;
   for(const k in grupos){ const p=provById(k);
     html+=`<div class="grpH">${esc(p.nombre||k)} · ${esc(p.pais||'')}</div>`;
-    grupos[k].forEach(i=>{ const e=EMB[i]; const pg=paid[e.despacho]; if(pg)nPaid++;
-      const f=pg?new Date(pg).toLocaleDateString('es-AR'):'';
-      html+=`<label class="dchk ${pg?'paid':''}" data-i="${i}" data-prov="${esc(e.proveedorId||'')}">
+    grupos[k].forEach(i=>{ const e=EMB[i]; const fob=+e.fob||0; const pg=PAID[e.despacho]||0; const saldo=Math.max(0,fob-pg);
+      let cls='', tag='';
+      if(pg>0.005 && saldo<=0.5){ cls='paid'; nTot++; tag=`<span class="ptag">✓ pagado total</span>`; }
+      else if(pg>0.005){ cls='partial'; nPar++; tag=`<span class="stag">◐ parcial · pagado USD ${usd(pg)} · saldo USD ${usd(saldo)}</span>`; }
+      html+=`<label class="dchk ${cls}" data-i="${i}" data-prov="${esc(e.proveedorId||'')}">
         <input type="checkbox" class="dcb" value="${i}" ${selCodes.has(e.despacho)?'checked':''}>
-        <span><span class="c">${esc(e.despacho)}</span> <span class="x">· ${esc(e.tipo||'')} ${e.factura?'· '+esc(e.factura):''}</span>${pg?` <span class="ptag">✓ pagado ${f}</span>`:''}</span>
-        <span class="m">USD ${usd(e.fob)}</span></label>`;
+        <span><span class="c">${esc(e.despacho)}</span> <span class="x">· ${esc(e.tipo||'')} ${e.factura?'· '+esc(e.factura):''}</span>${tag}</span>
+        <span class="m">USD ${usd(fob)}</span></label>`;
     });
   }
   $('lista').innerHTML=html;
   document.querySelectorAll('.dcb').forEach(cb=>cb.addEventListener('change',onSel));
   applyLock();
-  $('paidCount').textContent=nPaid?`✓ ${nPaid} despacho(s) con pago ya armado`:'';
-  $('clearPaid').style.display=nPaid?'inline':'none';
+  const parts=[]; if(nTot)parts.push(`${nTot} pagado(s) total`); if(nPar)parts.push(`${nPar} parcial(es)`);
+  $('paidCount').textContent=parts.length?('✓ '+parts.join(' · ')):'';
+  $('clearPaid').style.display=(nTot||nPar)?'inline':'none';
 }
 $('clearPaid').addEventListener('click',ev=>{ ev.preventDefault(); if(confirm('¿Borrar el registro de pagos de esta PC? (no afecta tus archivos ni la Torre)')){ PAGADOS.length=0; localStorage.setItem('finkap_comex_paquetes','[]'); renderLista(); revalidar(); } });
 function onSel(){
   sel=[...document.querySelectorAll('.dcb:checked')].map(cb=>EMB[+cb.value]);
   applyLock();
+  const PAID=paidByDespacho();
   const totFob=sel.reduce((s,e)=>s+(+e.fob||0),0);
+  const totSaldo=sel.reduce((s,e)=>s+Math.max(0,(+e.fob||0)-(PAID[e.despacho]||0)),0);
   $('sumbar').style.display = sel.length?'flex':'none';
-  $('sumN').textContent=sel.length; $('sumFob').textContent='USD '+usd(totFob);
+  $('sumN').textContent=sel.length; $('sumFob').textContent='USD '+usd(totFob); $('sumSaldo').textContent='USD '+usd(totSaldo);
   if(sel.length){
     const pid=provSel(); const p=provById(pid);
     const b=BANCOS[pid]||{};
     $('benefProv').textContent='Proveedor: '+(p.nombre||pid||'');
     $('bNombre').value=b.nombre||p.nombre||''; $('bBanco').value=b.banco||''; $('bSwift').value=b.swift||'';
     $('bIban').value=b.iban||''; $('bInter').value=b.inter||'';
-    $('pMonto').value=totFob.toFixed(2); $('pCod').value=(b.cod||'B06');
+    $('pMonto').value=totSaldo.toFixed(2); $('pCod').value=(b.cod||'B06');
     const facturas=[...new Set(sel.map(e=>e.factura).filter(Boolean))];
     $('pRef').value=sel.map(e=>e.despacho).join(' + ')+(facturas.length?(' · '+facturas.join(' / ')):'');
     ['cardBenef','cardPago','cardOut'].forEach(x=>$(x).style.display='block');
@@ -197,17 +209,19 @@ $('pVia').addEventListener('change',revalidar);
 
 function revalidar(){
   if(!sel.length){ $('gen').disabled=true; $('checks').innerHTML=''; return; }
+  const PAID=paidByDespacho();
   const totFob=sel.reduce((s,e)=>s+(+e.fob||0),0);
+  const totSaldo=sel.reduce((s,e)=>s+Math.max(0,(+e.fob||0)-(PAID[e.despacho]||0)),0);
   const monto=parseFloat(String($('pMonto').value).replace(',','.'));
   const swift=$('bSwift').value.trim().toUpperCase(); const iban=$('bIban').value.trim();
   const nombre=$('bNombre').value.trim(); const via=$('pVia').value; const unProv=provSel();
   const codigos=sel.map(e=>e.despacho);
   const yaPagado=PAGADOS.some(x=>JSON.stringify((x.despachos||[]).slice().sort())===JSON.stringify(codigos.slice().sort()) && Math.abs((x.monto||0)-(monto||0))<0.01);
-  $('montoHint').textContent=`Total FOB de los ${sel.length} despacho(s): USD ${usd(totFob)} (podés pagar parcial).`;
+  $('montoHint').textContent=`Saldo a pagar de los ${sel.length} despacho(s): USD ${usd(totSaldo)} (FOB total USD ${usd(totFob)}). Podés pagar menos (parcial).`;
   const checks=[
     { ok:!!unProv, txt:'Todos los despachos del mismo proveedor (un giro = un beneficiario)' },
     { ok:(monto>0), txt:'Monto mayor a cero' },
-    { ok:(monto>0 && monto<=totFob+0.01), txt:`Monto ≤ suma de FOB seleccionada (USD ${usd(totFob)})` },
+    { ok:(monto>0 && monto<=totSaldo+0.01), txt:`Monto ≤ saldo pendiente (USD ${usd(totSaldo)})` },
     { ok:!!nombre, txt:'Beneficiario cargado' },
     { ok:(via==='USDT')||/^[A-Z0-9]{8}([A-Z0-9]{3})?$/.test(swift), txt:via==='USDT'?'SWIFT no requerido (vía USDT)':'SWIFT válido (8 u 11 caracteres)' },
     { ok:(via==='USDT')||iban.length>=6, txt:via==='USDT'?'IBAN/cuenta no requerido (vía USDT)':'IBAN / N° de cuenta cargado' },
@@ -254,7 +268,11 @@ via==='USDT'?'':`  Banco intermediario: ${$('bInter').value||'—'}`,
 $('gen').addEventListener('click',()=>{
   $('paquete').textContent=paqueteTexto(); $('paqueteWrap').style.display='block';
   const monto=parseFloat(String($('pMonto').value).replace(',','.'));
-  PAGADOS.push({ despachos:sel.map(e=>e.despacho), monto, via:$('pVia').value, fecha:new Date().toISOString() });
+  const PAID=paidByDespacho();
+  const sal=sel.map(e=>({c:e.despacho, s:Math.max(0,(+e.fob||0)-(PAID[e.despacho]||0))}));
+  const sumS=sal.reduce((a,b)=>a+b.s,0); const alloc={};
+  sal.forEach(x=>{ alloc[x.c]= sumS>0 ? monto*(x.s/sumS) : monto/sel.length; });
+  PAGADOS.push({ despachos:sel.map(e=>e.despacho), monto, via:$('pVia').value, fecha:new Date().toISOString(), alloc });
   localStorage.setItem('finkap_comex_paquetes',JSON.stringify(PAGADOS)); renderLista(); revalidar();
 });
 $('copy').addEventListener('click',()=>{ navigator.clipboard.writeText($('paquete').textContent).then(()=>{$('copy').textContent='✓ Copiado';setTimeout(()=>$('copy').textContent='📋 Copiar',1200);}); });
