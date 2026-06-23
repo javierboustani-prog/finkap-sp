@@ -26,24 +26,26 @@ input:focus,select:focus{border-color:var(--orange)}
 .btn.ghost{background:var(--panel3);color:var(--text);border:1px solid var(--line2)}
 .btn:disabled{opacity:.5;cursor:default}
 .mini{font-size:11px;color:var(--muted2)}
-.grpH{font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted2);font-weight:700;margin:12px 0 6px}
-.dchk{display:flex;align-items:center;gap:10px;padding:8px 10px;border:1px solid var(--line);border-radius:9px;margin-bottom:6px;background:var(--panel2);cursor:pointer}
+.grpH{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:baseline;font-size:12px;font-weight:700;margin:14px 0 7px;padding:7px 10px;border-radius:8px;background:var(--panel2);border:1px solid var(--line)}
+.grpH .prov{color:var(--text)}
+.grpH .st{font-family:var(--mono);font-weight:600}
+.grpH.total{border-color:rgba(70,211,154,.35)} .grpH.total .st{color:var(--ok)}
+.grpH.parcial{border-color:rgba(224,164,78,.4)} .grpH.parcial .st{color:var(--warn)}
+.grpH.pend .st{color:var(--muted2)}
+.dchk{display:flex;align-items:center;gap:10px;padding:8px 10px;border:1px solid var(--line);border-radius:9px;margin-bottom:6px;background:#141417;cursor:pointer}
 .dchk.dis{opacity:.4;cursor:not-allowed}
-.dchk.paid{border-color:rgba(70,211,154,.4);background:rgba(70,211,154,.08)}
-.dchk.partial{border-color:rgba(224,164,78,.45);background:rgba(224,164,78,.08)}
-.ptag{color:var(--ok);font-size:10px;font-weight:700;margin-left:6px}
-.stag{color:var(--warn);font-size:10px;font-weight:700;margin-left:6px}
+.dchk.total{border-left:3px solid var(--ok)} .dchk.parcial{border-left:3px solid var(--warn)}
 .dchk input{width:17px;height:17px;accent-color:var(--orange);flex:0 0 auto}
 .dchk .c{font-family:var(--mono);font-weight:700;font-size:12.5px}
 .dchk .m{margin-left:auto;font-family:var(--mono);font-size:12.5px;color:var(--muted)}
 .dchk .x{font-size:11px;color:var(--muted2)}
-.sumbar{display:flex;justify-content:space-between;gap:10px;align-items:center;margin-top:10px;padding:10px 12px;border:1px solid var(--orange-line,rgba(249,115,22,.45));border-radius:9px;background:rgba(249,115,22,.08)}
+.sumbar{display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap;margin-top:10px;padding:10px 12px;border:1px solid rgba(249,115,22,.45);border-radius:9px;background:rgba(249,115,22,.08)}
 .sumbar b{font-family:var(--mono)}
-.dato{display:flex;justify-content:space-between;gap:10px;font-size:13px;padding:5px 0;border-bottom:1px solid var(--line)}
-.dato .l{color:var(--muted)}.dato .v{font-family:var(--mono);text-align:right}
+.tbanner{font-size:12.5px;line-height:1.55;padding:10px 12px;border-radius:9px;background:linear-gradient(160deg,rgba(124,196,255,.10),transparent);border:1px solid rgba(124,196,255,.35);margin-bottom:12px}
+.tbanner b{font-family:var(--mono)}
 .checks{list-style:none;margin:8px 0 0;padding:0}
 .checks li{display:flex;gap:8px;align-items:flex-start;font-size:13px;padding:3px 0}
-.ok{color:var(--ok)}.bad{color:var(--bad)}.warn{color:var(--warn)}
+.ok{color:var(--ok)}.bad{color:var(--bad)}.warn{color:var(--warn)}.blue{color:var(--blue)}
 .paquete{background:#0b0b0d;border:1px solid var(--line);border-radius:10px;padding:14px;font-family:var(--mono);font-size:12.5px;white-space:pre-wrap;color:#d7d7df;margin-top:10px}
 .actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
 .note{font-size:11.5px;color:var(--muted2);margin-top:8px;line-height:1.5}
@@ -52,22 +54,19 @@ input:focus,select:focus{border-color:var(--orange)}
 <body>
 <div class="shell">
   <div class="brand"><span class="dot">f</span> COMEX</div>
-  <p class="lead">Armá la transferencia para pagarle a un proveedor del exterior. Podés pagar <b>uno, varios o todos</b> los despachos del mismo proveedor en un solo giro. Toma los datos de la Torre, valida todo, y te deja el paquete listo para el home banking. <b>Nada se envía solo.</b></p>
+  <p class="lead">Armá la transferencia para pagarle a un proveedor del exterior. El pago va <b>contra la factura</b> del proveedor; podés cubrir uno, varios o todos sus despachos en un giro. <b>Toma el saldo real de la Torre</b> (lo ya pagado) y arma el paquete validado. Nada se envía solo.</p>
   <a class="back" href="index.html">← Volver a la Torre</a>
 
-  <!-- 1) DESPACHOS -->
   <div class="card" style="margin-top:14px">
-    <h2><span class="step">1</span>Despachos a pagar <span class="mini" style="text-transform:none;letter-spacing:0">(marcá uno o varios del mismo proveedor · los pagados van en verde)</span></h2>
-    <div class="mini" style="margin-bottom:8px"><span id="paidCount" class="ok"></span><a id="clearPaid" href="#" style="color:var(--muted);display:none;margin-left:8px">borrar registro de pagos (esta PC)</a></div>
+    <h2><span class="step">1</span>Despachos a pagar <span class="mini" style="text-transform:none;letter-spacing:0">(agrupados por proveedor · el saldo sale de la Torre)</span></h2>
     <div id="lista"></div>
     <div class="sumbar" id="sumbar" style="display:none">
-      <span><b id="sumN">0</b> despacho(s) seleccionado(s)</span>
-      <span>FOB: <b id="sumFob">USD 0,00</b></span>
+      <span><b id="sumN">0</b> despacho(s) marcado(s)</span>
+      <span>Factura: <b id="sumFact">USD 0,00</b></span>
       <span>Saldo a pagar: <b id="sumSaldo">USD 0,00</b></span>
     </div>
   </div>
 
-  <!-- 2) BENEFICIARIO -->
   <div class="card" id="cardBenef" style="display:none">
     <h2><span class="step">2</span>Banco del beneficiario (proveedor)</h2>
     <div class="mini" id="benefProv" style="margin-bottom:10px"></div>
@@ -81,18 +80,17 @@ input:focus,select:focus{border-color:var(--orange)}
       <div class="fld"><label>Banco intermediario (SWIFT corresponsal)</label><input id="bInter" placeholder="opcional (clave en USD)"></div>
     </div>
     <button class="btn ghost" id="bSave" style="margin-top:4px">💾 Guardar datos de este proveedor</button>
-    <div class="note">Los datos bancarios quedan guardados en esta PC (por proveedor) para no recargarlos. Para producción conviene moverlos al módulo cifrado de la Torre.</div>
+    <div class="note">Datos bancarios guardados en esta PC por proveedor. Para producción conviene moverlos al módulo cifrado de la Torre.</div>
   </div>
 
-  <!-- 3) PAGO -->
   <div class="card" id="cardPago" style="display:none">
     <h2><span class="step">3</span>Datos del pago</h2>
+    <div class="tbanner" id="torreBanner"></div>
     <div class="row3">
       <div class="fld"><label>Monto</label><input id="pMonto" inputmode="decimal"></div>
       <div class="fld"><label>Moneda</label><select id="pMoneda"><option>USD</option><option>EUR</option></select></div>
       <div class="fld"><label>Vía</label><select id="pVia"><option value="MULC">MULC (banco formal)</option><option value="USDT">Stablecoin (USDT)</option></select></div>
     </div>
-    <div class="mini" id="montoHint" style="margin:-4px 0 10px"></div>
     <div class="row">
       <div class="fld"><label>Código operación cambiaria (BCRA)</label><input id="pCod" placeholder="B06 — pago import. de bienes"></div>
       <div class="fld"><label>Referencia</label><input id="pRef" placeholder="auto: despachos + factura"></div>
@@ -106,7 +104,6 @@ input:focus,select:focus{border-color:var(--orange)}
     </details>
   </div>
 
-  <!-- 4) VALIDACION + PAQUETE -->
   <div class="card" id="cardOut" style="display:none">
     <h2><span class="step">4</span>Validación y paquete de pago</h2>
     <ul class="checks" id="checks"></ul>
@@ -117,6 +114,7 @@ input:focus,select:focus{border-color:var(--orange)}
         <button class="btn ghost" id="copy">📋 Copiar</button>
         <button class="btn ghost" id="print">🖨️ Imprimir</button>
         <button class="btn ghost" id="json">⬇️ JSON</button>
+        <a id="clearPaid" href="#" class="mini" style="align-self:center;margin-left:auto;color:var(--muted)">borrar pagos armados en COMEX (esta PC)</a>
       </div>
     </div>
   </div>
@@ -126,116 +124,117 @@ input:focus,select:focus{border-color:var(--orange)}
 const $=id=>document.getElementById(id);
 const D=(function(){ try{ const d=JSON.parse(sessionStorage.getItem('finkap_impo_v1')); if(d) return d; }catch(e){} location.replace('entrar.html'); return null; })();
 if(!D) throw new Error('sin sesión');
-const EMB=(D.embarques||[]); const PROV=(D.proveedores||[]);
+const EMB=(D.embarques||[]); const PROV=(D.proveedores||[]); const PAGOS=(D.pagos||[]);
 const provById=id=>PROV.find(p=>p.id===id)||{};
 const BANCOS=(()=>{ try{ return JSON.parse(localStorage.getItem('finkap_comex_bancos')||'{}'); }catch(e){ return {}; } })();
 const ORD=(()=>{ try{ return JSON.parse(localStorage.getItem('finkap_comex_ordenante')||'{}'); }catch(e){ return {}; } })();
-const PAGADOS=(()=>{ try{ return JSON.parse(localStorage.getItem('finkap_comex_paquetes')||'[]'); }catch(e){ return []; } })();
+const ARMADOS=(()=>{ try{ return JSON.parse(localStorage.getItem('finkap_comex_paquetes')||'[]'); }catch(e){ return []; } })();
 const saveBancos=()=>localStorage.setItem('finkap_comex_bancos',JSON.stringify(BANCOS));
 const saveOrd=()=>localStorage.setItem('finkap_comex_ordenante',JSON.stringify(ORD));
 const usd=n=>(n==null?'—':(+n).toLocaleString('es-AR',{minimumFractionDigits:2,maximumFractionDigits:2}));
 const esc=s=>(s==null?'':String(s)).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 
-// ---- Step 1: lista de despachos (checkboxes), con marca verde de "ya pagado" ----
-let sel=[]; // embarques seleccionados
+// ---- INTEGRACIÓN CON LA TORRE: el pago va contra la FACTURA del proveedor ----
+function torrePago(pid){ return PAGOS.find(p=>p.proveedorId===pid && !/2025/.test(p.id||'')) || null; }
+function facturaDe(pid){ const e=EMB.find(x=>x.proveedorId===pid && x.factura); return e?e.factura:''; }
+function armadoDe(pid){ return ARMADOS.filter(a=>a.proveedorId===pid).reduce((s,a)=>s+(+a.monto||0),0); }
+function factStatus(pid){
+  const tp=torrePago(pid);
+  const total = tp ? +tp.facturaTotal||0 : EMB.filter(e=>e.proveedorId===pid && e.tipo!=='IDA4').reduce((s,e)=>s+(+e.fob||0),0);
+  const torrePagado = tp ? +tp.pagado||0 : 0;
+  const torreSaldo = tp ? +tp.saldo||0 : total;
+  const local = armadoDe(pid);
+  const restante = Math.max(0, torreSaldo - local);
+  const pagadoTot = torrePagado + local;
+  const key = pagadoTot<=0.005 ? 'pend' : (restante<=0.5 ? 'total' : 'parcial');
+  return { tp, factura:facturaDe(pid), total, torrePagado, torreSaldo, local, restante, key, estado:tp?tp.estado:'', doc:tp?tp.doc:'' };
+}
+
+let sel=[];
 function provSel(){ const ps=[...new Set(sel.map(e=>e.proveedorId))]; return ps.length===1?ps[0]:null; }
-function fobDe(c){ const e=EMB.find(x=>x.despacho===c); return e?(+e.fob||0):0; }
-function paidByDespacho(){ const m={};
-  PAGADOS.forEach(pk=>{ if(pk.alloc){ for(const c in pk.alloc){ m[c]=(m[c]||0)+(+pk.alloc[c]||0); } }
-    else { const sum=(pk.despachos||[]).reduce((a,c)=>a+fobDe(c),0)||1; (pk.despachos||[]).forEach(c=>{ m[c]=(m[c]||0)+(+pk.monto||0)*(fobDe(c)/sum); }); } });
-  return m; }
 function applyLock(){ const lock=sel.length?sel[0].proveedorId:null;
   document.querySelectorAll('.dchk').forEach(l=>{ const cb=l.querySelector('.dcb'); const otra=lock&&l.dataset.prov!==lock;
     if(otra&&!cb.checked){ cb.disabled=true; l.classList.add('dis'); } else { cb.disabled=false; l.classList.remove('dis'); } });
 }
 function renderLista(){
-  const PAID=paidByDespacho(); const selCodes=new Set(sel.map(e=>e.despacho));
+  const selCodes=new Set(sel.map(e=>e.despacho));
   const grupos={}; EMB.forEach((e,i)=>{ const k=e.proveedorId||'(sin proveedor)'; (grupos[k]=grupos[k]||[]).push(i); });
-  let html=''; let nTot=0, nPar=0;
-  for(const k in grupos){ const p=provById(k);
-    html+=`<div class="grpH">${esc(p.nombre||k)} · ${esc(p.pais||'')}</div>`;
-    grupos[k].forEach(i=>{ const e=EMB[i]; const fob=+e.fob||0; const pg=PAID[e.despacho]||0; const saldo=Math.max(0,fob-pg);
-      let cls='', tag='';
-      if(pg>0.005 && saldo<=0.5){ cls='paid'; nTot++; tag=`<span class="ptag">✓ pagado total</span>`; }
-      else if(pg>0.005){ cls='partial'; nPar++; tag=`<span class="stag">◐ parcial · pagado USD ${usd(pg)} · saldo USD ${usd(saldo)}</span>`; }
-      html+=`<label class="dchk ${cls}" data-i="${i}" data-prov="${esc(e.proveedorId||'')}">
+  let html='';
+  for(const k in grupos){ const p=provById(k); const fs=factStatus(k);
+    const stTxt = fs.key==='total' ? `pagado total · USD ${usd(fs.torrePagado+fs.local)}`
+               : fs.key==='parcial' ? `pagado USD ${usd(fs.torrePagado+fs.local)} de ${usd(fs.total)} · saldo USD ${usd(fs.restante)}`
+               : `sin pagos · USD ${usd(fs.total)}`;
+    html+=`<div class="grpH ${fs.key}"><span class="prov">${esc(p.nombre||k)} · ${esc(p.pais||'')} ${fs.factura?'· '+esc(fs.factura):''}</span><span class="st">${stTxt}</span></div>`;
+    grupos[k].forEach(i=>{ const e=EMB[i];
+      html+=`<label class="dchk ${fs.key!=='pend'?fs.key:''}" data-i="${i}" data-prov="${esc(e.proveedorId||'')}">
         <input type="checkbox" class="dcb" value="${i}" ${selCodes.has(e.despacho)?'checked':''}>
-        <span><span class="c">${esc(e.despacho)}</span> <span class="x">· ${esc(e.tipo||'')} ${e.factura?'· '+esc(e.factura):''}</span>${tag}</span>
-        <span class="m">USD ${usd(fob)}</span></label>`;
+        <span><span class="c">${esc(e.despacho)}</span> <span class="x">· ${esc(e.tipo||'')}${e.tipo==='IDA4'?' (arribo)':''}</span></span>
+        <span class="m">USD ${usd(e.fob)}</span></label>`;
     });
   }
   $('lista').innerHTML=html;
   document.querySelectorAll('.dcb').forEach(cb=>cb.addEventListener('change',onSel));
   applyLock();
-  const parts=[]; if(nTot)parts.push(`${nTot} pagado(s) total`); if(nPar)parts.push(`${nPar} parcial(es)`);
-  $('paidCount').textContent=parts.length?('✓ '+parts.join(' · ')):'';
-  $('clearPaid').style.display=(nTot||nPar)?'inline':'none';
 }
-$('clearPaid').addEventListener('click',ev=>{ ev.preventDefault(); if(confirm('¿Borrar el registro de pagos de esta PC? (no afecta tus archivos ni la Torre)')){ PAGADOS.length=0; localStorage.setItem('finkap_comex_paquetes','[]'); renderLista(); revalidar(); } });
-function onSel(){
-  sel=[...document.querySelectorAll('.dcb:checked')].map(cb=>EMB[+cb.value]);
-  applyLock();
-  const PAID=paidByDespacho();
-  const totFob=sel.reduce((s,e)=>s+(+e.fob||0),0);
-  const totSaldo=sel.reduce((s,e)=>s+Math.max(0,(+e.fob||0)-(PAID[e.despacho]||0)),0);
-  $('sumbar').style.display = sel.length?'flex':'none';
-  $('sumN').textContent=sel.length; $('sumFob').textContent='USD '+usd(totFob); $('sumSaldo').textContent='USD '+usd(totSaldo);
-  if(sel.length){
-    const pid=provSel(); const p=provById(pid);
-    const b=BANCOS[pid]||{};
-    $('benefProv').textContent='Proveedor: '+(p.nombre||pid||'');
-    $('bNombre').value=b.nombre||p.nombre||''; $('bBanco').value=b.banco||''; $('bSwift').value=b.swift||'';
-    $('bIban').value=b.iban||''; $('bInter').value=b.inter||'';
-    $('pMonto').value=totSaldo.toFixed(2); $('pCod').value=(b.cod||'B06');
-    const facturas=[...new Set(sel.map(e=>e.factura).filter(Boolean))];
-    $('pRef').value=sel.map(e=>e.despacho).join(' + ')+(facturas.length?(' · '+facturas.join(' / ')):'');
-    ['cardBenef','cardPago','cardOut'].forEach(x=>$(x).style.display='block');
-  } else {
-    ['cardBenef','cardPago','cardOut'].forEach(x=>$(x).style.display='none');
-  }
-  $('paqueteWrap').style.display='none';
-  revalidar();
-}
+$('clearPaid').addEventListener('click',ev=>{ ev.preventDefault(); if(confirm('¿Borrar los pagos que armaste en COMEX en esta PC? (no toca la Torre ni tus archivos)')){ ARMADOS.length=0; localStorage.setItem('finkap_comex_paquetes','[]'); renderLista(); onSel(); } });
 
 $('oNom').value=ORD.nom||''; $('oCuit').value=ORD.cuit||''; $('oBco').value=ORD.bco||'';
 ['oNom','oCuit','oBco'].forEach(id=>$(id).addEventListener('input',()=>{ ORD.nom=$('oNom').value;ORD.cuit=$('oCuit').value;ORD.bco=$('oBco').value;saveOrd(); }));
+
+function onSel(){
+  sel=[...document.querySelectorAll('.dcb:checked')].map(cb=>EMB[+cb.value]);
+  applyLock();
+  const pid=provSel();
+  if(!sel.length || !pid){ ['cardBenef','cardPago','cardOut'].forEach(x=>$(x).style.display='none'); $('sumbar').style.display='none'; revalidar(); return; }
+  const p=provById(pid); const fs=factStatus(pid); const b=BANCOS[pid]||{};
+  $('sumbar').style.display='flex';
+  $('sumN').textContent=sel.length; $('sumFact').textContent='USD '+usd(fs.total); $('sumSaldo').textContent='USD '+usd(fs.restante);
+  $('benefProv').textContent='Proveedor: '+(p.nombre||pid||'');
+  $('bNombre').value=b.nombre||p.nombre||''; $('bBanco').value=b.banco||''; $('bSwift').value=b.swift||'';
+  $('bIban').value=b.iban||''; $('bInter').value=b.inter||'';
+  // banner con datos reales de la Torre
+  $('torreBanner').innerHTML = fs.tp
+    ? `📊 <b>Según la Torre</b> · Factura ${esc(fs.factura||'')}: total <b>USD ${usd(fs.total)}</b> · ya pagado <b>USD ${usd(fs.torrePagado)}</b> · saldo <b>USD ${usd(fs.torreSaldo)}</b> (${esc(fs.estado||'')}).`
+      + (fs.local>0?`<br>➕ Armado en COMEX (sin enviar): <b>USD ${usd(fs.local)}</b> → <b>saldo restante USD ${usd(fs.restante)}</b>.`:``)
+      + (fs.doc?`<br><span class="mini">${esc(fs.doc)}</span>`:``)
+    : `📊 Este proveedor no tiene un pago 2026 registrado en la Torre. Saldo estimado por FOB: <b>USD ${usd(fs.total)}</b>.`;
+  $('pMonto').value=fs.restante.toFixed(2); $('pCod').value=(b.cod||'B06');
+  const facturas=[...new Set(sel.map(e=>e.factura).filter(Boolean))];
+  $('pRef').value=sel.map(e=>e.despacho).join(' + ')+(facturas.length?(' · '+facturas.join(' / ')):(fs.factura?' · '+fs.factura:''));
+  ['cardBenef','cardPago','cardOut'].forEach(x=>$(x).style.display='block');
+  $('paqueteWrap').style.display='none';
+  revalidar();
+}
 
 $('bSave').addEventListener('click',()=>{ const pid=provSel(); if(!pid) return;
   BANCOS[pid]={ nombre:$('bNombre').value.trim(),banco:$('bBanco').value.trim(),swift:$('bSwift').value.trim().toUpperCase(),iban:$('bIban').value.trim(),inter:$('bInter').value.trim(),cod:$('pCod').value.trim() };
   saveBancos(); $('bSave').textContent='✓ Guardado'; setTimeout(()=>$('bSave').textContent='💾 Guardar datos de este proveedor',1500);
 });
 ['bNombre','bBanco','bSwift','bIban','bInter','pMonto','pMoneda','pCod','pRef','pVia'].forEach(id=>$(id).addEventListener('input',revalidar));
-$('pVia').addEventListener('change',revalidar);
 
 function revalidar(){
   if(!sel.length){ $('gen').disabled=true; $('checks').innerHTML=''; return; }
-  const PAID=paidByDespacho();
-  const totFob=sel.reduce((s,e)=>s+(+e.fob||0),0);
-  const totSaldo=sel.reduce((s,e)=>s+Math.max(0,(+e.fob||0)-(PAID[e.despacho]||0)),0);
+  const pid=provSel(); const fs=pid?factStatus(pid):null;
+  const restante=fs?fs.restante:0;
   const monto=parseFloat(String($('pMonto').value).replace(',','.'));
   const swift=$('bSwift').value.trim().toUpperCase(); const iban=$('bIban').value.trim();
-  const nombre=$('bNombre').value.trim(); const via=$('pVia').value; const unProv=provSel();
-  const codigos=sel.map(e=>e.despacho);
-  const yaPagado=PAGADOS.some(x=>JSON.stringify((x.despachos||[]).slice().sort())===JSON.stringify(codigos.slice().sort()) && Math.abs((x.monto||0)-(monto||0))<0.01);
-  $('montoHint').textContent=`Saldo a pagar de los ${sel.length} despacho(s): USD ${usd(totSaldo)} (FOB total USD ${usd(totFob)}). Podés pagar menos (parcial).`;
+  const nombre=$('bNombre').value.trim(); const via=$('pVia').value;
   const checks=[
-    { ok:!!unProv, txt:'Todos los despachos del mismo proveedor (un giro = un beneficiario)' },
+    { ok:!!pid, txt:'Todos los despachos del mismo proveedor (un giro = un beneficiario)' },
     { ok:(monto>0), txt:'Monto mayor a cero' },
-    { ok:(monto>0 && monto<=totSaldo+0.01), txt:`Monto ≤ saldo pendiente (USD ${usd(totSaldo)})` },
+    { ok:(monto>0 && monto<=restante+0.01), txt:`Monto ≤ saldo de la factura (USD ${usd(restante)})` },
     { ok:!!nombre, txt:'Beneficiario cargado' },
     { ok:(via==='USDT')||/^[A-Z0-9]{8}([A-Z0-9]{3})?$/.test(swift), txt:via==='USDT'?'SWIFT no requerido (vía USDT)':'SWIFT válido (8 u 11 caracteres)' },
     { ok:(via==='USDT')||iban.length>=6, txt:via==='USDT'?'IBAN/cuenta no requerido (vía USDT)':'IBAN / N° de cuenta cargado' },
-    { ok:!yaPagado, warn:yaPagado, txt:'Sin pago previo idéntico (anti-duplicado)' },
   ];
-  $('checks').innerHTML=checks.map(c=>{ const cls=c.ok?'ok':(c.warn?'warn':'bad'); const ic=c.ok?'✓':(c.warn?'⚠':'✕'); return `<li><span class="${cls}">${ic}</span><span>${c.txt}</span></li>`; }).join('');
-  $('gen').disabled=!checks.filter(c=>!c.warn).every(c=>c.ok);
+  $('checks').innerHTML=checks.map(c=>`<li><span class="${c.ok?'ok':'bad'}">${c.ok?'✓':'✕'}</span><span>${c.txt}</span></li>`).join('');
+  $('gen').disabled=!checks.every(c=>c.ok);
 }
 
 function paqueteTexto(){
   const monto=parseFloat(String($('pMonto').value).replace(',','.'));
-  const via=$('pVia').value; const totFob=sel.reduce((s,e)=>s+(+e.fob||0),0);
-  const p=provById(provSel());
-  const lineasDesp=sel.map(e=>`  · ${e.despacho}  (${e.tipo||''})  FOB USD ${usd(e.fob)}${e.factura?'  ·  '+e.factura:''}`);
+  const via=$('pVia').value; const pid=provSel(); const fs=factStatus(pid); const p=provById(pid);
+  const lineasDesp=sel.map(e=>`  · ${e.despacho}  (${e.tipo||''})  FOB USD ${usd(e.fob)}`);
   return [
 `PAQUETE DE PAGO AL EXTERIOR — FINKAP COMEX`,
 `Via: ${via==='USDT'?'STABLECOIN (USDT)':'MULC · transferencia bancaria'}`,
@@ -251,43 +250,44 @@ via==='USDT'?`  (USDT — coordinar wallet/red con la contraparte)`:`  SWIFT/BIC
 via==='USDT'?'':`  IBAN/Cuenta: ${$('bIban').value||'—'}`,
 via==='USDT'?'':`  Banco intermediario: ${$('bInter').value||'—'}`,
 ``,
-`PAGO`,
+`FACTURA / SALDO (segun Torre)`,
+`  Factura: ${fs.factura||'—'}  ·  Total USD ${usd(fs.total)}`,
+`  Ya pagado: USD ${usd(fs.torrePagado)}  ·  Saldo previo: USD ${usd(fs.torreSaldo)}`,
+``,
+`ESTE PAGO`,
 `  Monto: ${$('pMoneda').value} ${usd(monto)}`,
 `  Codigo op. cambiaria: ${$('pCod').value||'—'}`,
 `  Referencia: ${$('pRef').value}`,
+`  Saldo despues de este pago: USD ${usd(Math.max(0,fs.restante-monto))}`,
 ``,
 `DESPACHOS CUBIERTOS (${sel.length})`,
 ...lineasDesp,
-`  ----`,
-`  Total FOB seleccionado: USD ${usd(totFob)}`,
 ``,
 `Generado en Finkap COMEX. Revisar antes de cargar en el home banking.`,
   ].filter(x=>x!=='').join('\n');
 }
 
 $('gen').addEventListener('click',()=>{
+  const pid=provSel(); const monto=parseFloat(String($('pMonto').value).replace(',','.'));
   $('paquete').textContent=paqueteTexto(); $('paqueteWrap').style.display='block';
-  const monto=parseFloat(String($('pMonto').value).replace(',','.'));
-  const PAID=paidByDespacho();
-  const sal=sel.map(e=>({c:e.despacho, s:Math.max(0,(+e.fob||0)-(PAID[e.despacho]||0))}));
-  const sumS=sal.reduce((a,b)=>a+b.s,0); const alloc={};
-  sal.forEach(x=>{ alloc[x.c]= sumS>0 ? monto*(x.s/sumS) : monto/sel.length; });
-  PAGADOS.push({ despachos:sel.map(e=>e.despacho), monto, via:$('pVia').value, fecha:new Date().toISOString(), alloc });
-  localStorage.setItem('finkap_comex_paquetes',JSON.stringify(PAGADOS)); renderLista(); revalidar();
+  ARMADOS.push({ proveedorId:pid, despachos:sel.map(e=>e.despacho), monto, via:$('pVia').value, fecha:new Date().toISOString() });
+  localStorage.setItem('finkap_comex_paquetes',JSON.stringify(ARMADOS));
+  renderLista(); onSel();
 });
 $('copy').addEventListener('click',()=>{ navigator.clipboard.writeText($('paquete').textContent).then(()=>{$('copy').textContent='✓ Copiado';setTimeout(()=>$('copy').textContent='📋 Copiar',1200);}); });
 $('print').addEventListener('click',()=>{ const w=window.open('','_blank'); w.document.write('<pre style="font:13px monospace;white-space:pre-wrap">'+esc($('paquete').textContent)+'</pre>'); w.document.close(); w.print(); });
 $('json').addEventListener('click',()=>{
-  const monto=parseFloat(String($('pMonto').value).replace(',','.')); const p=provById(provSel());
+  const pid=provSel(); const fs=factStatus(pid); const p=provById(pid); const monto=parseFloat(String($('pMonto').value).replace(',','.'));
   const obj={ ordenante:{nom:$('oNom').value,cuit:$('oCuit').value,cuenta:$('oBco').value},
     beneficiario:{nombre:$('bNombre').value,pais:p.pais,banco:$('bBanco').value,swift:$('bSwift').value.toUpperCase(),iban:$('bIban').value,intermediario:$('bInter').value},
-    pago:{monto,moneda:$('pMoneda').value,via:$('pVia').value,codOp:$('pCod').value,referencia:$('pRef').value},
-    despachos:sel.map(e=>({codigo:e.despacho,tipo:e.tipo,fob:e.fob,factura:e.factura,pais:e.pais})) };
+    factura:{nro:fs.factura,total:fs.total,yaPagado:fs.torrePagado,saldoPrevio:fs.torreSaldo},
+    pago:{monto,moneda:$('pMoneda').value,via:$('pVia').value,codOp:$('pCod').value,referencia:$('pRef').value,saldoDespues:Math.max(0,fs.restante-monto)},
+    despachos:sel.map(e=>({codigo:e.despacho,tipo:e.tipo,fob:e.fob})) };
   const blob=new Blob([JSON.stringify(obj,null,2)],{type:'application/json'}); const a=document.createElement('a');
-  a.href=URL.createObjectURL(blob); a.download=`pago_${sel.length>1?sel.length+'despachos':sel[0].despacho}.json`; a.click();
+  a.href=URL.createObjectURL(blob); a.download=`pago_${p.nombre||pid}.json`; a.click();
 });
 
-renderLista();   // pintar la lista (con los pagados en verde) al cargar
+renderLista();
 </script>
 </body>
 </html>
