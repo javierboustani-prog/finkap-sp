@@ -114,9 +114,19 @@ input:focus,select:focus{border-color:var(--orange)}
         <button class="btn ghost" id="copy">📋 Copiar</button>
         <button class="btn ghost" id="print">🖨️ Imprimir</button>
         <button class="btn ghost" id="json">⬇️ JSON</button>
-        <a id="clearPaid" href="#" class="mini" style="align-self:center;margin-left:auto;color:var(--muted)">borrar pagos armados en COMEX (esta PC)</a>
       </div>
     </div>
+  </div>
+
+  <div class="card" id="cardSync" style="display:none">
+    <h2>↔ Sincronizar con la Torre</h2>
+    <div class="mini" id="syncInfo" style="margin-bottom:10px"></div>
+    <div class="actions" style="margin-top:0">
+      <button class="btn ghost" id="persistBtn">💾 Copiar pagos actualizados (para data.js)</button>
+      <a id="clearPaid" href="#" class="mini" style="align-self:center;color:var(--muted)">limpiar registro de giros (esta PC)</a>
+    </div>
+    <div class="note">Los giros que registrás acá <b>ya actualizan el saldo en la Torre</b> (en este equipo). Para que quede <b>permanente</b> y en otros dispositivos: tocá "Copiar pagos actualizados", pegalo reemplazando el array <code>pagos</code> en <code>importaciones/data.js</code>, cifrá con <code>encriptar-datos.html</code> y deployá. Después tocá "limpiar registro de giros".</div>
+    <div class="paquete" id="syncOut" style="display:none"></div>
   </div>
 </div>
 
@@ -174,7 +184,7 @@ function renderLista(){
   }
   $('lista').innerHTML=html;
   document.querySelectorAll('.dcb').forEach(cb=>cb.addEventListener('change',onSel));
-  applyLock();
+  applyLock(); updateSync();
 }
 $('clearPaid').addEventListener('click',ev=>{ ev.preventDefault(); if(confirm('¿Borrar los pagos que armaste en COMEX en esta PC? (no toca la Torre ni tus archivos)')){ ARMADOS.length=0; localStorage.setItem('finkap_comex_paquetes','[]'); renderLista(); onSel(); } });
 
@@ -195,7 +205,7 @@ function onSel(){
   // banner con datos reales de la Torre
   $('torreBanner').innerHTML = fs.tp
     ? `📊 <b>Según la Torre</b> · Factura ${esc(fs.factura||'')}: total <b>USD ${usd(fs.total)}</b> · ya pagado <b>USD ${usd(fs.torrePagado)}</b> · saldo <b>USD ${usd(fs.torreSaldo)}</b> (${esc(fs.estado||'')}).`
-      + (fs.local>0?`<br>➕ Armado en COMEX (sin enviar): <b>USD ${usd(fs.local)}</b> → <b>saldo restante USD ${usd(fs.restante)}</b>.`:``)
+      + (fs.local>0?`<br>➕ Giros registrados en COMEX (este equipo): <b>USD ${usd(fs.local)}</b> → <b>saldo restante USD ${usd(fs.restante)}</b>.`:``)
       + (fs.doc?`<br><span class="mini">${esc(fs.doc)}</span>`:``)
     : `📊 Este proveedor no tiene un pago 2026 registrado en la Torre. Saldo estimado por FOB: <b>USD ${usd(fs.total)}</b>.`;
   $('pMonto').value=fs.restante.toFixed(2); $('pCod').value=(b.cod||'B06');
@@ -285,6 +295,22 @@ $('json').addEventListener('click',()=>{
     despachos:sel.map(e=>({codigo:e.despacho,tipo:e.tipo,fob:e.fob})) };
   const blob=new Blob([JSON.stringify(obj,null,2)],{type:'application/json'}); const a=document.createElement('a');
   a.href=URL.createObjectURL(blob); a.download=`pago_${p.nombre||pid}.json`; a.click();
+});
+
+function pagosActualizados(){
+  const out=JSON.parse(JSON.stringify(PAGOS));
+  ARMADOS.forEach(g=>{ const pg=out.find(p=>p.proveedorId===g.proveedorId && !/2025/.test(p.id||'')); if(pg){ pg.pagado=(+pg.pagado||0)+(+g.monto||0); pg.saldo=Math.max(0,(+pg.facturaTotal||0)-pg.pagado); pg.estado=pg.saldo<=0.5?'cancelado':(pg.pagado>0?'parcial':pg.estado); } });
+  return out;
+}
+function updateSync(){
+  const n=ARMADOS.length; const tot=ARMADOS.reduce((s,a)=>s+(+a.monto||0),0);
+  $('cardSync').style.display = n?'block':'none';
+  $('syncInfo').textContent = n?`${n} giro(s) registrado(s) en COMEX · USD ${usd(tot)}. Ya reflejados en la Torre (este equipo).`:'';
+}
+$('persistBtn').addEventListener('click',()=>{
+  const js='pagos: '+JSON.stringify(pagosActualizados(),null,2)+',';
+  $('syncOut').style.display='block'; $('syncOut').textContent=js;
+  navigator.clipboard.writeText(js).then(()=>{ $('persistBtn').textContent='✓ Copiado — pegá en data.js'; setTimeout(()=>$('persistBtn').textContent='💾 Copiar pagos actualizados (para data.js)',2000); }).catch(()=>{});
 });
 
 renderLista();

@@ -270,6 +270,10 @@ window.addEventListener('error', function(){
   // defaults: que falten claves no rompa el render (antes tiraba TypeError mudo)
   D.embarques=D.embarques||[]; D.pagos=D.pagos||[]; D.proveedores=D.proveedores||[];
   D.alertas=D.alertas||[]; D.bancos=D.bancos||[]; D.meta=D.meta||{};
+  // pagos registrados desde el módulo COMEX (localStorage) → mantiene la Torre sincronizada
+  try{ const giros=JSON.parse(localStorage.getItem('finkap_comex_paquetes')||'[]');
+    giros.forEach(g=>{ const pg=D.pagos.find(p=>p.proveedorId===g.proveedorId && !/2025/.test(p.id||'')); if(pg){ pg.pagado=(+pg.pagado||0)+(+g.monto||0); pg.saldo=Math.max(0,(+pg.facturaTotal||0)-pg.pagado); pg.estado=pg.saldo<=0.5?'cancelado':(pg.pagado>0?'parcial':pg.estado); pg._comex=true; } });
+  }catch(e){}
   const usd = n => n==null ? null : n.toLocaleString("es-AR",{minimumFractionDigits:2,maximumFractionDigits:2});
   const fecha = s => s==null ? "—" : s.split("-").reverse().join("/");
   const provById = id => D.proveedores.find(p=>p.id===id);
