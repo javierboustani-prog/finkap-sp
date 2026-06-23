@@ -53,9 +53,12 @@ export const VARIEDADES = {
   'Typica':       { tierRef:'especialidad', perfil:'Taza limpia, dulzor delicado, claridad.', notas:['floral suave','miel','cítrico'] },
   'Pacas':        { tierRef:'especialidad', perfil:'Dulce y equilibrado (mutación de Bourbon).', notas:['caramelo','frutal'] },
   'Tabi':         { tierRef:'especialidad', perfil:'Complejo, buena acidez (Colombia).', notas:['frutal','panela','cítrico'] },
+  'Villa Sarchí': { tierRef:'especialidad', perfil:'Mutación de Bourbon, dulce y compacta (Costa Rica).', notas:['caramelo','cítrico','dulce'] },
+  'Marsellesa':   { tierRef:'especialidad', perfil:'Híbrido F1 resistente, buen cuerpo y dulzor.', notas:['chocolate','frutal','panela'] },
+  'Java':         { tierRef:'especialidad', perfil:'Long-berry de origen etíope; floral y limpio.', notas:['floral','cítrico','té'] },
   // --- exóticos / alto valor ---
   'Geisha':       { tierRef:'exotico', perfil:'Floral intenso, jazmín y bergamota, acidez té-cítrica, cuerpo sedoso.', notas:['jazmín','bergamota','durazno','té negro'] },
-  'Gesha':        { tierRef:'exotico', perfil:'Floral intenso, jazmín y bergamota, acidez té-cítrica, cuerpo sedoso.', notas:['jazmín','bergamota','durazno','té negro'] },
+  'Sidra':        { tierRef:'exotico', perfil:'Aromática y dulce, floral-frutal (Ecuador/Colombia).', notas:['floral','frutos rojos','tropical'] },
   'SL28':         { tierRef:'exotico', perfil:'Acidez vibrante tipo grosella/zarzamora, cuerpo jugoso (Kenia).', notas:['grosella negra','zarzamora','cítrico'] },
   'SL34':         { tierRef:'exotico', perfil:'Estructurado, frutal y complejo en altura.', notas:['frutos rojos','cítrico','dulce'] },
   'Pacamara':     { tierRef:'exotico', perfil:'Grano gigante, taza grande, frutal-herbal complejo.', notas:['frutal','herbal','chocolate'] },
@@ -63,6 +66,9 @@ export const VARIEDADES = {
   'Wush Wush':    { tierRef:'exotico', perfil:'Floral y tropical, muy aromático (Etiopía).', notas:['floral','tropical','té'] },
   'Bourbon Rosado':{ tierRef:'exotico', perfil:'Dulzor alto y delicadeza floral-frutal.', notas:['frutos rojos','floral','miel'] },
 };
+// alias (mismo perfil, distinta grafía) — sin duplicar el objeto, para que no se desincronicen
+VARIEDADES['Gesha'] = VARIEDADES['Geisha'];
+VARIEDADES['Pink Bourbon'] = VARIEDADES['Bourbon Rosado'];
 export const variedadInfo = v => VARIEDADES[v] || null;
 
 /* =========================================================================

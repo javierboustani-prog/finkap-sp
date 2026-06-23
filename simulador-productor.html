@@ -777,7 +777,7 @@ function onSend(){
 }
 
 function enviarLote(){
-  if(!WA_STATE){ return; }
+  if(!WA_STATE){ alert('Esperá un segundo a que se calcule el lote y volvé a tocar.'); return; }
   const { l, rep } = WA_STATE;
   const kg = l.kg || 0;
   const msg =
