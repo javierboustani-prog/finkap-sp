@@ -39,10 +39,17 @@ button:disabled{opacity:.5}
 const $=id=>document.getElementById(id);
 const KEY='finkap_impo_v1';        // datos descifrados de esta sesión
 const PKEY='finkap_impo_persist_v1'; // equipo recordado: guarda los datos descifrados en este dispositivo
-// si ya hay datos descifrados en esta sesión, entrar directo
-try{ if(JSON.parse(sessionStorage.getItem(KEY))) location.replace('index.html'); }catch(e){}
-// equipo recordado -> reusar el descifrado guardado y entrar sin pedir clave
-try{ const saved=localStorage.getItem(PKEY); if(saved && JSON.parse(saved)){ sessionStorage.setItem(KEY, saved); location.replace('index.html'); } }catch(e){}
+const FKEY='finkap_impo_fp_v1';      // huella de versión (sesión)
+const PFKEY='finkap_impo_persist_fp_v1'; // huella de versión (equipo recordado)
+// huella del paquete cifrado actual: cambia cada vez que se re-encriptan los datos
+const FP = window.FINKAP_IMPO_ENC ? ((window.FINKAP_IMPO_ENC.salt||'')+'.'+(window.FINKAP_IMPO_ENC.iv||'')) : '';
+// si ya hay datos descifrados en esta sesión Y son de la versión actual, entrar directo
+try{ if(JSON.parse(sessionStorage.getItem(KEY)) && sessionStorage.getItem(FKEY)===FP) location.replace('index.html');
+     else { sessionStorage.removeItem(KEY); sessionStorage.removeItem(FKEY); } }catch(e){}
+// equipo recordado -> reusar el descifrado guardado SOLO si es de la versión actual; si cambió, pedir clave de nuevo
+try{ const saved=localStorage.getItem(PKEY);
+     if(saved && JSON.parse(saved) && localStorage.getItem(PFKEY)===FP){ sessionStorage.setItem(KEY, saved); sessionStorage.setItem(FKEY, FP); location.replace('index.html'); }
+     else if(saved && localStorage.getItem(PFKEY)!==FP){ localStorage.removeItem(PKEY); localStorage.removeItem(PFKEY); } }catch(e){}
 
 async function go(){
   $('err').textContent=''; $('go').disabled=true; $('go').textContent='Descifrando…';
@@ -50,8 +57,8 @@ async function go(){
     if(!window.FINKAP_IMPO_ENC) throw new Error('Faltan los datos cifrados (data.enc.js).');
     const data = await finkapDecrypt(window.FINKAP_IMPO_ENC, $('pw').value);
     const blob = JSON.stringify(data);
-    sessionStorage.setItem(KEY, blob);
-    try{ if($('rm').checked) localStorage.setItem(PKEY, blob); else localStorage.removeItem(PKEY); }catch(e){}
+    sessionStorage.setItem(KEY, blob); sessionStorage.setItem(FKEY, FP);
+    try{ if($('rm').checked){ localStorage.setItem(PKEY, blob); localStorage.setItem(PFKEY, FP); } else { localStorage.removeItem(PKEY); localStorage.removeItem(PFKEY); } }catch(e){}
     location.replace('index.html');
   }catch(e){
     $('err').textContent = 'Clave incorrecta.';

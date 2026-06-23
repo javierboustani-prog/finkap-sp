@@ -254,6 +254,7 @@ td.r,th.r{text-align:right}
   <div class="foot" id="foot"></div>
 </div>
 
+<script src="data.enc.js"></script>
 <script>
 // red de seguridad: si algo del render falla, mostrar un cartel en vez de quedar a medio pintar (crash mudo)
 window.addEventListener('error', function(){
@@ -265,6 +266,19 @@ window.addEventListener('error', function(){
   (document.body||document.documentElement).appendChild(d);
 });
 (function(){
+  // auto-actualización: si el paquete cifrado deployado cambió (nueva versión de datos),
+  // la copia descifrada vieja guardada en este equipo queda obsoleta → la limpiamos y volvemos a pedir la clave.
+  try{
+    var ENC=window.FINKAP_IMPO_ENC, blob=sessionStorage.getItem('finkap_impo_v1');
+    if(ENC && blob){
+      var fp=(ENC.salt||'')+'.'+(ENC.iv||''), sfp=sessionStorage.getItem('finkap_impo_fp_v1');
+      if(sfp!==fp){ // datos nuevos (o sesión vieja sin huella) → invalidar y re-descifrar
+        sessionStorage.removeItem('finkap_impo_v1'); sessionStorage.removeItem('finkap_impo_fp_v1');
+        localStorage.removeItem('finkap_impo_persist_v1'); localStorage.removeItem('finkap_impo_persist_fp_v1');
+        location.replace('entrar.html'); return;
+      }
+    }
+  }catch(e){}
   const D = (function(){ try{ var d=JSON.parse(sessionStorage.getItem('finkap_impo_v1')); if(d) return d; }catch(e){} location.replace('entrar.html'); return null; })();
   if(!D) return;   // sin sesión descifrada → va a entrar.html
   // defaults: que falten claves no rompa el render (antes tiraba TypeError mudo)
