@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MODO · Cuenta con Martín — Finkap</title>
+<meta name="robots" content="noindex,nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0d0d0f;--bg2:#131316;--panel:#17171b;--panel2:#1d1d22;--line:#2c2c33;--line2:#3a3a43;
+  --text:#f5f5f7;--muted:#9b9ba6;--muted2:#6f6f7a;--orange:#F97316;--orange-line:rgba(249,115,22,.45);--orange-soft:rgba(249,115,22,.12);
+  --ok:#46d39a;--bad:#ef5350;--blue:#5b9dff;--violet:#b58bff;--yellow:#f5b942;
+  --radius:16px;--radius-sm:10px;--mono:"JetBrains Mono",ui-monospace,monospace;--sans:"Inter",system-ui,Arial,sans-serif;
+}
+*{box-sizing:border-box}html,body{margin:0;padding:0}
+body{background:radial-gradient(1200px 600px at 85% -10%,rgba(249,115,22,.10),transparent 60%),var(--bg);color:var(--text);font-family:var(--sans);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased;letter-spacing:-.01em;min-height:100vh}
+.num,.mono,.dospuntos{font-family:var(--mono);font-variant-numeric:tabular-nums}
+a{color:inherit;text-decoration:none}
+.topbar{position:sticky;top:0;z-index:50;backdrop-filter:saturate(140%) blur(14px);background:rgba(13,13,15,.72);border-bottom:1px solid var(--line)}
+.topbar-in{max-width:1380px;margin:0 auto;padding:12px 20px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:20px;letter-spacing:-.03em}
+.brand .dot{width:30px;height:30px;border-radius:50%;border:2.5px solid var(--orange);display:grid;place-items:center;color:var(--orange);font-weight:900;font-size:16px}
+.brand sup{color:var(--orange);font-size:10px;font-weight:700}
+.back{margin-left:auto;font-size:12px;color:var(--muted);border:1px solid var(--line);border-radius:99px;padding:6px 13px}
+.back:hover{color:var(--text);border-color:var(--line2)}
+.flag{font-size:10px;font-weight:800;letter-spacing:.5px;border-radius:99px;padding:3px 10px;color:var(--violet);border:1px solid rgba(181,139,255,.4);background:rgba(181,139,255,.1)}
+.shell{max-width:1380px;margin:0 auto;padding:24px 20px 80px}
+.hero h1{font-size:clamp(24px,3.5vw,32px);font-weight:800;letter-spacing:-.03em;margin:6px 0 4px}
+.hero h1 .ac{color:var(--orange)}
+.hero p{color:var(--muted);max-width:820px;margin:0}
+.sec{margin:26px 0 12px;display:flex;align-items:center;gap:10px}
+.sec h2{font-size:13px;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);margin:0;font-weight:700}
+.sec .ln{height:1px;background:var(--line);flex:1}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-top:16px}
+.kpi{background:linear-gradient(160deg,var(--panel2),var(--panel));border:1px solid var(--line);border-radius:var(--radius);padding:14px 16px;display:flex;flex-direction:column;min-height:112px}
+.kpi .k{font-size:9px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted2);min-height:24px;line-height:1.3}
+.kpi .v{font-family:var(--mono);font-size:21px;font-weight:800;margin-top:auto;line-height:1;white-space:nowrap;letter-spacing:-.5px}
+.kpi .s{font-size:10.5px;color:var(--muted);margin-top:5px;line-height:1.2}
+.kpi.usd{border-color:rgba(245,185,66,.45)}.kpi.usd .v{color:var(--yellow)}
+.kpi.ars{border-color:rgba(70,211,154,.45)}.kpi.ars .v{color:var(--ok)}
+.kpi.bal{border-color:var(--orange-line)}.kpi.bal .v{color:var(--orange)}
+.tbl-wrap{border:1px solid var(--line);border-radius:var(--radius);overflow-x:auto;background:var(--panel)}
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+th{text-align:left;font-size:9.5px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted2);font-weight:700;padding:11px 12px;background:var(--bg2);border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:10px 12px;border-bottom:1px solid var(--line)}tr:last-child td{border-bottom:none}tr:hover td{background:rgba(255,255,255,.015)}
+td.r,th.r{text-align:right}
+tr.tot td{font-weight:800;border-top:2px solid var(--line2);background:rgba(255,255,255,.02)}
+.sub{font-size:11px;color:var(--muted2);display:block;margin-top:2px}
+.pill{font-size:10px;font-weight:700;border-radius:99px;padding:2px 9px;margin-left:8px}
+.pill.usd{color:var(--yellow);border:1px solid rgba(245,185,66,.4);background:rgba(245,185,66,.1)}
+.pill.ars{color:var(--ok);border:1px solid rgba(70,211,154,.4);background:rgba(70,211,154,.1)}
+.note{margin-top:16px;background:linear-gradient(160deg,var(--orange-soft),transparent);border:1px solid var(--orange-line);border-radius:var(--radius);padding:16px 18px}
+.note h3{margin:0 0 5px;font-size:14px;color:var(--orange)}.note p{margin:0 0 8px;color:var(--muted);font-size:12.5px;line-height:1.55}.note p:last-child{margin-bottom:0}
+.foot{margin-top:30px;color:var(--muted2);font-size:11px;text-align:center}
+.meta-chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.chip{font-size:11px;color:var(--muted);background:var(--panel);border:1px solid var(--line);border-radius:99px;padding:4px 11px}
+.chip b{color:var(--text)}
+</style>
+</head>
+<body>
+<div class="topbar"><div class="topbar-in">
+  <div class="brand"><span class="dot">F</span> Finkap <sup>cuenta cruzada</sup></div>
+  <span class="flag">🇦🇷 MODO · CANJE / CUENTA</span>
+  <a class="back" href="index.html">← Volver al tablero</a>
+</div></div>
+
+<div class="shell">
+  <div class="hero">
+    <h1>MODO · Cuenta con <span class="ac" id="socio">Martín</span></h1>
+    <p id="heroP"></p>
+    <div class="meta-chips" id="chips"></div>
+  </div>
+
+  <div class="kpis" id="kpis"></div>
+
+  <div class="sec"><h2>☕ Café (en USD) <span class="pill usd">a favor de Martín</span></h2><div class="ln"></div></div>
+  <div class="tbl-wrap"><table>
+    <thead><tr><th>Concepto</th><th class="r">Kg</th><th class="r">USD/kg</th><th class="r">Valor USD</th></tr></thead>
+    <tbody id="usdBody"></tbody>
+  </table></div>
+
+  <div class="sec"><h2>💵 Facturas cruzadas (en pesos) <span class="pill ars" id="arsPill">a favor nuestro</span></h2><div class="ln"></div></div>
+  <div class="tbl-wrap"><table>
+    <thead><tr><th>Comprobante</th><th>Detalle</th><th class="r">Nosotros le debemos</th><th class="r">Modo nos debe</th></tr></thead>
+    <tbody id="arsBody"></tbody>
+  </table></div>
+
+  <div class="note"><h3>↔ Cómo leerlo</h3>
+    <p id="notePusd"></p>
+    <p id="notePars"></p>
+    <p style="color:var(--muted2);font-size:11.5px">Las dos partes se llevan <b>por separado</b>: el café se mide en USD y las facturas en pesos. No se netean entre sí.</p>
+  </div>
+
+  <div style="text-align:center;margin-top:34px"><a href="index.html" style="display:inline-block;font-weight:700;font-size:14px;color:var(--orange);border:1px solid var(--orange-line);background:var(--orange-soft);border-radius:99px;padding:11px 24px">← Volver al menú principal</a></div>
+  <div class="foot" id="foot"></div>
+</div>
+
+<script>(function(){try{var d=JSON.parse(sessionStorage.getItem('finkap_impo_v1'));if(d){window.FINKAP_IMPO=d;return;}}catch(e){}location.replace('entrar.html');})();</script>
+<script>
+(function(){
+  const C = (window.FINKAP_IMPO||{}).modo;
+  if(!C){ document.getElementById("heroP").textContent="No se encontraron datos de la cuenta de MODO."; return; }
+  const usd = n => n==null?"—":n.toLocaleString("es-AR",{minimumFractionDigits:2,maximumFractionDigits:2});
+  const ars = n => n==null?"—":"$ "+n.toLocaleString("es-AR",{minimumFractionDigits:2,maximumFractionDigits:2});
+  const kg  = n => n==null?"—":n.toLocaleString("es-AR");
+
+  // ---- USD (café) ----
+  const usdItems = C.usd.items||[];
+  const usdKgTot = usdItems.reduce((a,i)=>a+(i.kg||0),0);
+  const usdTot   = (C.usd.total!=null)? C.usd.total : usdItems.reduce((a,i)=>a+(i.valor||0),0);
+
+  // ---- ARS (facturas cruzadas) ----
+  const debemos = (C.ars.nosotrosDebemos||[]).reduce((a,f)=>a+(f.monto||0),0);
+  const nosDeben = (C.ars.ellosDeben||[]).reduce((a,f)=>a+(f.monto||0),0);
+  const saldoArs = (C.ars.saldo!=null)? C.ars.saldo : (nosDeben - debemos);
+  const arsAFavorNuestro = (C.ars.aFavorDe? C.ars.aFavorDe==='nosotros' : saldoArs>=0);
+
+  document.getElementById("socio").textContent = C.socio;
+  document.getElementById("heroP").textContent = C.nota;
+  document.title = "MODO · "+C.socio+" — Finkap";
+  document.getElementById("chips").innerHTML =
+    `<span class="chip">Socio <b>${C.socio}</b></span>`+
+    `<span class="chip">Empresa <b>${C.empresa}</b></span>`+
+    (C.actualizado?`<span class="chip">Actualizado <b>${C.actualizado.split("-").reverse().join("/")}</b></span>`:``);
+
+  const kpis = [
+    {k:"Café — a favor de Martín", v:"US$ "+usd(usdTot), s:kg(usdKgTot)+" kg de café", cls:"usd"},
+    {k:"Nosotros le debemos ($)", v:ars(debemos), s:(C.ars.nosotrosDebemos||[]).map(f=>f.doc).join(" · "), cls:""},
+    {k:"Modo nos debe ($)", v:ars(nosDeben), s:(C.ars.ellosDeben||[]).map(f=>f.doc).join(" · "), cls:""},
+    {k:"Saldo en pesos a compensar", v:ars(Math.abs(saldoArs)), s:(arsAFavorNuestro?"a favor nuestro":"a favor de Modo"), cls:"ars"}
+  ];
+  document.getElementById("kpis").innerHTML = kpis.map(x=>
+    `<div class="kpi ${x.cls||''}"><div class="k">${x.k}</div><div class="v">${x.v}</div><div class="s">${x.s}</div></div>`).join("");
+
+  // tabla USD
+  document.getElementById("usdBody").innerHTML = usdItems.map(i=>
+    `<tr><td><b>${i.concepto}</b>${i.detalle?`<span class="sub">${i.detalle}</span>`:''}</td>`+
+    `<td class="r dospuntos">${kg(i.kg)}</td>`+
+    `<td class="r dospuntos">${usd(i.usdKg)}</td>`+
+    `<td class="r dospuntos">${usd(i.valor)}</td></tr>`).join("")+
+    `<tr class="tot"><td>TOTAL a favor de ${C.usd.aFavorDe||'Martín'}</td><td class="r dospuntos">${kg(usdKgTot)}</td><td></td><td class="r dospuntos" style="color:var(--yellow)">US$ ${usd(usdTot)}</td></tr>`;
+
+  // tabla ARS
+  const arsRows = []
+    .concat((C.ars.nosotrosDebemos||[]).map(f=>({doc:f.doc,detalle:f.nota||'Le debemos a Modo',debe:f.monto,haber:0})))
+    .concat((C.ars.ellosDeben||[]).map(f=>({doc:f.doc,detalle:f.nota||'Modo nos debe',debe:0,haber:f.monto})));
+  document.getElementById("arsBody").innerHTML = arsRows.map(r=>
+    `<tr><td><b>${r.doc}</b></td><td style="color:var(--muted)">${r.detalle}</td>`+
+    `<td class="r dospuntos">${r.debe?ars(r.debe):'—'}</td>`+
+    `<td class="r dospuntos">${r.haber?ars(r.haber):'—'}</td></tr>`).join("")+
+    `<tr class="tot"><td colspan="2">SALDO ${arsAFavorNuestro?'A FAVOR NUESTRO':'A FAVOR DE MODO'} (a compensar)</td>`+
+    `<td class="r dospuntos">${ars(debemos)}</td><td class="r dospuntos" style="color:var(--ok)">${ars(nosDeben)}</td></tr>`+
+    `<tr class="tot"><td colspan="3" style="text-align:right">Neto ${arsAFavorNuestro?'a favor nuestro':'a favor de Modo'} →</td><td class="r dospuntos" style="color:var(--orange)">${ars(Math.abs(saldoArs))}</td></tr>`;
+
+  document.getElementById("arsPill").textContent = arsAFavorNuestro?'a favor nuestro':'a favor de Modo';
+
+  document.getElementById("notePusd").innerHTML = `<b>Café (USD):</b> entre la devolución de Honduras (1.840 kg) y la liquidación de lo vendido en Finkap (276 kg), el saldo a favor de Martín es <b style="color:var(--yellow)">US$ ${usd(usdTot)}</b> en café/valor.`;
+  document.getElementById("notePars").innerHTML = `<b>Pesos (facturas):</b> nosotros le debemos la <b>${(C.ars.nosotrosDebemos||[]).map(f=>f.doc).join(", ")}</b> (${ars(debemos)}) y Modo nos debe la <b>${(C.ars.ellosDeben||[]).map(f=>f.doc).join(", ")}</b> (${ars(nosDeben)}) → saldo ${arsAFavorNuestro?'<b style="color:var(--ok)">a favor nuestro</b>':'a favor de Modo'} de <b style="color:var(--orange)">${ars(Math.abs(saldoArs))}</b> para compensar.`;
+
+  document.getElementById("foot").textContent = "Cuenta cruzada con "+C.socio+" (MODO) · café en USD + facturas en pesos · actualizado "+(C.actualizado||"");
+})();
+</script>
+</body>
+</html>
