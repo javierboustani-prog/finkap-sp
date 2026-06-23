@@ -336,24 +336,39 @@ window.addEventListener('error', function(){
   document.getElementById('alToggle').addEventListener('click', function(ev){ ev.preventDefault(); alShowDismissed=!alShowDismissed; renderAlertas(); });
   renderAlertas();
 
-  // transferencias en curso
+  // transferencias en curso (con estado editable, guardado en este equipo)
   if(D.transferencias && D.transferencias.length){
-    const stTag={lista:'<span class="tag ok">✓ lista para presentar</span>',frenada:'<span class="tag pend">⚠ frenada</span>',girada:'<span class="tag ok">✓ girada</span>'};
-    document.getElementById("transfCnt").textContent = D.transferencias.length+" en gestión";
-    document.getElementById("transferencias").innerHTML = D.transferencias.map(t=>{
-      const items = (t.checklist||[]).map(c=>
-        `<li class="${c.estado==='ok'?'ok':'pend'}"><span class="ic">${c.estado==='ok'?'✓':'⚠'}</span>${c.item}`+
-        (c.nota?`<span class="lnote">${c.nota}</span>`:'')+`</li>`).join("");
-      return `<div class="trf ${t.estado}"><div class="th"><div>`+
-        `<div class="nm">${t.proveedor}</div>`+
-        `<div class="sub">${t.pais} · ${t.banco} · ${t.operacion}</div>`+
-        (t.detalle?`<div class="det">${t.detalle}</div>`:'')+
-        `</div><div style="text-align:right"><div class="amt">$${usd(t.monto)}</div>`+
-        `<div style="margin-top:5px">${stTag[t.estado]||''}</div></div></div>`+
-        `<ul>${items}</ul>`+
-        (t.faltante?`<div class="miss"><b>Falta →</b> ${t.faltante}</div>`:'')+
-        `</div>`;
-    }).join("");
+    var trStTag={ lista:'<span class="tag ok">✓ lista para presentar</span>',
+      procesada:'<span class="tag" style="color:var(--blue);background:rgba(124,196,255,.12);border:1px solid rgba(124,196,255,.4)">⏳ procesada · sale mañana</span>',
+      girada:'<span class="tag ok">✓ girada</span>', frenada:'<span class="tag pend">⚠ frenada</span>' };
+    var trLbl={ lista:'Lista para presentar', procesada:'Procesada · sale mañana', girada:'Girada (enviada)', frenada:'Frenada' };
+    function trKey(t){ var s=(t.proveedor||'')+'|'+(t.operacion||'')+'|'+(t.monto||''); var h=0; for(var i=0;i<s.length;i++){ h=(Math.imul(31,h)+s.charCodeAt(i))|0; } return (h>>>0).toString(36); }
+    function trOver(){ try{ return JSON.parse(localStorage.getItem('finkap_transf_estado')||'{}'); }catch(e){ return {}; } }
+    function trEst(t){ var o=trOver(); return o[trKey(t)]||t.estado; }
+    function renderTransf(){
+      document.getElementById("transfCnt").textContent = D.transferencias.length+" en gestión";
+      document.getElementById("transferencias").innerHTML = D.transferencias.map(function(t){
+        var est=trEst(t), k=trKey(t);
+        var items=(t.checklist||[]).map(function(c){ return '<li class="'+(c.estado==='ok'?'ok':'pend')+'"><span class="ic">'+(c.estado==='ok'?'✓':'⚠')+'</span>'+c.item+(c.nota?'<span class="lnote">'+c.nota+'</span>':'')+'</li>'; }).join("");
+        var opts=['lista','procesada','girada','frenada'].map(function(o){ return '<option value="'+o+'"'+(o===est?' selected':'')+'>'+trLbl[o]+'</option>'; }).join('');
+        return '<div class="trf '+est+'"><div class="th"><div>'+
+          '<div class="nm">'+t.proveedor+'</div>'+
+          '<div class="sub">'+t.pais+' · '+t.banco+' · '+t.operacion+'</div>'+
+          (t.detalle?'<div class="det">'+t.detalle+'</div>':'')+
+          '</div><div style="text-align:right"><div class="amt">$'+usd(t.monto)+'</div>'+
+          '<div style="margin-top:5px">'+(trStTag[est]||'')+'</div>'+
+          '<select class="transf-estado" data-k="'+k+'" style="margin-top:6px;font-size:11px;background:#111114;border:1px solid var(--line2);color:var(--text);border-radius:6px;padding:3px 6px">'+opts+'</select>'+
+          '</div></div>'+
+          '<ul>'+items+'</ul>'+
+          (t.faltante?'<div class="miss"><b>Falta →</b> '+t.faltante+'</div>':'')+
+          '</div>';
+      }).join("");
+    }
+    document.getElementById("transferencias").addEventListener('change', function(ev){
+      var s=ev.target; if(!s.classList || !s.classList.contains('transf-estado')) return;
+      var o=trOver(); o[s.getAttribute('data-k')]=s.value; localStorage.setItem('finkap_transf_estado', JSON.stringify(o)); renderTransf();
+    });
+    renderTransf();
   }
 
   // proveedores
