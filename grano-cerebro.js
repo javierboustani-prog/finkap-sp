@@ -75,6 +75,7 @@ export const ORIGENES = {
   'Costa Rica': 'Acidez brillante, cítrico y miel, taza muy limpia.',
   'Panamá':     'Geishas florales de subasta; acidez té-cítrica, delicadeza extrema.',
   'Etiopía':    'Origen del arábica: floral y tropical (naturales) o té-cítrico (lavados).',
+  'Kenia':      'Acidez vibrante (grosella negra/zarzamora), cuerpo jugoso; SL28/SL34 en altura.',
   'México':     'Suave, dulce, acidez ligera; nuez y chocolate.',
   'Nicaragua':  'Equilibrado, dulzor y cuerpo medio; frutal en altura.',
   'Ecuador':    'Microlotes de altura, frutal-floral, acidez vibrante.',

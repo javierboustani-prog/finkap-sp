@@ -736,7 +736,7 @@ async function loadCatalog(){
     : (CONFIG.SHEET_ID ? `https://docs.google.com/spreadsheets/d/${CONFIG.SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(CONFIG.SHEET_NAME)}` : "");
   if(csvUrl){
     try{
-      const r = await fetch(csvUrl);
+      const r = await fetchT(csvUrl);
       if(!r.ok) throw new Error("HTTP "+r.status);
       const text = await r.text();
       if(/^\s*<(!doctype|html)/i.test(text)) throw new Error("La URL no devuelve CSV (¿la hoja está publicada?).");
@@ -1104,7 +1104,7 @@ async function sendPedido(){
    ============================================================ */
 async function loadTC(){
   try{
-    const r=await fetch(CONFIG.TC_API);
+    const r=await fetchT(CONFIG.TC_API);
     if(!r.ok) throw 0;
     const j=await r.json();
     const venta=+j.venta, compra=+j.compra;
@@ -1130,15 +1130,15 @@ const LB_KG = 0.45359237;
 const viaCORS = u => "https://corsproxy.io/?url=" + encodeURIComponent(u);
 
 async function yahooQuote(sym){
-  const r = await fetch(viaCORS("https://query1.finance.yahoo.com/v8/finance/chart/"+sym), {cache:"no-store"});
+  const r = await fetchT(viaCORS("https://query1.finance.yahoo.com/v8/finance/chart/"+sym), {cache:"no-store"});
   if(!r.ok) throw 0;
   const j = await r.json();
-  const m = j.chart.result[0].meta;
-  if(!(m.regularMarketPrice>0)) throw 0;
+  const m = j?.chart?.result?.[0]?.meta;   // defensivo: si el proxy devuelve algo raro, no rompe
+  if(!m || !(m.regularMarketPrice>0)) throw 0;
   return { price:m.regularMarketPrice, prev:(m.previousClose||m.chartPreviousClose||0) };
 }
 async function stooqQuote(sym){
-  const r = await fetch(viaCORS("https://stooq.com/q/l/?s="+sym+"&f=sd2t2ohlc&h&e=csv"), {cache:"no-store"});
+  const r = await fetchT(viaCORS("https://stooq.com/q/l/?s="+sym+"&f=sd2t2ohlc&h&e=csv"), {cache:"no-store"});
   const t = await r.text();
   const cols = t.trim().split(/\r?\n/).pop().split(",");
   const close = parseFloat(cols[6]);

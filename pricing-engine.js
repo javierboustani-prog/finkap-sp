@@ -7,7 +7,8 @@ export const KC_REF = 268.88;             // referencia de calibración (mayo 20
 
 // --- Config: diferenciales sobre el "C" (¢/lb) ---
 export const D_ORIGEN = { Colombia:25, Honduras:12, Brasil:5, Guatemala:28, 'Costa Rica':35,
-  'Panamá':45, 'Perú':10, 'México':14, Nicaragua:12, 'El Salvador':20, Ecuador:30, Bolivia:22, Vietnam:-40 };
+  'Panamá':45, 'Perú':10, 'México':14, Nicaragua:12, 'El Salvador':20, Ecuador:30, Bolivia:22, Vietnam:-40,
+  'Etiopía':32, Kenia:45 };   // estimados (origen premium) · calibrar con compras reales
 
 export const D_PROCESO = { Lavado:0, Washed:0, Honey:10, Natural:18, 'Anaeróbico':40, Nitro:25 };
 
@@ -128,7 +129,7 @@ export function pvpSugerido(lot, kc){
 // robusta Vietnam ~8 a su nivel de score. Editá estos números cuando cambie el mercado.
 export const NIVEL_ORIGEN = {
   Honduras:13.3, Brasil:11.9, Colombia:15.0, 'Perú':13.5, Bolivia:12.9,
-  Guatemala:13.5, 'Costa Rica':15.0, 'Panamá':16.0, 'Etiopía':16.0, 'México':13.0,
+  Guatemala:13.5, 'Costa Rica':15.0, 'Panamá':16.0, 'Etiopía':16.0, Kenia:16.5, 'México':13.0,
   Nicaragua:13.0, Ecuador:14.0, Vietnam:10.0,
 };
 export const NIVEL_ORIGEN_DEF = 13.0;

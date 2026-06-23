@@ -466,6 +466,12 @@ const pct = (v,d=0)=> (v>=0?'+':'')+fmt(v*100,d)+'%';
 const SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/1J_Gor9FaSFkbIuKJlDROXgCRT2cgCL-I_Q64Kn75zy0/gviz/tq?tqx=out:csv&gid=0";
 const KC_API_VIA = u => "https://corsproxy.io/?url="+encodeURIComponent(u);
 const TC_API = "https://dolarapi.com/v1/dolares/oficial";
+// fetch con timeout: si la red se cuelga, aborta y cae al fallback (no deja spinner colgado)
+const fetchT = async (url, opts, ms) => {
+  const c = new AbortController(); const t = setTimeout(()=>c.abort(), ms||10000);
+  try { return await fetch(url, Object.assign({}, opts, { signal:c.signal })); }
+  finally { clearTimeout(t); }
+};
 
 let feeds = { kc: PE.KC_REF, tc: 1430 };
 let CATALOG = [];
@@ -826,7 +832,7 @@ const CAT2TIER = c => { const s=normH(c); if(s.includes('exotic')) return 'exoti
 
 async function loadCatalog(){
   try{
-    const r = await fetch(SHEET_CSV_URL); if(!r.ok) throw 0;
+    const r = await fetchT(SHEET_CSV_URL); if(!r.ok) throw 0;
     const rows = csvToRows(await r.text()).filter(r=>r.some(c=>String(c).trim()!==''));
     const head = rows.shift().map(normH);
     const find = arr => { for(const a of arr){ const i=head.indexOf(a); if(i>-1) return i; } return -1; };
@@ -848,12 +854,12 @@ async function loadCatalog(){
 /* ---------- feeds ---------- */
 async function loadFeeds(){
   try{
-    const r = await fetch(KC_API_VIA("https://query1.finance.yahoo.com/v8/finance/chart/KC=F"),{cache:'no-store'});
-    const j = await r.json(); const kc = j.chart.result[0].meta.regularMarketPrice;
+    const r = await fetchT(KC_API_VIA("https://query1.finance.yahoo.com/v8/finance/chart/KC=F"),{cache:'no-store'});
+    const j = await r.json(); const kc = j?.chart?.result?.[0]?.meta?.regularMarketPrice;
     if(kc>0){ feeds.kc=kc; $('kcVal').textContent=fmt(kc); $('kcVal').classList.add('live'); }
   }catch(e){ feeds.kc=PE.KC_REF; $('kcVal').textContent=fmt(PE.KC_REF); }
   try{
-    const r = await fetch(TC_API); const j = await r.json(); const v=+j.venta;
+    const r = await fetchT(TC_API); const j = await r.json(); const v=+j.venta;
     if(v>0){ feeds.tc=v; $('tcVal').textContent=fmt(v,0); $('tcVal').classList.add('live'); }
   }catch(e){ $('tcVal').textContent=fmt(feeds.tc,0); }
   recalc();

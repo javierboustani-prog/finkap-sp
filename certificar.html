@@ -410,6 +410,8 @@ $('publicar').addEventListener('click', async ()=>{
   /* ---- unir todo por LOTE (lote_id) en Supabase: lote + scan + contrato ---- */
   let loteId=null;
   if(window.sbRpc){
+    const syncTag=document.createElement('div'); syncTag.style.marginTop='6px';
+    syncTag.textContent='☁️ sincronizando al equipo…'; $('seal').appendChild(syncTag);
     const slugDe = s => (s||'').toString().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'');
     const f=ultimo.inp.ficha, cosecha=String(new Date().getFullYear());
     const loteSlug=slugDe([snap.origen,snap.variedad,f.productor,cosecha].filter(Boolean).join('-'));
@@ -427,7 +429,11 @@ $('publicar').addEventListener('click', async ()=>{
         confianza:snap.conf, nivel:snap.nivel, sca_declarado:snap.scaDeclarado??null,
         humedad:(ultimo.inp.scan&&ultimo.inp.scan.humedad)??null, altura:snap.altura||null,
         kc_ref:snap.kcRef, veredicto:ultimo.motivo||'', snapshot:snap }});
-    }catch(err){ console.warn('No se pudo unir por lote (¿migración v2 aplicada?):', err); }
+      syncTag.innerHTML='<span style="color:var(--ok)">☁️ Sincronizado: lote y contrato guardados para el equipo</span>';
+    }catch(err){
+      console.warn('No se pudo unir por lote (¿migración v2 aplicada / conexión?):', err);
+      syncTag.innerHTML='<span style="color:#e0a44e">⚠️ Guardado en ESTE equipo, pero no se sincronizó a la nube (revisá la conexión). El contrato quedó local.</span>';
+    }
   }
 
   /* ---- subir foto al banco de imágenes + registrar (cross-device) ---- */
