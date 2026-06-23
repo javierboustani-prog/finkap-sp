@@ -13,7 +13,7 @@
 (function(){
   var KEY='finkap_gate_v1';          // sesión activa (se borra al cerrar el navegador)
   var PKEY='finkap_gate_persist_v1';  // equipo recordado (persiste); guarda el hash vigente
-  var PASS_HASH='1017526c345b2f14e5119e8e85de4b6a2d6d6559ba5d58ed1955dcf235537b67'; // SHA-256 de la clave
+  var PASS_HASH='4654edf5ac7faee59d171823146053056ddb8893055396bf33e9d63ae61117bc'; // SHA-256 de la clave
   if(sessionStorage.getItem(KEY)==='ok') return;
   // equipo recordado con la clave vigente -> abrir sin pedir nada
   try{ if(localStorage.getItem(PKEY)===PASS_HASH){ sessionStorage.setItem(KEY,'ok'); return; } }catch(e){}
