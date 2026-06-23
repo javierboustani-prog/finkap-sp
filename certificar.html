@@ -206,7 +206,8 @@ table.liq td.n{font-family:var(--mono);text-align:right;white-space:nowrap}
         <div class="metrics" id="visMetrics" style="display:none">
           <div class="metric"><div class="v" id="mUnif">—</div><div class="l">Uniformidad</div></div>
           <div class="metric"><div class="v" id="mColor">—</div><div class="l">Color parejo</div></div>
-          <div class="fld" style="flex:1;min-width:120px;margin:0"><label>Defectos secundarios</label><input id="defSec" inputmode="numeric" value="0"></div>
+          <div class="fld" style="flex:1;min-width:110px;margin:0"><label>Defectos primarios <span class="hint" style="display:inline">(graves)</span></label><input id="defPrim" inputmode="numeric" value="0"></div>
+          <div class="fld" style="flex:1;min-width:110px;margin:0"><label>Defectos secundarios</label><input id="defSec" inputmode="numeric" value="0"></div>
         </div>
         <div class="hint">El navegador mide <b>uniformidad</b> y <b>color</b> de la foto en vivo, sin subirla a ningún lado. La cuenta fina de defectos la confirma el scan físico / la visión IA — por eso el peso fuerte está en ProfilePrint, no en la foto.</div>
       </div>
@@ -301,7 +302,7 @@ $('foto').addEventListener('change', e=>{
   img.onload=()=>{
     $('preview').src=img.src; $('preview').style.display='block';
     const m=analizarImagen(img);
-    visual={ ...m, defSecundarios:num($('defSec').value)||0, defPrimarios:0 };
+    visual={ ...m, defSecundarios:num($('defSec').value)||0, defPrimarios:num($('defPrim').value)||0 };
     $('mUnif').textContent=(m.uniformidad*100).toFixed(0)+'%';
     $('mColor').textContent=(m.colorUnif*100).toFixed(0)+'%';
     $('visMetrics').style.display='flex';
@@ -313,7 +314,7 @@ $('foto').addEventListener('change', e=>{
 /* ---- evaluación (automática en cada cambio) ---- */
 function inputs(){
   const sca=num($('sca').value), ss=num($('scanScore').value), hum=num($('humedad').value);
-  if(visual) visual.defSecundarios=num($('defSec').value)||0;
+  if(visual){ visual.defSecundarios=num($('defSec').value)||0; visual.defPrimarios=num($('defPrim').value)||0; }
   return {
     ficha:{ scaDeclarado:sca, origen:$('origen').value, proceso:$('proceso').value,
             variedad:$('variedad').value||null, altura:num($('altura').value),
@@ -343,7 +344,7 @@ function evaluar(){
   $('vMotivo').textContent = r.motivo;
 
   if(r.viable){
-    const score=r.scoreProvisorio, tier=tierDe(score);   // etiqueta derivada del puntaje (no del select manual)
+    const score=r.scoreProvisorio, tier=Cerebro.tierConDefectos(score, inp.visual);   // puntaje + defecto primario topea a regional (SCA)
     $('tier').value=tier;                                  // sincronizar el campo para que no contradiga al contrato
     const precio=PE.pvpEstimado({origen:inp.ficha.origen, score}, feeds);  // precio = origen + puntaje
     $('cTier').textContent=TIER_LBL[tier];
@@ -474,7 +475,7 @@ function renderContratos(){
 }
 
 /* ---- bind ---- */
-['origen','proceso','tier','variedad','altura','sca','scanScore','humedad','defSec','productor','criba','notas'].forEach(id=>{
+['origen','proceso','tier','variedad','altura','sca','scanScore','humedad','defPrim','defSec','productor','criba','notas'].forEach(id=>{
   $(id).addEventListener('input', evaluar);
   $(id).addEventListener('change', evaluar);
 });

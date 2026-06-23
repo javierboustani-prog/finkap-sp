@@ -515,16 +515,13 @@ select.fld{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns
         <div style="margin-top:8px"><div class="lblup">Email</div><input id="cMail" type="email" class="fld" oninput="recalc()"></div>
         <div style="margin-top:12px"><div class="lblup">Resumen para WhatsApp</div><div class="summary" id="summary">—</div></div>
         <button class="btn send" id="btnSend" onclick="sendPedido()" style="width:100%;margin-top:12px">
-          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
-          Enviar pedido a Finkap
+          <svg width="17" height="17" fill="currentColor" viewBox="0 0 24 24"><path d="M17.5 14.4c-.3-.1-1.7-.8-1.9-.9-.3-.1-.5-.1-.7.1-.2.3-.7.9-.9 1.1-.2.2-.3.2-.6.1-1.6-.8-2.6-1.4-3.7-3.2-.3-.5.3-.5.8-1.5.1-.2 0-.4 0-.5 0-.1-.7-1.6-.9-2.2-.2-.6-.5-.5-.7-.5h-.6c-.2 0-.5.1-.8.4-.3.3-1 1-1 2.4s1.1 2.8 1.2 3c.1.2 2.1 3.2 5 4.5 1.8.8 2.5.8 3.4.7.5-.1 1.7-.7 1.9-1.4.2-.7.2-1.2.2-1.4-.1-.1-.3-.2-.6-.3M12 2a10 10 0 0 0-8.6 15l-1.3 4.8 4.9-1.3A10 10 0 1 0 12 2"/></svg>
+          Enviar pedido por WhatsApp
         </button>
+        <div style="font-size:11px;color:var(--muted2);text-align:center;margin-top:5px">Te abre WhatsApp y, a la vez, registra tu pedido en Finkap.</div>
         <div id="sendOk" class="sendok" style="display:none"></div>
-        <div class="row2" style="margin-top:10px">
-          <button class="btn subtle" onclick="resetOrder()">Vaciar</button>
-          <button class="btn wa" onclick="sendWA()">
-            <svg width="17" height="17" fill="currentColor" viewBox="0 0 24 24"><path d="M17.5 14.4c-.3-.1-1.7-.8-1.9-.9-.3-.1-.5-.1-.7.1-.2.3-.7.9-.9 1.1-.2.2-.3.2-.6.1-1.6-.8-2.6-1.4-3.7-3.2-.3-.5.3-.5.8-1.5.1-.2 0-.4 0-.5 0-.1-.7-1.6-.9-2.2-.2-.6-.5-.5-.7-.5h-.6c-.2 0-.5.1-.8.4-.3.3-1 1-1 2.4s1.1 2.8 1.2 3c.1.2 2.1 3.2 5 4.5 1.8.8 2.5.8 3.4.7.5-.1 1.7-.7 1.9-1.4.2-.7.2-1.2.2-1.4-.1-.1-.3-.2-.6-.3M12 2a10 10 0 0 0-8.6 15l-1.3 4.8 4.9-1.3A10 10 0 1 0 12 2"/></svg>
-            o por WhatsApp
-          </button>
+        <div style="margin-top:10px;text-align:center">
+          <button class="btn subtle" onclick="resetOrder()">Vaciar pedido</button>
         </div>
         <div class="datanote">Catálogo: <b id="srcLabel">datos de ejemplo</b> · <span id="prodCount">0</span> variedades</div>
       </div>
@@ -1059,6 +1056,8 @@ async function sendPedido(){
   };
   if(!cli.nombre && !cli.empresa){ toast("Completá tu nombre o empresa"); $("cNom").focus(); return; }
   if(!cli.tel && !cli.mail){ toast("Dejá un teléfono o email de contacto"); $("cTel").focus(); return; }
+  // dispara WhatsApp YA (en el gesto del click, para que el navegador no lo bloquee) y a la vez registra el pedido
+  window.open("https://wa.me/"+CONFIG.WHATSAPP+"?text="+encodeURIComponent($("summary").textContent), "_blank");
   const o=lastTotals||{};
   const items=order.map(it=>{ const kg=it.q*it.b; return {
     n:it.n, origen:it.origen||"", proc:it.proc||"", cat:it.cat||"",
@@ -1083,18 +1082,15 @@ async function sendPedido(){
     const ok=$("sendOk");
     ok.style.display="block";
     ok.innerHTML=`✅ <b>Pedido enviado.</b> Tu código es <b>#${ref}</b>.<br>`+
-      `Te vamos a contactar con los datos de transferencia. ¿Querés avisarnos también por WhatsApp? `+
-      `<a href="https://wa.me/${CONFIG.WHATSAPP}?text=`+
-      encodeURIComponent("Hola, acabo de enviar el pedido #"+ref+" desde la web.")+
-      `" target="_blank" style="color:var(--green);font-weight:700">Avisar →</a>`;
+      `Te abrimos WhatsApp para confirmar y quedó registrado en Finkap. Te contactamos con los datos de transferencia.`;
     ok.scrollIntoView({behavior:"smooth",block:"center"});
     order=[]; save();
     toast("Pedido #"+ref+" recibido");
   }catch(e){
-    toast("No se pudo enviar — probá por WhatsApp");
+    toast("Te abrimos WhatsApp; el registro automático no entró");
     const ok=$("sendOk"); ok.style.display="block";
     ok.style.background="rgba(255,120,90,.1)"; ok.style.borderColor="rgba(255,120,90,.45)";
-    ok.innerHTML="No pudimos enviar el pedido automáticamente. Usá el botón de <b>WhatsApp</b> y te respondemos enseguida.";
+    ok.innerHTML="Te abrimos <b>WhatsApp</b> con tu pedido — por ahí te respondemos enseguida. (El registro automático en Finkap no entró esta vez, no te preocupes.)";
     console.error(e);
   }finally{ btn.disabled=false; btn.innerHTML=old; }
 }

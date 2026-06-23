@@ -28,6 +28,10 @@ export const CATEGORIAS = {
 };
 // deriva la categoría/tier desde el puntaje (única definición; antes duplicada en certificar)
 export const tierDe = s => s>=88 ? 'exotico' : s>=84 ? 'especialidad' : 'regional';
+// Green grading (SCA): un defecto PRIMARIO (grano negro pleno, agrio, hongo…) impide
+// especialidad/exótico aunque el puntaje sea alto -> topea a 'regional'.
+export const tierConDefectos = (s, visual) =>
+  (visual && (visual.defPrimarios||0) > 0) ? 'regional' : (s!=null ? tierDe(s) : 'regional');
 export const TIER_LBL = { regional:'Regional', especialidad:'Especialidad', exotico:'Exótico' };
 
 /* =========================================================================
@@ -194,7 +198,7 @@ export const lentePorId = id => LENTES.find(l=>l.id===id) || null;
 export function evaluarLote(inp, feeds){
   const cert = PE.certificar(inp);                                  // veredicto determinista (motor)
   const score = cert.scoreProvisorio;
-  const tier = score!=null ? tierDe(score) : 'regional';
+  const tier = tierConDefectos(score, inp.visual);   // un defecto primario topea a regional (SCA)
   const origen = inp.ficha?.origen, variedad = inp.ficha?.variedad, proceso = inp.ficha?.proceso;
   const precio = score!=null ? PE.pvpEstimado({ origen, score }, feeds) : null;
   const ctx = { ...inp, cert, tier, precio, variedad, origen, proceso };
