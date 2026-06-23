@@ -934,7 +934,7 @@ function save(){ localStorage.setItem("finkap_order_v2",JSON.stringify(order)); 
 function recalc(){
   const body=$("orderBody"), tot=$("orderTotals");
   if(!order.length){
-    body.innerHTML=`<div class="emptyorder">${BEAN}<b>Tu pedido está vacío</b><span>Tocá una variedad para empezar.</span></div>`;
+    body.innerHTML=`<div class="emptyorder">${BEAN}<b>Tu pedido está vacío</b><span>Tocá una variedad para empezar. Al agregar tu primer café se habilitan el pago y el envío.</span></div>`;
     tot.style.display="none"; $("payPanel").style.display="none"; $("custPanel").style.display="none"; $("mobar").style.display="none";
     return;
   }
