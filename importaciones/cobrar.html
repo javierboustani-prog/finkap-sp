@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Finkap · Pagamento em USDT</title>
+<meta name="robots" content="noindex,nofollow">
+<style>
+:root{--bg:#0d0d0f;--panel:#17171b;--panel2:#1d1d22;--panel3:#222228;--line:#2c2c33;--line2:#3a3a43;--text:#f5f5f7;--muted:#9b9ba6;--muted2:#6f6f7a;--orange:#F97316;--ok:#46d39a;--bad:#ef5350;--warn:#e0a44e;--mono:"JetBrains Mono",ui-monospace,monospace}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui,-apple-system,sans-serif;font-size:14px;line-height:1.55}
+.shell{max-width:560px;margin:0 auto;padding:26px 18px 70px}
+.brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:22px;margin-bottom:2px}
+.brand .dot{width:34px;height:34px;border-radius:50%;border:2.5px solid var(--orange);display:grid;place-items:center;color:var(--orange);font-weight:900;font-size:18px}
+.lead{color:var(--muted);margin:2px 0 18px;font-size:13px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px 18px;margin-bottom:14px}
+.card h2{margin:0 0 12px;font-size:12px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted2);font-weight:700}
+label{display:block;font-size:11px;color:var(--muted);margin:0 0 4px;font-weight:600}
+input,select{width:100%;background:#111114;border:1px solid var(--line2);border-radius:9px;color:var(--text);font-size:14px;padding:11px;outline:none;font-family:inherit}
+input:focus,select:focus{border-color:var(--orange)}
+.fld{margin-bottom:12px}
+.big{font-family:var(--mono);font-size:30px;font-weight:800;color:var(--ok)}
+.kv{display:flex;justify-content:space-between;gap:10px;padding:5px 0;border-bottom:1px dashed var(--line);font-size:13px}
+.kv:last-child{border-bottom:none}.kv .k{color:var(--muted)}.kv .v{font-family:var(--mono);text-align:right}
+.btn{width:100%;padding:12px 16px;border-radius:10px;border:none;background:var(--orange);color:#fff;font-weight:700;font-size:15px;cursor:pointer;font-family:inherit}
+.btn:disabled{opacity:.45;cursor:default}
+.btn.ghost{background:var(--panel3);color:var(--text);border:1px solid var(--line2)}
+.btn.wa{background:#25D366;color:#06291a}
+.note{font-size:12px;color:var(--muted2);margin-top:8px;line-height:1.5}
+.warn{font-size:12.5px;line-height:1.5;padding:10px 12px;border-radius:9px;background:rgba(224,164,78,.10);border:1px solid rgba(224,164,78,.4);color:#f0d8a8;margin-top:10px}
+.checks{list-style:none;margin:8px 0 0;padding:0;font-size:13px}
+.checks li{display:flex;gap:8px;padding:2px 0}
+.ok{color:var(--ok)}.bad{color:var(--bad)}
+.out{background:#0b0b0d;border:1px solid var(--line);border-radius:10px;padding:12px;font-family:var(--mono);font-size:12px;white-space:pre-wrap;color:#d7d7df;margin-top:10px}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.actions .btn{width:auto;flex:1;min-width:130px}
+.done{text-align:center;padding:14px 0}
+.done .ico{font-size:42px}
+a.exp{color:var(--orange);font-family:var(--mono);font-size:12px;word-break:break-all}
+.lng{float:right;font-size:11px;color:var(--muted2)}
+</style>
+</head>
+<body>
+<div class="shell">
+  <div class="brand"><span class="dot">f</span> Finkap</div>
+  <p class="lead" id="lead">Pagamento internacional em USDT (stablecoin · ≈ 1 USD)</p>
+
+  <!-- COMPROBANTE (si ya hay txid) -->
+  <div class="card" id="cardDone" style="display:none">
+    <div class="done">
+      <div class="ico">✅</div>
+      <div style="font-weight:800;font-size:18px;margin-top:6px" id="doneTit">Pagamento enviado</div>
+      <div class="big" id="doneAmt" style="font-size:24px;margin:8px 0"></div>
+      <div class="note" id="doneRef"></div>
+      <div style="margin-top:12px"><a class="exp" id="doneExp" target="_blank" rel="noopener"></a></div>
+      <div class="note" id="doneNet" style="margin-top:6px"></div>
+    </div>
+  </div>
+
+  <!-- COBRO -->
+  <div id="cobro">
+    <div class="card">
+      <h2>A Finkap vai te pagar</h2>
+      <div class="big" id="amt">USD —</div>
+      <div style="margin-top:10px">
+        <div class="kv"><span class="k">Referência / fatura</span><span class="v" id="vRef">—</span></div>
+        <div class="kv"><span class="k">Beneficiário</span><span class="v" id="vBenef">—</span></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Onde você quer receber?</h2>
+      <div class="fld">
+        <label>Rede / blockchain</label>
+        <select id="red">
+          <option value="TRC-20 (Tron)">USDT · TRC-20 (Tron) — recomendado, taxas baixas</option>
+          <option value="Polygon">USDT · Polygon</option>
+          <option value="ERC-20 (Ethereum)">USDT · ERC-20 (Ethereum) — taxas altas</option>
+          <option value="BSC (BEP-20)">USDT · BSC (BEP-20)</option>
+        </select>
+      </div>
+      <div class="fld">
+        <label>Endereço da sua carteira (wallet)</label>
+        <input id="wallet" placeholder="T… (Tron) / 0x… (EVM)" autocomplete="off" spellcheck="false">
+      </div>
+      <ul class="checks" id="checks"></ul>
+      <div class="warn">⚠ <b>Confira a rede e o endereço.</b> Enviar para a rede errada ou um endereço errado <b>faz perder os fundos</b> (não há reembolso). Se você não tem carteira: abra uma conta no <b>Mercado Bitcoin</b> ou <b>Binance</b> e copie o endereço de depósito <b>USDT na rede TRON (TRC-20)</b>.</div>
+      <button class="btn" id="confirm" style="margin-top:12px" disabled>Confirmar carteira</button>
+    </div>
+
+    <div class="card" id="cardOut" style="display:none">
+      <h2>Pronto — envie isto para a Finkap</h2>
+      <div class="note">A Finkap vai primeiro mandar um <b>teste pequeno (US$50–100)</b>. Confirme quando receber, e então o restante é enviado.</div>
+      <div class="out" id="out"></div>
+      <div class="actions">
+        <button class="btn wa" id="wa">Enviar pelo WhatsApp</button>
+        <button class="btn ghost" id="copy">Copiar</button>
+      </div>
+    </div>
+  </div>
+
+  <p class="note" style="text-align:center;margin-top:20px">Finkap · Kapselmaker — pagamento de importação de café verde.</p>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+const P=new URLSearchParams(location.search);
+const g=(k,d='')=>P.get(k)||d;
+const moneda=g('cur','USD'), monto=g('m'), ref=g('ref'), benef=g('benef'), tel=g('tel');
+const txid=g('txid'), redParam=g('red');
+const fmt=n=>{ const x=parseFloat(String(n).replace(',','.')); return isNaN(x)?'—':x.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}); };
+const expBase={ 'TRC-20 (Tron)':'https://tronscan.org/#/transaction/', 'Polygon':'https://polygonscan.com/tx/', 'ERC-20 (Ethereum)':'https://etherscan.io/tx/', 'BSC (BEP-20)':'https://bscscan.com/tx/' };
+
+// --- modo COMPROBANTE ---
+if(txid){
+  $('cobro').style.display='none'; $('cardDone').style.display='block';
+  $('doneAmt').textContent=`${moneda} ${fmt(monto)}`;
+  $('doneRef').textContent=(ref?('Ref: '+ref+'  ·  '):'')+(redParam||'');
+  const base=expBase[redParam]||expBase['TRC-20 (Tron)'];
+  const a=$('doneExp'); a.href=base+txid; a.textContent='Ver no explorer: '+txid;
+  $('doneNet').textContent='Rede: '+(redParam||'—');
+}else{
+  // --- modo COBRO ---
+  $('amt').textContent=`${moneda} ${fmt(monto)}`;
+  $('vRef').textContent=ref||'—'; $('vBenef').textContent=benef||'—';
+  if(redParam) $('red').value=redParam;
+
+  function validWallet(w,red){
+    if(red.indexOf('Tron')>=0) return /^T[1-9A-HJ-NP-Za-km-z]{33}$/.test(w);
+    return /^0x[0-9a-fA-F]{40}$/.test(w); // EVM: Polygon/ERC-20/BSC
+  }
+  function check(){
+    const w=$('wallet').value.trim(), red=$('red').value, ok=validWallet(w,red);
+    $('checks').innerHTML = w ? `<li><span class="${ok?'ok':'bad'}">${ok?'✓':'✕'}</span><span>${ok?'Endereço válido para a rede selecionada':'Endereço não parece válido para esta rede — confira'}</span></li>` : '';
+    $('confirm').disabled = !ok;
+  }
+  $('wallet').addEventListener('input',check); $('red').addEventListener('change',check);
+
+  function confirmText(){
+    const w=$('wallet').value.trim(), red=$('red').value;
+    return [
+      'PAGAMENTO FINKAP — confirmação de carteira',
+      ref?('Fatura/Ref: '+ref):'',
+      'Valor: '+moneda+' '+fmt(monto),
+      'Rede: '+red,
+      'Carteira: '+w,
+      '— enviado pelo beneficiário'
+    ].filter(Boolean).join('\n');
+  }
+  $('confirm').addEventListener('click',()=>{
+    $('out').textContent=confirmText(); $('cardOut').style.display='block';
+    $('cardOut').scrollIntoView({behavior:'smooth'});
+  });
+  $('copy').addEventListener('click',()=>{ navigator.clipboard.writeText($('out').textContent).then(()=>{$('copy').textContent='Copiado ✓';setTimeout(()=>$('copy').textContent='Copiar',1300);}); });
+  $('wa').addEventListener('click',()=>{
+    const txt=encodeURIComponent($('out').textContent);
+    const base = tel ? ('https://wa.me/'+tel.replace(/[^0-9]/g,'')+'?text=') : ('https://wa.me/?text=');
+    window.open(base+txt,'_blank');
+  });
+  check();
+}
+</script>
+</body>
+</html>

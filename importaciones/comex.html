@@ -95,6 +95,24 @@ input:focus,select:focus{border-color:var(--orange)}
       <div class="fld"><label>Código operación cambiaria (BCRA)</label><input id="pCod" placeholder="B06 — pago import. de bienes"></div>
       <div class="fld"><label>Referencia</label><input id="pRef" placeholder="auto: despachos + factura"></div>
     </div>
+    <div id="usdtBox" style="display:none">
+      <div class="row">
+        <div class="fld"><label>Red / blockchain</label><select id="uRed">
+          <option value="TRC-20 (Tron)">USDT · TRC-20 (Tron) — fees bajos</option>
+          <option value="Polygon">USDT · Polygon</option>
+          <option value="ERC-20 (Ethereum)">USDT · ERC-20 (Ethereum) — fees altos</option>
+          <option value="BSC (BEP-20)">USDT · BSC (BEP-20)</option>
+        </select></div>
+        <div class="fld"><label>Wallet destino del proveedor</label><input id="uWallet" placeholder="T… (Tron) / 0x… (EVM)"></div>
+      </div>
+      <div class="row">
+        <div class="fld"><label>Hash de transacción (txid)</label><input id="uTx" placeholder="se completa al ejecutar el giro"></div>
+        <div class="fld"><label>Fecha del giro</label><input id="uFecha" type="date"></div>
+      </div>
+      <div class="note">⚠ El USDT se coordina con la contraparte. <b>Verificá la red</b>: enviar a la red equivocada o a una wallet errónea <b>pierde los fondos</b> (no hay reversa). La wallet se guarda junto al proveedor. El <b>txid</b> queda como comprobante on-chain del giro (pegalo al ejecutar; primero mandá una <b>prueba chica</b>).</div>
+      <button class="btn ghost" id="cobroLink" style="margin-top:8px">🔗 Link de cobro para el productor</button>
+      <div class="mini" id="cobroOut" style="margin-top:6px;display:none;word-break:break-all"></div>
+    </div>
     <details style="margin-top:4px"><summary style="cursor:pointer;font-size:12px;color:var(--muted)">Datos del ordenante (Finkap)</summary>
       <div class="row3" style="margin-top:10px">
         <div class="fld"><label>Razón social</label><input id="oNom" placeholder="Kapselmaker SA"></div>
@@ -116,6 +134,11 @@ input:focus,select:focus{border-color:var(--orange)}
         <button class="btn ghost" id="json">⬇️ JSON</button>
       </div>
     </div>
+  </div>
+
+  <div class="card" id="cardHist" style="display:none">
+    <h2>📋 Giros armados <span class="mini" style="text-transform:none;letter-spacing:0">(registro de este equipo · ya descontados del saldo)</span></h2>
+    <div id="histList"></div>
   </div>
 
   <div class="card" id="cardSync" style="display:none">
@@ -186,7 +209,7 @@ function renderLista(){
   document.querySelectorAll('.dcb').forEach(cb=>cb.addEventListener('change',onSel));
   applyLock(); updateSync();
 }
-$('clearPaid').addEventListener('click',ev=>{ ev.preventDefault(); if(confirm('¿Borrar los pagos que armaste en COMEX en esta PC? (no toca la Torre ni tus archivos)')){ ARMADOS.length=0; localStorage.setItem('finkap_comex_paquetes','[]'); renderLista(); onSel(); } });
+$('clearPaid').addEventListener('click',ev=>{ ev.preventDefault(); if(confirm('¿Borrar los pagos que armaste en COMEX en esta PC? (no toca la Torre ni tus archivos)')){ ARMADOS.length=0; localStorage.setItem('finkap_comex_paquetes','[]'); renderLista(); onSel(); renderHist(); } });
 
 $('oNom').value=ORD.nom||''; $('oCuit').value=ORD.cuit||''; $('oBco').value=ORD.bco||'';
 ['oNom','oCuit','oBco'].forEach(id=>$(id).addEventListener('input',()=>{ ORD.nom=$('oNom').value;ORD.cuit=$('oCuit').value;ORD.bco=$('oBco').value;saveOrd(); }));
@@ -202,6 +225,9 @@ function onSel(){
   $('benefProv').textContent='Proveedor: '+(p.nombre||pid||'');
   $('bNombre').value=b.nombre||p.nombre||''; $('bBanco').value=b.banco||''; $('bSwift').value=b.swift||'';
   $('bIban').value=b.iban||''; $('bInter').value=b.inter||'';
+  const u=b.usdt||provById(pid).cripto||{}; if(u.red) $('uRed').value=u.red; $('uWallet').value=u.wallet||'';
+  $('uTx').value=''; $('uFecha').value='';
+  toggleVia();
   // banner con datos reales de la Torre
   $('torreBanner').innerHTML = fs.tp
     ? `📊 <b>Según la Torre</b> · Factura ${esc(fs.factura||'')}: total <b>USD ${usd(fs.total)}</b> · ya pagado <b>USD ${usd(fs.torrePagado)}</b> · saldo <b>USD ${usd(fs.torreSaldo)}</b> (${esc(fs.estado||'')}).`
@@ -217,10 +243,24 @@ function onSel(){
 }
 
 $('bSave').addEventListener('click',()=>{ const pid=provSel(); if(!pid) return;
-  BANCOS[pid]={ nombre:$('bNombre').value.trim(),banco:$('bBanco').value.trim(),swift:$('bSwift').value.trim().toUpperCase(),iban:$('bIban').value.trim(),inter:$('bInter').value.trim(),cod:$('pCod').value.trim() };
+  BANCOS[pid]={ nombre:$('bNombre').value.trim(),banco:$('bBanco').value.trim(),swift:$('bSwift').value.trim().toUpperCase(),iban:$('bIban').value.trim(),inter:$('bInter').value.trim(),cod:$('pCod').value.trim(),
+    usdt:{ red:$('uRed').value, wallet:$('uWallet').value.trim() } };
   saveBancos(); $('bSave').textContent='✓ Guardado'; setTimeout(()=>$('bSave').textContent='💾 Guardar datos de este proveedor',1500);
 });
-['bNombre','bBanco','bSwift','bIban','bInter','pMonto','pMoneda','pCod','pRef','pVia'].forEach(id=>$(id).addEventListener('input',revalidar));
+function toggleVia(){ const usdt=$('pVia').value==='USDT'; $('usdtBox').style.display=usdt?'block':'none';
+  // los datos bancarios (SWIFT/IBAN/intermediario) no aplican al pago USDT: se ocultan
+  $('cardBenef').querySelectorAll('.row').forEach(r=>{ r.style.display=usdt?'none':'grid'; });
+}
+$('pVia').addEventListener('change',()=>{ toggleVia(); revalidar(); });
+['bNombre','bBanco','bSwift','bIban','bInter','uRed','uWallet','pMonto','pMoneda','pCod','pRef','pVia'].forEach(id=>$(id).addEventListener('input',revalidar));
+$('cobroLink').addEventListener('click',()=>{ const pid=provSel(); if(!pid) return;
+  const u=new URL('cobrar.html', location.href);
+  u.searchParams.set('cur',$('pMoneda').value); u.searchParams.set('m',$('pMonto').value);
+  u.searchParams.set('ref',$('pRef').value); u.searchParams.set('benef',$('bNombre').value||provById(pid).nombre||'');
+  u.searchParams.set('red',$('uRed').value);
+  const link=u.toString(); $('cobroOut').style.display='block'; $('cobroOut').textContent=link;
+  navigator.clipboard.writeText(link).then(()=>{ $('cobroLink').textContent='✓ Link copiado — mandáselo a Labareda'; setTimeout(()=>$('cobroLink').textContent='🔗 Link de cobro para el productor',1800); }).catch(()=>{});
+});
 
 function revalidar(){
   if(!sel.length){ $('gen').disabled=true; $('checks').innerHTML=''; return; }
@@ -229,14 +269,19 @@ function revalidar(){
   const monto=parseFloat(String($('pMonto').value).replace(',','.'));
   const swift=$('bSwift').value.trim().toUpperCase(); const iban=$('bIban').value.trim();
   const nombre=$('bNombre').value.trim(); const via=$('pVia').value;
-  const checks=[
+  const wallet=$('uWallet').value.trim();
+  const base=[
     { ok:!!pid, txt:'Todos los despachos del mismo proveedor (un giro = un beneficiario)' },
     { ok:(monto>0), txt:'Monto mayor a cero' },
     { ok:(monto>0 && monto<=restante+0.01), txt:`Monto ≤ saldo de la factura (USD ${usd(restante)})` },
     { ok:!!nombre, txt:'Beneficiario cargado' },
-    { ok:(via==='USDT')||/^[A-Z0-9]{8}([A-Z0-9]{3})?$/.test(swift), txt:via==='USDT'?'SWIFT no requerido (vía USDT)':'SWIFT válido (8 u 11 caracteres)' },
-    { ok:(via==='USDT')||iban.length>=6, txt:via==='USDT'?'IBAN/cuenta no requerido (vía USDT)':'IBAN / N° de cuenta cargado' },
   ];
+  const viaChecks = via==='USDT'
+    ? [ { ok:!!$('uRed').value, txt:'Red de la stablecoin elegida' },
+        { ok:wallet.length>=10, txt:'Wallet destino cargada (verificá que sea de la red elegida)' } ]
+    : [ { ok:/^[A-Z0-9]{8}([A-Z0-9]{3})?$/.test(swift), txt:'SWIFT válido (8 u 11 caracteres)' },
+        { ok:iban.length>=6, txt:'IBAN / N° de cuenta cargado' } ];
+  const checks=base.concat(viaChecks);
   $('checks').innerHTML=checks.map(c=>`<li><span class="${c.ok?'ok':'bad'}">${c.ok?'✓':'✕'}</span><span>${c.txt}</span></li>`).join('');
   $('gen').disabled=!checks.every(c=>c.ok);
 }
@@ -256,9 +301,9 @@ function paqueteTexto(){
 `BENEFICIARIO`,
 `  ${$('bNombre').value}  (${p.pais||''})`,
 `  Banco: ${$('bBanco').value||'—'}`,
-via==='USDT'?`  (USDT — coordinar wallet/red con la contraparte)`:`  SWIFT/BIC: ${$('bSwift').value.toUpperCase()||'—'}`,
-via==='USDT'?'':`  IBAN/Cuenta: ${$('bIban').value||'—'}`,
-via==='USDT'?'':`  Banco intermediario: ${$('bInter').value||'—'}`,
+via==='USDT'?`  USDT · Red: ${$('uRed').value||'—'}`:`  SWIFT/BIC: ${$('bSwift').value.toUpperCase()||'—'}`,
+via==='USDT'?`  Wallet destino: ${$('uWallet').value.trim()||'—'}`:`  IBAN/Cuenta: ${$('bIban').value||'—'}`,
+via==='USDT'?`  (Verificar red y wallet con la contraparte — el envío no tiene reversa)`:`  Banco intermediario: ${$('bInter').value||'—'}`,
 ``,
 `FACTURA / SALDO (segun Torre)`,
 `  Factura: ${fs.factura||'—'}  ·  Total USD ${usd(fs.total)}`,
@@ -268,6 +313,7 @@ via==='USDT'?'':`  Banco intermediario: ${$('bInter').value||'—'}`,
 `  Monto: ${$('pMoneda').value} ${usd(monto)}`,
 `  Codigo op. cambiaria: ${$('pCod').value||'—'}`,
 `  Referencia: ${$('pRef').value}`,
+via==='USDT'?`  Giro USDT — Red: ${$('uRed').value} · TxHash: ${$('uTx').value.trim()||'(pendiente de ejecutar)'} · Fecha: ${$('uFecha').value||'—'}`:'',
 `  Saldo despues de este pago: USD ${usd(Math.max(0,fs.restante-monto))}`,
 ``,
 `DESPACHOS CUBIERTOS (${sel.length})`,
@@ -279,17 +325,21 @@ via==='USDT'?'':`  Banco intermediario: ${$('bInter').value||'—'}`,
 
 $('gen').addEventListener('click',()=>{
   const pid=provSel(); const monto=parseFloat(String($('pMonto').value).replace(',','.'));
-  $('paquete').textContent=paqueteTexto(); $('paqueteWrap').style.display='block';
-  ARMADOS.push({ proveedorId:pid, despachos:sel.map(e=>e.despacho), monto, via:$('pVia').value, fecha:new Date().toISOString() });
+  const texto=paqueteTexto();
+  $('paquete').textContent=texto; $('paqueteWrap').style.display='block';
+  ARMADOS.push({ proveedorId:pid, proveedor:(provById(pid).nombre||pid), despachos:sel.map(e=>e.despacho),
+    monto, moneda:$('pMoneda').value, via:$('pVia').value, ref:$('pRef').value, texto, fecha:new Date().toISOString(),
+    txHash:($('pVia').value==='USDT'?$('uTx').value.trim():''), red:($('pVia').value==='USDT'?$('uRed').value:''), fechaTx:$('uFecha').value });
   localStorage.setItem('finkap_comex_paquetes',JSON.stringify(ARMADOS));
-  renderLista(); onSel();
+  renderLista(); onSel(); renderHist();
 });
 $('copy').addEventListener('click',()=>{ navigator.clipboard.writeText($('paquete').textContent).then(()=>{$('copy').textContent='✓ Copiado';setTimeout(()=>$('copy').textContent='📋 Copiar',1200);}); });
 $('print').addEventListener('click',()=>{ const w=window.open('','_blank'); w.document.write('<pre style="font:13px monospace;white-space:pre-wrap">'+esc($('paquete').textContent)+'</pre>'); w.document.close(); w.print(); });
 $('json').addEventListener('click',()=>{
   const pid=provSel(); const fs=factStatus(pid); const p=provById(pid); const monto=parseFloat(String($('pMonto').value).replace(',','.'));
   const obj={ ordenante:{nom:$('oNom').value,cuit:$('oCuit').value,cuenta:$('oBco').value},
-    beneficiario:{nombre:$('bNombre').value,pais:p.pais,banco:$('bBanco').value,swift:$('bSwift').value.toUpperCase(),iban:$('bIban').value,intermediario:$('bInter').value},
+    beneficiario:{nombre:$('bNombre').value,pais:p.pais,banco:$('bBanco').value,swift:$('bSwift').value.toUpperCase(),iban:$('bIban').value,intermediario:$('bInter').value,
+      usdt:$('pVia').value==='USDT'?{red:$('uRed').value,wallet:$('uWallet').value.trim(),txHash:$('uTx').value.trim(),fecha:$('uFecha').value}:null},
     factura:{nro:fs.factura,total:fs.total,yaPagado:fs.torrePagado,saldoPrevio:fs.torreSaldo},
     pago:{monto,moneda:$('pMoneda').value,via:$('pVia').value,codOp:$('pCod').value,referencia:$('pRef').value,saldoDespues:Math.max(0,fs.restante-monto)},
     despachos:sel.map(e=>({codigo:e.despacho,tipo:e.tipo,fob:e.fob})) };
@@ -307,13 +357,33 @@ function updateSync(){
   $('cardSync').style.display = n?'block':'none';
   $('syncInfo').textContent = n?`${n} giro(s) registrado(s) en COMEX · USD ${usd(tot)}. Ya reflejados en la Torre (este equipo).`:'';
 }
+function histResumen(a){ return `Giro ${a.proveedor||a.proveedorId||''} · ${(a.moneda||'USD')} ${usd(a.monto)} · ${a.via||''} · despachos: ${(a.despachos||[]).join(', ')}${a.ref?(' · '+a.ref):''}`; }
+function renderHist(){
+  if(!ARMADOS.length){ $('cardHist').style.display='none'; $('histList').innerHTML=''; return; }
+  $('cardHist').style.display='block';
+  $('histList').innerHTML = ARMADOS.map((a,i)=>{
+    const f=new Date(a.fecha); const fl=isNaN(+f)?'':f.toLocaleDateString('es-AR')+' '+f.toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'});
+    const viaTag=a.via==='USDT'?'USDT':'MULC';
+    return `<div class="dchk" style="cursor:default">
+      <span><span class="c">${esc(a.proveedor||a.proveedorId||'')}</span> <span class="x">· ${esc((a.despachos||[]).join(', '))} · ${viaTag}${fl?' · '+esc(fl):''}${a.txHash?' · 🔗 '+esc(a.txHash.slice(0,10))+'…':''}</span></span>
+      <span class="m">${esc(a.moneda||'USD')} ${usd(a.monto)}</span>
+      <span style="display:flex;gap:6px;margin-left:8px;flex:0 0 auto">
+        <button class="btn ghost histcopy" data-i="${i}" style="padding:5px 9px;font-size:11px">📋</button>
+        <button class="btn ghost histdel" data-i="${i}" style="padding:5px 9px;font-size:11px">✕</button>
+      </span></div>`;
+  }).join('');
+  document.querySelectorAll('.histcopy').forEach(b=>b.addEventListener('click',()=>{ const a=ARMADOS[+b.dataset.i]; const t=a.texto||histResumen(a);
+    navigator.clipboard.writeText(t).then(()=>{ b.textContent='✓'; setTimeout(()=>b.textContent='📋',1200); }); }));
+  document.querySelectorAll('.histdel').forEach(b=>b.addEventListener('click',()=>{ if(confirm('¿Eliminar este giro del registro? Se recalcula el saldo de la factura.')){
+    ARMADOS.splice(+b.dataset.i,1); localStorage.setItem('finkap_comex_paquetes',JSON.stringify(ARMADOS)); renderLista(); onSel(); renderHist(); } }));
+}
 $('persistBtn').addEventListener('click',()=>{
   const js='pagos: '+JSON.stringify(pagosActualizados(),null,2)+',';
   $('syncOut').style.display='block'; $('syncOut').textContent=js;
   navigator.clipboard.writeText(js).then(()=>{ $('persistBtn').textContent='✓ Copiado — pegá en data.js'; setTimeout(()=>$('persistBtn').textContent='💾 Copiar pagos actualizados (para data.js)',2000); }).catch(()=>{});
 });
 
-renderLista();
+renderLista(); renderHist();
 </script>
 </body>
 </html>
