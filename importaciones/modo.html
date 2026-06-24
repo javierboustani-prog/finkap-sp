@@ -111,6 +111,8 @@ tr.tot td{font-weight:800;border-top:2px solid var(--line2);background:rgba(255,
   const usdItems = C.usd.items||[];
   const usdKgTot = usdItems.reduce((a,i)=>a+(i.kg||0),0);
   const usdTot   = (C.usd.total!=null)? C.usd.total : usdItems.reduce((a,i)=>a+(i.valor||0),0);
+  const usdPend  = (C.usd.pendientes||[]).reduce((a,i)=>a+(i.valor||0),0);
+  const usdProj  = usdTot - usdPend; // los pases (café que le entregamos a Martín) bajan lo que le debemos
 
   // ---- ARS (facturas cruzadas) ----
   const debemos = (C.ars.nosotrosDebemos||[]).reduce((a,f)=>a+(f.monto||0),0);
@@ -127,21 +129,33 @@ tr.tot td{font-weight:800;border-top:2px solid var(--line2);background:rgba(255,
     (C.actualizado?`<span class="chip">Actualizado <b>${C.actualizado.split("-").reverse().join("/")}</b></span>`:``);
 
   const kpis = [
-    {k:"Café — a favor de Martín", v:"US$ "+usd(usdTot), s:kg(usdKgTot)+" kg de café", cls:"usd"},
+    {k:"Café — a favor de Martín"+(usdPend>0?" (confirmado)":""), v:"US$ "+usd(usdTot), s:kg(usdKgTot)+" kg de café", cls:"usd"}
+  ];
+  if(usdPend>0) kpis.push({k:"Café — proyectado (con pase pendiente)", v:"US$ "+usd(usdProj), s:"si se confirma el pase a Modo (−US$ "+usd(usdPend)+")", cls:"bal"});
+  kpis.push(
     {k:"Nosotros le debemos ($)", v:ars(debemos), s:(C.ars.nosotrosDebemos||[]).map(f=>f.doc).join(" · "), cls:""},
     {k:"Modo nos debe ($)", v:ars(nosDeben), s:(C.ars.ellosDeben||[]).map(f=>f.doc).join(" · "), cls:""},
     {k:"Saldo en pesos a compensar", v:ars(Math.abs(saldoArs)), s:(arsAFavorNuestro?"a favor nuestro":"a favor de Modo"), cls:"ars"}
-  ];
+  );
   document.getElementById("kpis").innerHTML = kpis.map(x=>
     `<div class="kpi ${x.cls||''}"><div class="k">${x.k}</div><div class="v">${x.v}</div><div class="s">${x.s}</div></div>`).join("");
 
   // tabla USD
-  document.getElementById("usdBody").innerHTML = usdItems.map(i=>
+  let usdHtml = usdItems.map(i=>
     `<tr><td><b>${i.concepto}</b>${i.detalle?`<span class="sub">${i.detalle}</span>`:''}</td>`+
     `<td class="r dospuntos">${kg(i.kg)}</td>`+
     `<td class="r dospuntos">${usd(i.usdKg)}</td>`+
     `<td class="r dospuntos">${usd(i.valor)}</td></tr>`).join("")+
-    `<tr class="tot"><td>TOTAL a favor de ${C.usd.aFavorDe||'Martín'}</td><td class="r dospuntos">${kg(usdKgTot)}</td><td></td><td class="r dospuntos" style="color:var(--yellow)">US$ ${usd(usdTot)}</td></tr>`;
+    `<tr class="tot"><td>TOTAL a favor de ${C.usd.aFavorDe||'Martín'}${usdPend>0?' (confirmado)':''}</td><td class="r dospuntos">${kg(usdKgTot)}</td><td></td><td class="r dospuntos" style="color:var(--yellow)">US$ ${usd(usdTot)}</td></tr>`;
+  if(usdPend>0){
+    usdHtml += (C.usd.pendientes||[]).map(i=>
+      `<tr style="background:rgba(245,185,66,.05)"><td><b>⏳ ${i.concepto}</b> <span class="pill usd">PENDIENTE</span>${i.detalle?`<span class="sub">${i.detalle}</span>`:''}</td>`+
+      `<td class="r dospuntos">${kg(i.kg)}</td>`+
+      `<td class="r dospuntos">${usd(i.usdKg)}</td>`+
+      `<td class="r dospuntos" style="color:var(--bad)">− US$ ${usd(i.valor)}</td></tr>`).join("")+
+      `<tr class="tot"><td>SALDO PROYECTADO (si se confirma el pase)</td><td></td><td></td><td class="r dospuntos" style="color:var(--orange)">US$ ${usd(usdProj)}</td></tr>`;
+  }
+  document.getElementById("usdBody").innerHTML = usdHtml;
 
   // tabla ARS
   const arsRows = []
@@ -158,7 +172,7 @@ tr.tot td{font-weight:800;border-top:2px solid var(--line2);background:rgba(255,
   document.getElementById("arsPill").textContent = arsAFavorNuestro?'a favor nuestro':'a favor de Modo';
 
   const usdDesc = usdItems.map(i=>i.concepto.toLowerCase()+(i.kg?` (${kg(i.kg)} kg)`:'')).join(" y ");
-  document.getElementById("notePusd").innerHTML = `<b>Café (USD):</b> entre ${usdDesc}, el saldo a favor de ${C.usd.aFavorDe||'Martín'} es <b style="color:var(--yellow)">US$ ${usd(usdTot)}</b> en café/valor.`;
+  document.getElementById("notePusd").innerHTML = `<b>Café (USD):</b> entre ${usdDesc}, el saldo a favor de ${C.usd.aFavorDe||'Martín'} es <b style="color:var(--yellow)">US$ ${usd(usdTot)}</b> en café/valor.`+(usdPend>0?` ⏳ <b>Pase pendiente:</b> ${(C.usd.pendientes||[]).map(i=>i.concepto+' (US$ '+usd(i.valor)+')').join(', ')} — le entregás ese café a Martín, así que <b>baja</b> lo que le debés: si se confirma, el saldo pasa a <b style="color:var(--orange)">US$ ${usd(usdProj)}</b>.`:``);
   document.getElementById("notePars").innerHTML = `<b>Pesos (facturas):</b> nosotros le debemos la <b>${(C.ars.nosotrosDebemos||[]).map(f=>f.doc).join(", ")}</b> (${ars(debemos)}) y Modo nos debe la <b>${(C.ars.ellosDeben||[]).map(f=>f.doc).join(", ")}</b> (${ars(nosDeben)}) → saldo ${arsAFavorNuestro?'<b style="color:var(--ok)">a favor nuestro</b>':'a favor de Modo'} de <b style="color:var(--orange)">${ars(Math.abs(saldoArs))}</b> para compensar.`;
 
   document.getElementById("foot").textContent = "Cuenta cruzada con "+C.socio+" (MODO) · café en USD + facturas en pesos · actualizado "+(C.actualizado||"");
