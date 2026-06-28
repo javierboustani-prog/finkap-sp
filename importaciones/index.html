@@ -219,7 +219,21 @@ td.r,th.r{text-align:right}
     <tbody id="embBody"></tbody>
   </table></div>
 
-  <div class="sec"><h2>Stock físico (planilla del equipo)</h2><div class="ln"></div><span class="cnt" id="stockCnt"></span></div>
+  <div class="sec"><h2>📦 Stock de grano verde — EN VIVO (admin2)</h2><div class="ln"></div><span class="cnt" id="svCnt"></span></div>
+  <div id="svWrap" style="display:none">
+    <div class="kg-note" id="svNote"></div>
+    <div class="kpis" id="svResumen" style="margin-bottom:14px"></div>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>Café (SKU)</th><th class="r">admin2</th><th class="r">Santa Fe</th><th class="r">Mendoza</th><th class="r">Corregido (vos)</th><th>—</th></tr></thead>
+      <tbody id="svBody"></tbody>
+    </table></div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:10px">
+      <a id="svClear" href="#" style="font-size:11px;color:var(--muted)">limpiar correcciones (este equipo)</a>
+      <span style="font-size:11px;color:var(--muted2)">Stock real de admin2 — corré <code>bancos\correr-grano.ps1</code> para refrescar. Las correcciones se guardan en este equipo, no tocan admin2.</span>
+    </div>
+  </div>
+
+  <div class="sec"><h2>Stock físico (planilla del equipo · referencia)</h2><div class="ln"></div><span class="cnt" id="stockCnt"></span></div>
   <div class="kg-note" id="stockNote"></div>
   <div class="tbl-wrap"><table>
     <thead><tr><th>Origen</th><th class="r">Galpón (local)</th><th class="r">Depósito fiscal</th><th class="r">En depósito (aduana)</th><th>Cruce / modalidad</th></tr></thead>
@@ -261,6 +275,7 @@ td.r,th.r{text-align:right}
 </div>
 
 <script src="data.enc.js"></script>
+<script src="stock-vivo.js"></script>
 <script>
 // red de seguridad: si algo del render falla, mostrar un cartel en vez de quedar a medio pintar (crash mudo)
 window.addEventListener('error', function(){
@@ -537,6 +552,51 @@ window.addEventListener('error', function(){
       `<div class="nom" style="color:var(--blue)">$${usd(g.monto)}</div></div></div>`+
       `<div class="nt">${g.concepto}</div>`+
       `<div class="nt" style="color:var(--blue);margin-top:6px">↩ ${g.recupero}</div></div>`).join("");
+  }
+
+  // ── Stock de grano verde EN VIVO desde admin2 (overlay local stock-vivo.js) + correcciones ──
+  const SV = window.STOCK_VIVO;
+  if(SV && SV.items && SV.items.length){
+    document.getElementById('svWrap').style.display='block';
+    const SVCORR_KEY='finkap_stock_correc';
+    const n0 = n => (n==null?0:Math.round(n)).toLocaleString('es-AR');
+    function svCorr(){ try{ return JSON.parse(localStorage.getItem(SVCORR_KEY)||'{}'); }catch(e){ return {}; } }
+    function svCorrSet(o){ localStorage.setItem(SVCORR_KEY, JSON.stringify(o)); }
+    function origenDe(nom){ const n=(nom||'').toLowerCase();
+      if(/honduras/.test(n))return'Honduras'; if(/brasil|brazil/.test(n))return'Brasil';
+      if(/colombia/.test(n))return'Colombia'; if(/bolivia/.test(n))return'Bolivia';
+      if(/per[uú]/.test(n))return'Perú'; if(/etiop/.test(n))return'Etiopía';
+      if(/vietnam|robusta/.test(n))return'Robusta/Vietnam'; if(/kenia|kenya/.test(n))return'Kenia';
+      return'Otros'; }
+    function svEff(it,corr){ const c=corr[it.sku]; return (c!=null && c!=='' && !isNaN(+c))? (+c) : it.stock; }
+    function renderSV(){
+      const corr=svCorr();
+      const porOri={}; SV.items.forEach(it=>{ const o=origenDe(it.nombre); porOri[o]=(porOri[o]||0)+svEff(it,corr); });
+      const totalEff=SV.items.reduce((s,it)=>s+svEff(it,corr),0);
+      const oris=Object.entries(porOri).sort((a,b)=>b[1]-a[1]);
+      document.getElementById('svResumen').innerHTML =
+        `<div class="kpi accent"><div class="k">Total grano verde (vivo)</div><div class="v">${n0(totalEff)}</div><div class="s">${SV.conStock} SKUs con stock</div></div>`+
+        oris.map(([o,v])=>`<div class="kpi"><div class="k">${o}</div><div class="v">${n0(v)}</div><div class="s">stock</div></div>`).join('');
+      document.getElementById('svCnt').textContent = 'admin2 · '+(SV.generado||'');
+      document.getElementById('svBody').innerHTML = SV.items.map(it=>{
+        const corrgd=(corr[it.sku]!=null && corr[it.sku]!=='');
+        return `<tr><td><b>${it.nombre||it.sku}</b><span style="display:block;font-size:10px;color:var(--muted2)" class="dospuntos">${it.sku}</span></td>`+
+          `<td class="r dospuntos">${n0(it.stock)}</td>`+
+          `<td class="r dospuntos" style="${it.stockSF<0?'color:var(--bad)':''}">${n0(it.stockSF)}</td>`+
+          `<td class="r dospuntos" style="${it.stockMza<0?'color:var(--bad)':''}">${n0(it.stockMza)}</td>`+
+          `<td class="r"><input class="sv-in" data-sku="${it.sku}" value="${corrgd?corr[it.sku]:''}" placeholder="${n0(it.stock)}" inputmode="decimal" style="width:88px;text-align:right;background:#0e0e11;border:1px solid ${corrgd?'var(--orange-line)':'var(--line2)'};border-radius:6px;color:${corrgd?'var(--orange)':'var(--text)'};font-family:var(--mono);font-size:12px;padding:4px 7px"></td>`+
+          `<td>${corrgd?'<span class="tag pend">corregido</span>':''}</td></tr>`;
+      }).join('');
+    }
+    document.getElementById('svBody').addEventListener('change', function(ev){
+      const inp=ev.target.closest && ev.target.closest('.sv-in'); if(!inp) return;
+      const sku=inp.getAttribute('data-sku'); const o=svCorr(); const v=inp.value.trim();
+      if(v==='' || isNaN(parseFloat(v))){ delete o[sku]; } else { o[sku]=parseFloat(v); }
+      svCorrSet(o); renderSV();
+    });
+    document.getElementById('svClear').addEventListener('click', function(ev){ ev.preventDefault(); if(confirm('¿Borrar tus correcciones de stock? (no toca admin2)')){ localStorage.removeItem(SVCORR_KEY); renderSV(); } });
+    document.getElementById('svNote').innerHTML = `<b>${SV.totalSkus}</b> SKUs de grano verde de admin2, <b>${SV.conStock} con stock</b>, repartido por depósito <b>Santa Fe</b> / <b>Mendoza</b>. admin2 a veces deja saldos en negativo o sin cuadrar (en <span style="color:var(--bad)">rojo</span>) → ahí corregís vos en la última columna. <span style="color:var(--muted2)">Fuente: ${SV.fuente} · ${SV.generado||''}.</span>`;
+    renderSV();
   }
 
   // stock físico (planilla del equipo) + cruce con aduana
