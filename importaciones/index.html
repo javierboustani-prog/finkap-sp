@@ -223,9 +223,15 @@ td.r,th.r{text-align:right}
   <div id="svWrap" style="display:none">
     <div class="kg-note" id="svNote"></div>
     <div class="kpis" id="svResumen" style="margin-bottom:14px"></div>
+    <div class="sec" style="margin:16px 0 8px"><h2 style="font-size:12px">☕ Granel — bolsas abiertas (en kg)</h2><div class="ln"></div><span class="cnt" id="svGranelCnt"></span></div>
     <div class="tbl-wrap"><table>
-      <thead><tr><th>Café (SKU)</th><th class="r">admin2</th><th class="r">Santa Fe</th><th class="r">Mendoza</th><th class="r">Corregido (vos)</th><th>—</th></tr></thead>
-      <tbody id="svBody"></tbody>
+      <thead><tr><th>Café (SKU)</th><th class="r">admin2 (kg)</th><th class="r">Santa Fe</th><th class="r">Mendoza</th><th class="r">Corregido (kg)</th><th>—</th></tr></thead>
+      <tbody id="svBodyGranel"></tbody>
+    </table></div>
+    <div class="sec" style="margin:18px 0 8px"><h2 style="font-size:12px">📦 Bolsas cerradas (sin abrir)</h2><div class="ln"></div><span class="cnt" id="svBolsasCnt"></span></div>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>Café (SKU)</th><th class="r">Bolsas</th><th class="r">kg/bolsa</th><th class="r">= kg</th><th class="r">Corregido (bolsas)</th><th>—</th></tr></thead>
+      <tbody id="svBodyBolsas"></tbody>
     </table></div>
     <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:10px">
       <a id="svClear" href="#" style="font-size:11px;color:var(--muted)">limpiar correcciones (este equipo)</a>
@@ -568,34 +574,52 @@ window.addEventListener('error', function(){
       if(/per[uú]/.test(n))return'Perú'; if(/etiop/.test(n))return'Etiopía';
       if(/vietnam|robusta/.test(n))return'Robusta/Vietnam'; if(/kenia|kenya/.test(n))return'Kenia';
       return'Otros'; }
+    function claseDe(it){ const m=/bolsa\s*gv\s*([\d.]+)\s*kg/i.exec(it.nombre||''); return m? {clase:'bolsa', bolsaKg:parseFloat(m[1])||0} : {clase:'granel', bolsaKg:0}; }
     function svEff(it,corr){ const c=corr[it.sku]; return (c!=null && c!=='' && !isNaN(+c))? (+c) : it.stock; }
+    function svInput(it,corr){ const cg=(corr[it.sku]!=null && corr[it.sku]!=='');
+      return `<input class="sv-in" data-sku="${it.sku}" value="${cg?corr[it.sku]:''}" placeholder="${n0(it.stock)}" inputmode="decimal" style="width:88px;text-align:right;background:#0e0e11;border:1px solid ${cg?'var(--orange-line)':'var(--line2)'};border-radius:6px;color:${cg?'var(--orange)':'var(--text)'};font-family:var(--mono);font-size:12px;padding:4px 7px">`; }
+    function svTag(it,corr){ return (corr[it.sku]!=null && corr[it.sku]!=='')?'<span class="tag pend">corregido</span>':''; }
+    function svNombre(it){ return `<td><b>${it.nombre||it.sku}</b><span style="display:block;font-size:10px;color:var(--muted2)" class="dospuntos">${it.sku}</span></td>`; }
     function renderSV(){
       const corr=svCorr();
-      const porOri={}; SV.items.forEach(it=>{ const o=origenDe(it.nombre); porOri[o]=(porOri[o]||0)+svEff(it,corr); });
-      const totalEff=SV.items.reduce((s,it)=>s+svEff(it,corr),0);
+      const granel=[], bolsas=[];
+      SV.items.forEach(it=>{ const c=claseDe(it); (c.clase==='bolsa'?bolsas:granel).push(Object.assign({},it,c)); });
+      const granelKg=granel.reduce((s,it)=>s+svEff(it,corr),0);
+      const bolsasCount=bolsas.reduce((s,it)=>s+svEff(it,corr),0);
+      const bolsasKg=bolsas.reduce((s,it)=>s+svEff(it,corr)*(it.bolsaKg||0),0);
+      const totalKg=granelKg+bolsasKg;
+      const porOri={};
+      granel.forEach(it=>{ const o=origenDe(it.nombre); porOri[o]=(porOri[o]||0)+svEff(it,corr); });
+      bolsas.forEach(it=>{ const o=origenDe(it.nombre); porOri[o]=(porOri[o]||0)+svEff(it,corr)*(it.bolsaKg||0); });
       const oris=Object.entries(porOri).sort((a,b)=>b[1]-a[1]);
       document.getElementById('svResumen').innerHTML =
-        `<div class="kpi accent"><div class="k">Total grano verde (vivo)</div><div class="v">${n0(totalEff)}</div><div class="s">${SV.conStock} SKUs con stock</div></div>`+
-        oris.map(([o,v])=>`<div class="kpi"><div class="k">${o}</div><div class="v">${n0(v)}</div><div class="s">stock</div></div>`).join('');
+        `<div class="kpi accent"><div class="k">Total grano verde (kg)</div><div class="v">${n0(totalKg)}</div><div class="s">granel + bolsas en kg</div></div>`+
+        `<div class="kpi"><div class="k">Granel (abiertas)</div><div class="v">${n0(granelKg)}</div><div class="s">kg sueltos</div></div>`+
+        `<div class="kpi blue"><div class="k">Bolsas cerradas</div><div class="v">${n0(bolsasCount)}</div><div class="s">= ${n0(bolsasKg)} kg sin abrir</div></div>`+
+        oris.map(([o,v])=>`<div class="kpi"><div class="k">${o}</div><div class="v">${n0(v)}</div><div class="s">kg total</div></div>`).join('');
+      granel.sort((a,b)=>b.stock-a.stock); bolsas.sort((a,b)=>(b.stock*b.bolsaKg)-(a.stock*a.bolsaKg));
+      document.getElementById('svGranelCnt').textContent = granel.length+' cafés · '+n0(granelKg)+' kg';
+      document.getElementById('svBolsasCnt').textContent = bolsas.length+' cafés · '+n0(bolsasCount)+' bolsas = '+n0(bolsasKg)+' kg';
+      document.getElementById('svBodyGranel').innerHTML = granel.map(it=>
+        `<tr>${svNombre(it)}<td class="r dospuntos">${n0(it.stock)}</td>`+
+        `<td class="r dospuntos" style="${it.stockSF<0?'color:var(--bad)':''}">${n0(it.stockSF)}</td>`+
+        `<td class="r dospuntos" style="${it.stockMza<0?'color:var(--bad)':''}">${n0(it.stockMza)}</td>`+
+        `<td class="r">${svInput(it,corr)}</td><td>${svTag(it,corr)}</td></tr>`).join('');
+      document.getElementById('svBodyBolsas').innerHTML = bolsas.map(it=>
+        `<tr>${svNombre(it)}<td class="r dospuntos">${n0(it.stock)}</td>`+
+        `<td class="r dospuntos">${n0(it.bolsaKg)}</td>`+
+        `<td class="r dospuntos" style="color:var(--blue)">${n0(svEff(it,corr)*(it.bolsaKg||0))}</td>`+
+        `<td class="r">${svInput(it,corr)}</td><td>${svTag(it,corr)}</td></tr>`).join('');
       document.getElementById('svCnt').textContent = 'admin2 · '+(SV.generado||'');
-      document.getElementById('svBody').innerHTML = SV.items.map(it=>{
-        const corrgd=(corr[it.sku]!=null && corr[it.sku]!=='');
-        return `<tr><td><b>${it.nombre||it.sku}</b><span style="display:block;font-size:10px;color:var(--muted2)" class="dospuntos">${it.sku}</span></td>`+
-          `<td class="r dospuntos">${n0(it.stock)}</td>`+
-          `<td class="r dospuntos" style="${it.stockSF<0?'color:var(--bad)':''}">${n0(it.stockSF)}</td>`+
-          `<td class="r dospuntos" style="${it.stockMza<0?'color:var(--bad)':''}">${n0(it.stockMza)}</td>`+
-          `<td class="r"><input class="sv-in" data-sku="${it.sku}" value="${corrgd?corr[it.sku]:''}" placeholder="${n0(it.stock)}" inputmode="decimal" style="width:88px;text-align:right;background:#0e0e11;border:1px solid ${corrgd?'var(--orange-line)':'var(--line2)'};border-radius:6px;color:${corrgd?'var(--orange)':'var(--text)'};font-family:var(--mono);font-size:12px;padding:4px 7px"></td>`+
-          `<td>${corrgd?'<span class="tag pend">corregido</span>':''}</td></tr>`;
-      }).join('');
     }
-    document.getElementById('svBody').addEventListener('change', function(ev){
+    document.getElementById('svWrap').addEventListener('change', function(ev){
       const inp=ev.target.closest && ev.target.closest('.sv-in'); if(!inp) return;
       const sku=inp.getAttribute('data-sku'); const o=svCorr(); const v=inp.value.trim();
       if(v==='' || isNaN(parseFloat(v))){ delete o[sku]; } else { o[sku]=parseFloat(v); }
       svCorrSet(o); renderSV();
     });
     document.getElementById('svClear').addEventListener('click', function(ev){ ev.preventDefault(); if(confirm('¿Borrar tus correcciones de stock? (no toca admin2)')){ localStorage.removeItem(SVCORR_KEY); renderSV(); } });
-    document.getElementById('svNote').innerHTML = `<b>${SV.totalSkus}</b> SKUs de grano verde de admin2, <b>${SV.conStock} con stock</b>, repartido por depósito <b>Santa Fe</b> / <b>Mendoza</b>. admin2 a veces deja saldos en negativo o sin cuadrar (en <span style="color:var(--bad)">rojo</span>) → ahí corregís vos en la última columna. <span style="color:var(--muted2)">Fuente: ${SV.fuente} · ${SV.generado||''}.</span>`;
+    document.getElementById('svNote').innerHTML = `<b>${SV.totalSkus}</b> SKUs de grano verde de admin2 · <b>${SV.conStock} con stock</b>. <b style="color:var(--ok)">Granel</b> = bolsas abiertas (en kg) · <b style="color:var(--blue)">Bolsas cerradas</b> = sin abrir (se cuentan en bolsas; su kg = bolsas × kg/bolsa). Los saldos por depósito SF/Mza los vemos después. <span style="color:var(--muted2)">Fuente: ${SV.fuente} · ${SV.generado||''}.</span>`;
     renderSV();
   }
 
