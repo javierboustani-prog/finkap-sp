@@ -226,14 +226,20 @@ td.r,th.r{text-align:right}
     <tbody id="stockBody"></tbody>
   </table></div>
 
-  <div class="sec"><h2>Pagos al exterior</h2><div class="ln"></div></div>
+  <div class="sec"><h2>Pagos al exterior</h2><div class="ln"></div><span class="cnt" id="pagCnt"></span></div>
   <div class="tbl-wrap"><table>
     <thead><tr>
       <th>Proveedor</th><th>Banco</th><th>Condición</th>
-      <th class="r">Factura USD</th><th class="r">Pagado</th><th class="r">Saldo</th><th>Estado</th><th>Doc</th>
+      <th class="r">Factura USD</th><th class="r">Pagado</th><th class="r">Saldo</th><th>Estado</th><th>Doc</th><th>Actualizar</th>
     </tr></thead>
     <tbody id="pagBody"></tbody>
   </table></div>
+  <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:10px">
+    <button id="pagExport" style="font-size:11.5px;border-radius:7px;padding:6px 11px;background:var(--panel2);border:1px solid var(--line2);color:var(--text);cursor:pointer">💾 Copiar pagos para data.js</button>
+    <a id="pagClear" href="#" style="font-size:11px;color:var(--muted)">limpiar marcas (este equipo)</a>
+    <span style="font-size:11px;color:var(--muted2)">Los pagos que marcás se guardan en este equipo y actualizan saldos al instante — para dejarlo permanente, copiá y pegalo en data.js.</span>
+  </div>
+  <textarea id="pagOut" readonly style="display:none;width:100%;height:120px;margin-top:8px;background:#0b0b0d;border:1px solid var(--line);border-radius:8px;color:#7ee0a0;font-family:var(--mono);font-size:11px;padding:10px"></textarea>
 
   <div class="sec"><h2>Capital personal a recuperar</h2><div class="ln"></div><span class="cnt" id="garCnt"></span></div>
   <div class="note" style="background:linear-gradient(160deg,rgba(91,157,255,.10),transparent);border-color:rgba(91,157,255,.4);margin-top:0;margin-bottom:14px">
@@ -284,10 +290,25 @@ window.addEventListener('error', function(){
   // defaults: que falten claves no rompa el render (antes tiraba TypeError mudo)
   D.embarques=D.embarques||[]; D.pagos=D.pagos||[]; D.proveedores=D.proveedores||[];
   D.alertas=D.alertas||[]; D.bancos=D.bancos||[]; D.meta=D.meta||{};
-  // pagos registrados desde el módulo COMEX (localStorage) → mantiene la Torre sincronizada
-  try{ const giros=JSON.parse(localStorage.getItem('finkap_comex_paquetes')||'[]');
-    giros.forEach(g=>{ const pg=D.pagos.find(p=>p.proveedorId===g.proveedorId && !/2025/.test(p.id||'')); if(pg){ pg.pagado=(+pg.pagado||0)+(+g.monto||0); pg.saldo=Math.max(0,(+pg.facturaTotal||0)-pg.pagado); pg.estado=pg.saldo<=0.5?'cancelado':(pg.pagado>0?'parcial':pg.estado); pg._comex=true; } });
-  }catch(e){}
+  // ── Pagos al exterior: overlay editable en este equipo (COMEX + marcas manuales), SIN re-cifrar ──
+  D.pagos.forEach(p=>{ p._basePagado=(+p.pagado||0); p._baseEstado=p.estado; });
+  const PAGMOV_KEY='finkap_pagos_mov';
+  function pagosMov(){ try{ return JSON.parse(localStorage.getItem(PAGMOV_KEY)||'{}'); }catch(e){ return {}; } }
+  function pagosMovSet(o){ localStorage.setItem(PAGMOV_KEY, JSON.stringify(o)); }
+  function applyPagos(){
+    let giros=[]; try{ giros=JSON.parse(localStorage.getItem('finkap_comex_paquetes')||'[]'); }catch(e){}
+    const mov=pagosMov();
+    D.pagos.forEach(p=>{
+      const comexSum=giros.filter(g=>g.proveedorId===p.proveedorId && !/2025/.test(p.id||'')).reduce((s,g)=>s+(+g.monto||0),0);
+      const manual=(mov[p.id]||[]);
+      const manualSum=manual.reduce((s,m)=>s+(+m.monto||0),0);
+      p.pagado=p._basePagado+comexSum+manualSum;
+      p.saldo=Math.max(0,(+p.facturaTotal||0)-p.pagado);
+      p.estado=p.saldo<=0.5?'cancelado':(p.pagado>0?'parcial':p._baseEstado);
+      p._comex=comexSum>0; p._mov=manual;
+    });
+  }
+  applyPagos();
   const usd = n => n==null ? null : n.toLocaleString("es-AR",{minimumFractionDigits:2,maximumFractionDigits:2});
   const fecha = s => s==null ? "—" : s.split("-").reverse().join("/");
   const provById = id => D.proveedores.find(p=>p.id===id);
@@ -300,23 +321,26 @@ window.addEventListener('error', function(){
     `<span class="chip"><span class="lbl">Despachante</span><b>${D.meta.despachante}</b></span>`+
     `<span class="chip"><span class="lbl">Actualizado</span><b>${fecha(D.meta.actualizado)}</b></span>`;
 
-  // KPIs
+  // KPIs (pagado/saldo se recalculan en vivo al marcar pagos)
   const arr = D.embarques.filter(e=>e.tipo==="IDA4").reduce((s,e)=>s+(e.fob||0),0);
   const nac = D.embarques.filter(e=>e.tipo==="IC06").reduce((s,e)=>s+(e.fob||0),0);
-  const pagado = D.pagos.reduce((s,p)=>s+(p.pagado||0),0);
-  const saldoExt = D.pagos.reduce((s,p)=>s+(p.saldo||0),0);
   const garPers = (D.garantias||[]).reduce((s,g)=>s+(g.monto||0),0);
-  const kpis = [
-    {k:"Embarques cargados", v:D.embarques.length, s:"despachos en sistema"},
-    {k:"FOB importado (arribos)", v:"$"+usd(arr), s:"3 embarques 2026"},
-    {k:"FOB nacionalizado", v:"$"+usd(nac), s:"sacado de depósito", a:true},
-    {k:"Pagado al exterior", v:"$"+usd(pagado), s:"giros liquidados"},
-    {k:"Saldo técnico a girar", v:"$"+usd(saldoExt), s:"deuda formal c/ bancos"},
-    {k:"− Capital personal", v:"$"+usd(garPers), s:"garantías tuyas (a recuperar)", cls:'blue'},
-    {k:"= Saldo real a proveedores", v:"$"+usd(saldoExt-garPers), s:"neto de tus garantías", a:true}
-  ];
-  document.getElementById("kpis").innerHTML = kpis.map(x=>
-    `<div class="kpi ${x.a?'accent':''} ${x.cls||''}"><div class="k">${x.k}</div><div class="v">${x.v}</div><div class="s">${x.s}</div></div>`).join("");
+  function renderKpis(){
+    const pagado = D.pagos.reduce((s,p)=>s+(p.pagado||0),0);
+    const saldoExt = D.pagos.reduce((s,p)=>s+(p.saldo||0),0);
+    const kpis = [
+      {k:"Embarques cargados", v:D.embarques.length, s:"despachos en sistema"},
+      {k:"FOB importado (arribos)", v:"$"+usd(arr), s:"3 embarques 2026"},
+      {k:"FOB nacionalizado", v:"$"+usd(nac), s:"sacado de depósito", a:true},
+      {k:"Pagado al exterior", v:"$"+usd(pagado), s:"giros liquidados"},
+      {k:"Saldo técnico a girar", v:"$"+usd(saldoExt), s:"deuda formal c/ bancos"},
+      {k:"− Capital personal", v:"$"+usd(garPers), s:"garantías tuyas (a recuperar)", cls:'blue'},
+      {k:"= Saldo real a proveedores", v:"$"+usd(saldoExt-garPers), s:"neto de tus garantías", a:true}
+    ];
+    document.getElementById("kpis").innerHTML = kpis.map(x=>
+      `<div class="kpi ${x.a?'accent':''} ${x.cls||''}"><div class="k">${x.k}</div><div class="v">${x.v}</div><div class="s">${x.s}</div></div>`).join("");
+  }
+  renderKpis();
 
   // alertas (con opción de resolver/descartar; se guarda en este equipo)
   var alShowDismissed=false;
@@ -441,18 +465,61 @@ window.addEventListener('error', function(){
   });
   document.getElementById("embBody").innerHTML = embHtml;
 
-  // pagos
-  const stCls = {ok:"ok",parcial:"pend",pendiente:"pend",trabado:"trab"};
-  document.getElementById("pagBody").innerHTML = D.pagos.map(p=>{
-    const pr = provById(p.proveedorId);
-    return `<tr><td>${pr?pr.nombre:'—'}</td>`+
-      `<td>${p.banco||'—'}</td><td>${p.tipo||'—'}</td>`+
-      `<td class="r dospuntos">${p.facturaTotal!=null?usd(p.facturaTotal):pend}</td>`+
-      `<td class="r dospuntos">${usd(p.pagado||0)}</td>`+
-      `<td class="r dospuntos">${p.saldo!=null?usd(p.saldo):pend}</td>`+
-      `<td><span class="tag ${stCls[p.estado]||'st'}">${p.estado}</span></td>`+
-      `<td>${p.doc||'—'}</td></tr>`;
-  }).join("");
+  // ── pagos al exterior (render + marcar pagos ejecutados, en este equipo) ──
+  const stCls = {ok:"ok",parcial:"pend",pendiente:"pend",trabado:"trab",cancelado:"ok"};
+  const pbtn='font-size:10.5px;border-radius:6px;padding:3px 8px;cursor:pointer;border:1px solid var(--line2);background:var(--panel2);color:var(--text)';
+  function renderPagos(){
+    applyPagos();
+    document.getElementById("pagCnt").textContent = '$'+usd(D.pagos.reduce((s,p)=>s+(p.saldo||0),0))+' saldo a girar';
+    document.getElementById("pagBody").innerHTML = D.pagos.map(p=>{
+      const pr = provById(p.proveedorId);
+      const movHtml=(p._mov||[]).map((m,mi)=>
+        `<div style="font-size:10.5px;color:var(--muted);display:flex;justify-content:space-between;gap:6px;margin-top:3px"><span>${fecha(m.fecha)} · $${usd(m.monto)} · ${m.via||'—'}${m.ref?' · '+m.ref:''}</span><button class="pmov-del" data-pid="${p.id}" data-mi="${mi}" title="borrar" style="background:transparent;border:none;color:var(--bad);cursor:pointer">✕</button></div>`).join("");
+      const acc = (p.saldo>0.5)
+        ? `<button class="pag-add" data-pid="${p.id}" style="${pbtn}">＋ pago</button> <button class="pag-saldar" data-pid="${p.id}" style="${pbtn};border-color:rgba(126,224,160,.45);color:#7ee0a0">✓ saldar</button>`
+        : `<span class="tag ok">✓ saldado</span>`;
+      return `<tr><td>${pr?pr.nombre:'—'}</td>`+
+        `<td>${p.banco||'—'}</td><td>${p.tipo||'—'}</td>`+
+        `<td class="r dospuntos">${p.facturaTotal!=null?usd(p.facturaTotal):pend}</td>`+
+        `<td class="r dospuntos">${usd(p.pagado||0)}${p._comex?' <span class="tag ok" style="font-size:8.5px">comex</span>':''}</td>`+
+        `<td class="r dospuntos">${p.saldo!=null?usd(p.saldo):pend}</td>`+
+        `<td><span class="tag ${stCls[p.estado]||'st'}">${p.estado}</span></td>`+
+        `<td>${p.doc||'—'}</td>`+
+        `<td style="min-width:150px">${acc}<div class="pform" id="pf_${p.id}" style="display:none"></div>${movHtml}</td></tr>`;
+    }).join("");
+    renderKpis();
+  }
+  function pagFormHtml(p){
+    const today=new Date().toISOString().slice(0,10);
+    const inp='width:100%;margin-top:4px;background:#0e0e11;border:1px solid var(--line2);border-radius:6px;color:var(--text);font-size:11px;padding:5px 7px';
+    return `<div style="margin-top:6px;padding:7px;border:1px solid var(--line2);border-radius:7px;background:var(--panel2)">`+
+      `<input class="pf-monto" type="number" step="0.01" value="${(p.saldo||0).toFixed(2)}" placeholder="monto USD" style="${inp}">`+
+      `<input class="pf-fecha" type="date" value="${today}" style="${inp}">`+
+      `<select class="pf-via" style="${inp}"><option>MULC</option><option>USDT</option><option>Transferencia</option><option>Otro</option></select>`+
+      `<input class="pf-ref" placeholder="ref / comprobante" style="${inp}">`+
+      `<div style="display:flex;gap:6px;margin-top:6px"><button class="pf-save" data-pid="${p.id}" style="${pbtn};border-color:rgba(126,224,160,.45);color:#7ee0a0">Guardar</button><button class="pf-cancel" data-pid="${p.id}" style="${pbtn}">Cancelar</button></div></div>`;
+  }
+  document.getElementById("pagBody").addEventListener('click', function(ev){
+    const t=ev.target.closest && ev.target.closest('button'); if(!t) return;
+    const pid=t.getAttribute('data-pid'); const p=D.pagos.find(x=>x.id===pid); if(!p && !t.classList.contains('pmov-del')) return;
+    if(t.classList.contains('pag-add')){ const f=document.getElementById('pf_'+pid); if(f){ if(f.style.display==='none'){ f.innerHTML=pagFormHtml(p); f.style.display='block'; } else { f.style.display='none'; f.innerHTML=''; } } return; }
+    if(t.classList.contains('pf-cancel')){ const f=document.getElementById('pf_'+pid); if(f){ f.style.display='none'; f.innerHTML=''; } return; }
+    if(t.classList.contains('pag-saldar')){ const o=pagosMov(); (o[pid]=o[pid]||[]).push({monto:+(p.saldo||0).toFixed(2), fecha:new Date().toISOString().slice(0,10), via:'—', ref:'saldo total'}); pagosMovSet(o); renderPagos(); return; }
+    if(t.classList.contains('pf-save')){
+      const f=document.getElementById('pf_'+pid); if(!f) return;
+      const monto=parseFloat((f.querySelector('.pf-monto')||{}).value); if(!(monto>0)) return;
+      const o=pagosMov(); (o[pid]=o[pid]||[]).push({ monto:monto, fecha:(f.querySelector('.pf-fecha')||{}).value||'', via:(f.querySelector('.pf-via')||{}).value||'', ref:((f.querySelector('.pf-ref')||{}).value||'').trim() });
+      pagosMovSet(o); renderPagos(); return;
+    }
+    if(t.classList.contains('pmov-del')){ const mi=+t.getAttribute('data-mi'); const o=pagosMov(); if(o[pid]){ o[pid].splice(mi,1); if(!o[pid].length) delete o[pid]; pagosMovSet(o); renderPagos(); } return; }
+  });
+  document.getElementById("pagExport").addEventListener('click', function(){
+    const clean=D.pagos.map(p=>{ const o={}; Object.keys(p).forEach(k=>{ if(k.charAt(0)!=='_') o[k]=p[k]; }); return o; });
+    const out=document.getElementById('pagOut'); out.value='pagos: '+JSON.stringify(clean,null,2)+',';
+    out.style.display='block'; out.select(); try{ navigator.clipboard.writeText(out.value); }catch(e){}
+  });
+  document.getElementById("pagClear").addEventListener('click', function(ev){ ev.preventDefault(); if(confirm('¿Borrar las marcas de pago de este equipo? (no toca data.js ni los giros de COMEX)')){ localStorage.removeItem(PAGMOV_KEY); renderPagos(); } });
+  renderPagos();
 
   // bancos
   document.getElementById("bancos").innerHTML = D.bancos.map(b=>
@@ -462,8 +529,9 @@ window.addEventListener('error', function(){
 
   // garantías (capital personal a recuperar)
   if(D.garantias){
+    const saldoExtG = D.pagos.reduce((s,p)=>s+(p.saldo||0),0);
     document.getElementById("garCnt").textContent = "$"+usd(garPers)+" a recuperar";
-    document.getElementById("garMath").innerHTML = "Saldo técnico $"+usd(saldoExt)+"  −  <span style='color:var(--blue)'>Capital personal $"+usd(garPers)+"</span>  =  <b style='color:var(--orange)'>Saldo real a proveedores $"+usd(saldoExt-garPers)+"</b>";
+    document.getElementById("garMath").innerHTML = "Saldo técnico $"+usd(saldoExtG)+"  −  <span style='color:var(--blue)'>Capital personal $"+usd(garPers)+"</span>  =  <b style='color:var(--orange)'>Saldo real a proveedores $"+usd(saldoExtG-garPers)+"</b>";
     document.getElementById("garantias").innerHTML = D.garantias.map(g=>
       `<div class="card"><div class="top"><div><div class="pais">${g.op}</div>`+
       `<div class="nom" style="color:var(--blue)">$${usd(g.monto)}</div></div></div>`+
