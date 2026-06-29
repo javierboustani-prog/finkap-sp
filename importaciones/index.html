@@ -690,7 +690,17 @@ window.addEventListener('error', function(){
       if(!clave){ clave=window.prompt('Clave del equipo para cifrar la Torre\n(la MISMA que usan para entrar):'); if(!clave) return; try{ localStorage.setItem('km_pub_clave',clave); }catch(e){} }
       var orig=btn.textContent; btn.disabled=true; btn.textContent='🔐 Cifrando…'; msg('Cifrando…');
       try{
-        applyPagos();  // asegura que D.pagos tenga COMEX + manuales bajados
+        // aplanar TODOS los overlays de este equipo dentro de D antes de cifrar:
+        applyPagos();  // pagos: COMEX + manuales bajados a D.pagos
+        var ocA=alOcultas();  // alertas: base no-ocultas + propias
+        var baseA=D.alertas.filter(function(a){ return ocA.indexOf(alKey(a))<0; }).map(function(a){ return {nivel:a.nivel,titulo:a.titulo,detalle:a.detalle,accion:a.accion}; });
+        var usA=auser().map(function(a){ return {nivel:a.nivel,titulo:a.titulo,detalle:a.detalle,accion:a.accion}; });
+        D.alertas=baseA.concat(usA);
+        var ocT=trOcultas();  // gestiones: base+propias no-ocultas, con estado aplicado
+        D.transferencias=D.transferencias.map(function(t){ var c=Object.assign({},t); c._user=false; return c; })
+          .concat(tuser().map(function(t){ var c=Object.assign({},t); c._user=true; return c; }))
+          .filter(function(t){ return ocT.indexOf(trKey(t))<0; })
+          .map(function(t){ var c=Object.assign({},t); c.estado=trEst(t); delete c._user; return c; });
         var enc=await finkapEncrypt(D, clave);
         btn.textContent='📤 Subiendo…'; msg('Subiendo a GitHub…');
         var resp=await fetch(SERVIDOR+'/publicar-torre',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({enc, dataObj:D})});
@@ -699,8 +709,9 @@ window.addEventListener('error', function(){
           try{ sessionStorage.setItem('finkap_impo_v1', JSON.stringify(D));
                var fp=(enc.salt||'')+'.'+(enc.iv||''); sessionStorage.setItem('finkap_impo_fp_v1', fp);
                if(localStorage.getItem('finkap_impo_persist_v1')){ localStorage.setItem('finkap_impo_persist_v1', JSON.stringify(D)); localStorage.setItem('finkap_impo_persist_fp_v1', fp); } }catch(e){}
-          try{ localStorage.removeItem(PAGMOV_KEY); localStorage.setItem('finkap_comex_paquetes','[]'); }catch(e){}
-          btn.textContent='✓ Publicado'; msg('✓ Publicado. La web se actualiza en ~1 min. Recargando…','#46d39a');
+          try{ localStorage.removeItem(PAGMOV_KEY); localStorage.setItem('finkap_comex_paquetes','[]');
+               ['finkap_alertas_ocultas','finkap_alertas_user','finkap_transf_estado','finkap_transf_user','finkap_transf_ocultas'].forEach(function(k){ localStorage.removeItem(k); }); }catch(e){}
+          btn.textContent='✓ Publicado'; msg('✓ Publicado (pagos + alertas + gestiones). La web se actualiza en ~1 min. Recargando…','#46d39a');
           setTimeout(function(){ location.reload(); }, 1800);
         } else { throw new Error('git push code '+(data&&data.code)); }
       }catch(e){

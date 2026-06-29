@@ -405,11 +405,22 @@ renderLista(); renderHist();
     if(!clave){ clave=window.prompt('Clave del equipo para cifrar la Torre\n(la MISMA que usan para entrar):'); if(!clave) return; try{ localStorage.setItem('km_pub_clave',clave); }catch(e){} }
     const orig=btn.textContent; btn.disabled=true; btn.textContent='🔐 Cifrando…'; msg('Cifrando…');
     try{
-      // bajar AMBOS overlays al saldo: giros del COMEX + pagos manuales (finkap_pagos_mov, por id de pago)
+      // aplanar TODOS los overlays de este equipo (igual que la home), para no pisar nada:
+      const LS=(k,d)=>{ try{ return JSON.parse(localStorage.getItem(k)||d); }catch(e){ return JSON.parse(d); } };
+      const _h=s=>{ let h=0; for(let i=0;i<s.length;i++){ h=(Math.imul(31,h)+s.charCodeAt(i))|0; } return (h>>>0).toString(36); };
+      // pagos: giros COMEX + pagos manuales (finkap_pagos_mov, por id de pago)
       const pagosC = pagosActualizados();
-      const movC = (function(){ try{ return JSON.parse(localStorage.getItem('finkap_pagos_mov')||'{}'); }catch(e){ return {}; } })();
+      const movC = LS('finkap_pagos_mov','{}');
       pagosC.forEach(pg=>{ const ms=(movC[pg.id]||[]).reduce((s,m)=>s+(+m.monto||0),0); if(ms>0){ pg.pagado=(+pg.pagado||0)+ms; pg.saldo=Math.max(0,(+pg.facturaTotal||0)-pg.pagado); pg.estado=pg.saldo<=0.5?'cancelado':(pg.pagado>0?'parcial':pg.estado); } });
-      const Dnew = Object.assign({}, D, { pagos: pagosC });
+      // alertas: base no-ocultas + propias
+      const alKey=a=>_h((a.titulo||'')+'|'+(a.detalle||''));
+      const ocA=LS('finkap_alertas_ocultas','[]'), usA=LS('finkap_alertas_user','[]');
+      const alertasEf=(D.alertas||[]).filter(a=>ocA.indexOf(alKey(a))<0).map(a=>({nivel:a.nivel,titulo:a.titulo,detalle:a.detalle,accion:a.accion})).concat(usA.map(a=>({nivel:a.nivel,titulo:a.titulo,detalle:a.detalle,accion:a.accion})));
+      // gestiones: base+propias no-ocultas, con estado aplicado
+      const trKey=t=>t._user?('u|'+t.id):_h((t.proveedor||'')+'|'+(t.operacion||'')+'|'+(t.monto||''));
+      const ocT=LS('finkap_transf_ocultas','[]'), trOv=LS('finkap_transf_estado','{}'), usT=LS('finkap_transf_user','[]');
+      const transfEf=(D.transferencias||[]).map(t=>Object.assign({},t,{_user:false})).concat(usT.map(t=>Object.assign({},t,{_user:true}))).filter(t=>ocT.indexOf(trKey(t))<0).map(t=>{ const c=Object.assign({},t); c.estado=trOv[trKey(t)]||t.estado||'lista'; delete c._user; return c; });
+      const Dnew = Object.assign({}, D, { pagos: pagosC, alertas: alertasEf, transferencias: transfEf });
       const enc = await finkapEncrypt(Dnew, clave);
       btn.textContent='📤 Subiendo…'; msg('Subiendo a GitHub…');
       const resp = await fetch(SERVIDOR+'/publicar-torre', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ enc, dataObj: Dnew }) });
@@ -419,7 +430,7 @@ renderLista(); renderHist();
         try{ sessionStorage.setItem('finkap_impo_v1', JSON.stringify(Dnew));
              const fp=(enc.salt||'')+'.'+(enc.iv||''); sessionStorage.setItem('finkap_impo_fp_v1', fp);
              if(localStorage.getItem('finkap_impo_persist_v1')){ localStorage.setItem('finkap_impo_persist_v1', JSON.stringify(Dnew)); localStorage.setItem('finkap_impo_persist_fp_v1', fp); } }catch(e){}
-        try{ ARMADOS.length=0; localStorage.setItem('finkap_comex_paquetes','[]'); localStorage.removeItem('finkap_pagos_mov'); }catch(e){}
+        try{ ARMADOS.length=0; ['finkap_comex_paquetes','finkap_pagos_mov','finkap_alertas_ocultas','finkap_alertas_user','finkap_transf_estado','finkap_transf_user','finkap_transf_ocultas'].forEach(k=>{ if(k==='finkap_comex_paquetes') localStorage.setItem(k,'[]'); else localStorage.removeItem(k); }); }catch(e){}
         btn.textContent='✓ Publicado';
         msg('✓ Publicado y bajado al saldo. La web se actualiza en ~1 min. Recargando…','#46d39a');
         setTimeout(()=>location.reload(), 1800);
