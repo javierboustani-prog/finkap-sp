@@ -629,7 +629,10 @@ window.addEventListener('error', function(){
     const campos=['galpon','sf','mza','fiscal'];
     function planOv(){ try{ return JSON.parse(localStorage.getItem(PLAN_KEY)||'{}'); }catch(e){ return {}; } }
     function planSet(o){ localStorage.setItem(PLAN_KEY, JSON.stringify(o)); }
-    const seed={}; D.stock.porOrigen.forEach(o=>{ seed[o.origen+'|galpon']=o.local; seed[o.origen+'|fiscal']=o.fiscal; });
+    // Galpón se SINCRONIZA con el stock vivo de admin2 (window.STOCK_VIVO), por origen
+    function origenPlan(nom){ const n=(nom||'').toLowerCase(); if(/honduras/.test(n))return'Honduras'; if(/brasil|brazil/.test(n))return'Brasil'; if(/colombia/.test(n))return'Colombia'; if(/bolivia/.test(n))return'Bolivia'; if(/per[uú]/.test(n))return'Perú'; if(/vietnam|robusta/.test(n))return'Vietnam'; return null; }
+    const a2={}; if(window.STOCK_VIVO && window.STOCK_VIVO.items){ window.STOCK_VIVO.items.forEach(it=>{ const o=origenPlan(it.nombre); if(!o) return; const mB=/bolsa\s*gv\s*([\d.]+)\s*kg/i.exec(it.nombre||''); a2[o]=(a2[o]||0)+(mB?(it.stock*(parseFloat(mB[1])||0)):it.stock); }); }
+    const seed={}; D.stock.porOrigen.forEach(o=>{ seed[o.origen+'|galpon']=(a2[o.origen]!=null?Math.round(a2[o.origen]):o.local); seed[o.origen+'|fiscal']=o.fiscal; });
     function planVal(origen,campo){ const ov=planOv(), k=origen+'|'+campo; if(ov[k]!=null && ov[k]!=='') return +ov[k]; if(seed[k]!=null) return +seed[k]; return null; }
     function planInput(origen,campo){ const ov=planOv(), k=origen+'|'+campo, ed=(ov[k]!=null && ov[k]!==''), v=planVal(origen,campo);
       return `<input class="plan-in" data-k="${k}" value="${ed?ov[k]:''}" placeholder="${v!=null?kgf(v):'—'}" inputmode="decimal" style="width:78px;text-align:right;background:#0e0e11;border:1px solid ${ed?'var(--orange-line)':'var(--line2)'};border-radius:6px;color:${ed?'var(--orange)':'var(--text)'};font-family:var(--mono);font-size:12px;padding:4px 6px">`; }
@@ -662,7 +665,7 @@ window.addEventListener('error', function(){
       else if(!isNaN(parseFloat(v))){ ov[k]=parseFloat(v); }
       planSet(ov); renderPlan();
     });
-    document.getElementById("stockNote").innerHTML = `Stock físico por depósito, <b>editable</b> (se guarda en este equipo, no toca data.js). <b>Galpón</b> = tu galpón · <b>Santa Fe / Mendoza</b> = locales · <b>Depósito fiscal</b> = grano que importa <b>Harmony</b> por vos y vas retirando/pagando (Colombia) · <b style="color:var(--blue)">En tránsito</b> = lo que viene en camino con su <b>fecha de arribo estimada</b> (suma aparte, no es físico todavía). Si un número ya está contabilizado en otro lado (ej. Honduras depósito fiscal), ponelo en 0. <a href="#" id="planClear" style="color:var(--muted)">limpiar ediciones</a>`;
+    document.getElementById("stockNote").innerHTML = `Stock físico por depósito, <b>editable</b> (se guarda en este equipo, no toca data.js). <b>Galpón</b> = stock vivo de <b>admin2</b> por origen (se sincroniza solo al refrescar el conector; podés editarlo para corregir) · <b>Santa Fe / Mendoza</b> = locales · <b>Depósito fiscal</b> = grano que importa <b>Harmony</b> por vos y vas retirando/pagando (Colombia) · <b style="color:var(--blue)">En tránsito</b> = lo que viene en camino con su <b>fecha de arribo estimada</b> (suma aparte, no es físico todavía). Cuando algo en tránsito llega y se carga en admin2, el Galpón se actualiza solo → borrás el en tránsito. Si un número ya está contabilizado en otro lado (ej. Honduras depósito fiscal), ponelo en 0. <a href="#" id="planClear" style="color:var(--muted)">limpiar ediciones</a>`;
     var pc=document.getElementById('planClear'); if(pc) pc.addEventListener('click',function(ev){ ev.preventDefault(); if(confirm('¿Borrar tus ediciones de la planilla? (no toca data.js)')){ localStorage.removeItem(PLAN_KEY); renderPlan(); } });
     renderPlan();
   }
