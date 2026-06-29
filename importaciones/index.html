@@ -203,7 +203,7 @@ td.r,th.r{text-align:right}
   <div class="sec"><h2>Alertas</h2><div class="ln"></div><button id="alNueva" style="font-size:11px;border-radius:7px;padding:4px 10px;background:var(--panel2);border:1px solid var(--line2);color:var(--text);cursor:pointer;margin-right:8px">＋ nueva</button><a id="alToggle" href="#" style="font-size:11px;color:var(--muted);text-decoration:none;display:none"></a></div>
   <div class="alertas" id="alertas"></div>
 
-  <div class="sec"><h2>Transferencias al exterior · en curso</h2><div class="ln"></div><span class="cnt" id="transfCnt"></span></div>
+  <div class="sec"><h2>Gestiones · transferencias al exterior</h2><div class="ln"></div><button id="trNueva" style="font-size:11px;border-radius:7px;padding:4px 10px;background:var(--panel2);border:1px solid var(--line2);color:var(--text);cursor:pointer;margin-right:8px">＋ nueva</button><span class="cnt" id="transfCnt"></span></div>
   <div class="grid" id="transferencias"></div>
 
   <div class="sec"><h2>Proveedores por origen</h2><div class="ln"></div><span class="cnt" id="provCnt"></span></div>
@@ -311,6 +311,26 @@ td.r,th.r{text-align:right}
     <div style="display:flex;gap:8px;margin-top:12px;justify-content:flex-end">
       <button id="aeClose" style="font-size:12px;border-radius:8px;padding:7px 12px;background:var(--panel2);border:1px solid var(--line2);color:var(--text);cursor:pointer">cancelar</button>
       <button id="aeSave" style="font-size:12px;font-weight:700;border-radius:8px;padding:7px 13px;background:var(--orange);border:none;color:#fff;cursor:pointer">Guardar</button>
+    </div>
+  </div>
+</div>
+<!-- modal crear / editar gestión (transferencia) -->
+<div id="teModal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.6)">
+  <div style="max-width:520px;margin:7vh auto;background:var(--panel);border:1px solid var(--line2);border-radius:14px;padding:18px">
+    <div id="teHead" style="font-weight:700;font-size:14px;margin-bottom:12px">Nueva gestión</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px 10px">
+      <div><label style="font-size:11px;color:var(--muted)">Proveedor / concepto</label><input id="teProv" placeholder="Total Ingredients" style="width:100%;box-sizing:border-box;margin-top:3px;background:#0e0e11;border:1px solid var(--line2);border-radius:7px;color:var(--text);padding:7px;font-size:13px"></div>
+      <div><label style="font-size:11px;color:var(--muted)">País</label><input id="tePais" style="width:100%;box-sizing:border-box;margin-top:3px;background:#0e0e11;border:1px solid var(--line2);border-radius:7px;color:var(--text);padding:7px;font-size:13px"></div>
+      <div><label style="font-size:11px;color:var(--muted)">Banco</label><input id="teBanco" placeholder="Nación" style="width:100%;box-sizing:border-box;margin-top:3px;background:#0e0e11;border:1px solid var(--line2);border-radius:7px;color:var(--text);padding:7px;font-size:13px"></div>
+      <div><label style="font-size:11px;color:var(--muted)">Operación</label><input id="teOp" placeholder="B06 · financiación" style="width:100%;box-sizing:border-box;margin-top:3px;background:#0e0e11;border:1px solid var(--line2);border-radius:7px;color:var(--text);padding:7px;font-size:13px"></div>
+      <div><label style="font-size:11px;color:var(--muted)">Monto (USD)</label><input id="teMonto" inputmode="decimal" style="width:100%;box-sizing:border-box;margin-top:3px;background:#0e0e11;border:1px solid var(--line2);border-radius:7px;color:var(--text);padding:7px;font-size:13px"></div>
+      <div><label style="font-size:11px;color:var(--muted)">Estado</label><select id="teEst" style="width:100%;box-sizing:border-box;margin-top:3px;background:#0e0e11;border:1px solid var(--line2);border-radius:7px;color:var(--text);padding:7px;font-size:13px"><option value="lista">lista para presentar</option><option value="pendiente">pendiente</option><option value="girada">girada</option><option value="frenada">frenada</option></select></div>
+    </div>
+    <label style="font-size:11px;color:var(--muted);display:block;margin-top:8px">Detalle</label>
+    <textarea id="teDet" rows="2" style="width:100%;box-sizing:border-box;margin-top:3px;background:#0e0e11;border:1px solid var(--line2);border-radius:7px;color:var(--text);padding:7px;font-size:13px;font-family:inherit"></textarea>
+    <div style="display:flex;gap:8px;margin-top:12px;justify-content:flex-end">
+      <button id="teClose" style="font-size:12px;border-radius:8px;padding:7px 12px;background:var(--panel2);border:1px solid var(--line2);color:var(--text);cursor:pointer">cancelar</button>
+      <button id="teSave" style="font-size:12px;font-weight:700;border-radius:8px;padding:7px 13px;background:var(--orange);border:none;color:#fff;cursor:pointer">Guardar</button>
     </div>
   </div>
 </div>
@@ -482,42 +502,66 @@ window.addEventListener('error', function(){
   document.getElementById('alToggle').addEventListener('click', function(ev){ ev.preventDefault(); alShowDismissed=!alShowDismissed; renderAlertas(); });
   renderAlertas();
 
-  // transferencias en curso (marcar girada / desmarcar, guardado en este equipo)
-  if(D.transferencias && D.transferencias.length){
-    var trStTag={ lista:'<span class="tag ok">✓ lista para presentar</span>',
-      girada:'<span class="tag ok">✓ girada</span>', frenada:'<span class="tag pend">⚠ frenada</span>' };
-    function trKey(t){ var s=(t.proveedor||'')+'|'+(t.operacion||'')+'|'+(t.monto||''); var h=0; for(var i=0;i<s.length;i++){ h=(Math.imul(31,h)+s.charCodeAt(i))|0; } return (h>>>0).toString(36); }
-    function trOver(){ try{ return JSON.parse(localStorage.getItem('finkap_transf_estado')||'{}'); }catch(e){ return {}; } }
-    function trEst(t){ var o=trOver(); return o[trKey(t)]||t.estado; }
-    function renderTransf(){
-      document.getElementById("transfCnt").textContent = D.transferencias.length+" en gestión";
-      document.getElementById("transferencias").innerHTML = D.transferencias.map(function(t){
-        var est=trEst(t), k=trKey(t), girada=(est==='girada');
-        var items=(t.checklist||[]).map(function(c){ return '<li class="'+(c.estado==='ok'?'ok':'pend')+'"><span class="ic">'+(c.estado==='ok'?'✓':'⚠')+'</span>'+c.item+(c.nota?'<span class="lnote">'+c.nota+'</span>':'')+'</li>'; }).join("");
-        var btn='<button class="transf-btn" data-k="'+k+'" data-girada="'+(girada?'1':'0')+'" style="margin-top:6px;cursor:pointer;font-size:11px;border-radius:6px;padding:4px 9px;'+(girada?'background:rgba(124,196,255,.12);border:1px solid var(--line2);color:var(--sub)':'background:rgba(126,224,160,.14);border:1px solid rgba(126,224,160,.45);color:#7ee0a0')+'">'+(girada?'↩ desmarcar':'✓ marcar girada')+'</button>';
-        return '<div class="trf '+est+'"><div class="th"><div>'+
-          '<div class="nm">'+t.proveedor+'</div>'+
-          '<div class="sub">'+t.pais+' · '+t.banco+' · '+t.operacion+'</div>'+
-          (t.detalle?'<div class="det">'+t.detalle+'</div>':'')+
-          '</div><div style="text-align:right"><div class="amt">$'+usd(t.monto)+'</div>'+
-          '<div style="margin-top:5px">'+(trStTag[est]||'')+'</div>'+
-          btn+' '+cmBtn('transf|'+k, t.proveedor+' · '+(t.operacion||''), 'Transferencia')+
-          '</div></div>'+
-          '<ul>'+items+'</ul>'+
-          (t.faltante?'<div class="miss"><b>Falta →</b> '+t.faltante+'</div>':'')+
-          '</div>';
-      }).join("");
-    }
-    document.getElementById("transferencias").addEventListener('click', function(ev){
-      var b=ev.target.closest && ev.target.closest('button'); if(!b) return;
-      if(b.classList.contains('cm-btn')){ openCm(b.getAttribute('data-k'), b.getAttribute('data-head'), b.getAttribute('data-sub')); return; }
-      if(!b.classList.contains('transf-btn')) return;
-      var o=trOver(), k=b.getAttribute('data-k');
-      if(b.getAttribute('data-girada')==='1'){ delete o[k]; } else { o[k]='girada'; }
-      localStorage.setItem('finkap_transf_estado', JSON.stringify(o)); renderTransf();
-    });
-    renderTransf();
+  // ── transferencias / gestiones: base (data.js) + propias (crear/editar/borrar) + girada + comentario + ocultar ──
+  D.transferencias = D.transferencias || [];
+  var trStTag={ lista:'<span class="tag ok">✓ lista para presentar</span>', girada:'<span class="tag ok">✓ girada</span>', frenada:'<span class="tag pend">⚠ frenada</span>', pendiente:'<span class="tag pend">pendiente</span>' };
+  function trKey(t){ if(t._user) return 'u|'+t.id; var s=(t.proveedor||'')+'|'+(t.operacion||'')+'|'+(t.monto||''); var h=0; for(var i=0;i<s.length;i++){ h=(Math.imul(31,h)+s.charCodeAt(i))|0; } return (h>>>0).toString(36); }
+  function trOver(){ try{ return JSON.parse(localStorage.getItem('finkap_transf_estado')||'{}'); }catch(e){ return {}; } }
+  function trEst(t){ var o=trOver(); return o[trKey(t)]||t.estado||'lista'; }
+  function tuser(){ try{ return JSON.parse(localStorage.getItem('finkap_transf_user')||'[]'); }catch(e){ return []; } }
+  function tuserSet(a){ localStorage.setItem('finkap_transf_user', JSON.stringify(a)); }
+  function trOcultas(){ try{ return JSON.parse(localStorage.getItem('finkap_transf_ocultas')||'[]'); }catch(e){ return []; } }
+  function trOcSet(a){ localStorage.setItem('finkap_transf_ocultas', JSON.stringify(a)); }
+  var _teId=null;
+  function openTe(t){ _teId=t?t.id:null; document.getElementById('teHead').textContent=t?'Editar gestión':'Nueva gestión'; document.getElementById('teProv').value=t?(t.proveedor||''):''; document.getElementById('tePais').value=t?(t.pais||''):''; document.getElementById('teBanco').value=t?(t.banco||''):''; document.getElementById('teOp').value=t?(t.operacion||''):''; document.getElementById('teMonto').value=t?(t.monto||''):''; document.getElementById('teDet').value=t?(t.detalle||''):''; document.getElementById('teEst').value=t?(t.estado||'lista'):'lista'; document.getElementById('teModal').style.display='block'; document.getElementById('teProv').focus(); }
+  function closeTe(){ document.getElementById('teModal').style.display='none'; _teId=null; }
+  document.getElementById('teClose').addEventListener('click', closeTe);
+  document.getElementById('teModal').addEventListener('click', function(ev){ if(ev.target.id==='teModal') closeTe(); });
+  document.getElementById('trNueva').addEventListener('click', function(){ openTe(null); });
+  document.getElementById('teSave').addEventListener('click', function(){
+    var prov=document.getElementById('teProv').value.trim(); if(!prov){ document.getElementById('teProv').focus(); return; }
+    var obj={ id:_teId||('u'+Date.now()), _user:true, proveedor:prov, pais:document.getElementById('tePais').value.trim(), banco:document.getElementById('teBanco').value.trim(), operacion:document.getElementById('teOp').value.trim(), monto:parseFloat(String(document.getElementById('teMonto').value).replace(',','.'))||0, detalle:document.getElementById('teDet').value.trim(), estado:document.getElementById('teEst').value };
+    var list=tuser(); var i=-1; list.forEach(function(x,ix){ if(x.id===obj.id) i=ix; }); if(i>=0) list[i]=obj; else list.push(obj);
+    tuserSet(list); closeTe(); renderTransf();
+  });
+  function renderTransf(){
+    var oc=trOcultas();
+    var base=D.transferencias.map(function(t){ var c=Object.assign({}, t); c._user=false; return c; });
+    var us=tuser().map(function(t){ var c=Object.assign({}, t); c._user=true; return c; });
+    var all=base.concat(us).filter(function(t){ return oc.indexOf(trKey(t))<0; });
+    document.getElementById("transfCnt").textContent = all.length+" en gestión";
+    document.getElementById("transferencias").innerHTML = all.length ? all.map(function(t){
+      var est=trEst(t), k=trKey(t), girada=(est==='girada');
+      var items=(t.checklist||[]).map(function(c){ return '<li class="'+(c.estado==='ok'?'ok':'pend')+'"><span class="ic">'+(c.estado==='ok'?'✓':'⚠')+'</span>'+c.item+(c.nota?'<span class="lnote">'+c.nota+'</span>':'')+'</li>'; }).join("");
+      var btn='<button class="transf-btn" data-k="'+k+'" data-girada="'+(girada?'1':'0')+'" style="margin-top:6px;cursor:pointer;font-size:11px;border-radius:6px;padding:4px 9px;'+(girada?'background:rgba(124,196,255,.12);border:1px solid var(--line2);color:var(--sub)':'background:rgba(126,224,160,.14);border:1px solid rgba(126,224,160,.45);color:#7ee0a0')+'">'+(girada?'↩ desmarcar':'✓ marcar girada')+'</button>';
+      var ctrl = t._user
+        ? ' <button class="tr-edit" data-id="'+t.id+'" title="editar" style="'+ICTRL+'">✏️</button> <button class="tr-del" data-id="'+t.id+'" title="borrar" style="'+ICTRL+'">🗑️</button>'
+        : ' <button class="tr-oc" data-k="'+k+'" title="ocultar (hecha)" style="'+ICTRL+'">✕</button>';
+      return '<div class="trf '+est+'"><div class="th"><div>'+
+        '<div class="nm">'+(t.proveedor||'—')+'</div>'+
+        '<div class="sub">'+[t.pais,t.banco,t.operacion].filter(Boolean).join(' · ')+'</div>'+
+        (t.detalle?'<div class="det">'+t.detalle+'</div>':'')+
+        '</div><div style="text-align:right"><div class="amt">$'+usd(t.monto||0)+'</div>'+
+        '<div style="margin-top:5px">'+(trStTag[est]||'')+'</div>'+
+        btn+' '+cmBtn('transf|'+k, (t.proveedor||'')+' · '+(t.operacion||''), 'Transferencia')+ctrl+
+        '</div></div>'+
+        (items?'<ul>'+items+'</ul>':'')+
+        (t.faltante?'<div class="miss"><b>Falta →</b> '+t.faltante+'</div>':'')+
+        '</div>';
+    }).join("") : '<div class="note" style="margin:0">No hay gestiones. Tocá <b>＋ nueva</b> para crear una.</div>';
   }
+  document.getElementById("transferencias").addEventListener('click', function(ev){
+    var b=ev.target.closest && ev.target.closest('button'); if(!b) return;
+    if(b.classList.contains('cm-btn')){ openCm(b.getAttribute('data-k'), b.getAttribute('data-head'), b.getAttribute('data-sub')); return; }
+    if(b.classList.contains('tr-edit')){ var id=b.getAttribute('data-id'); var t=tuser().filter(function(x){return x.id===id;})[0]; if(t) openTe(t); return; }
+    if(b.classList.contains('tr-del')){ var id2=b.getAttribute('data-id'); if(confirm('¿Borrar esta gestión?')){ tuserSet(tuser().filter(function(x){return x.id!==id2;})); renderTransf(); } return; }
+    if(b.classList.contains('tr-oc')){ var kk=b.getAttribute('data-k'); var o=trOcultas(); if(o.indexOf(kk)<0)o.push(kk); trOcSet(o); renderTransf(); return; }
+    if(!b.classList.contains('transf-btn')) return;
+    var o2=trOver(), k2=b.getAttribute('data-k');
+    if(b.getAttribute('data-girada')==='1'){ delete o2[k2]; } else { o2[k2]='girada'; }
+    localStorage.setItem('finkap_transf_estado', JSON.stringify(o2)); renderTransf();
+  });
+  renderTransf();
 
   // proveedores
   document.getElementById("provCnt").textContent = D.proveedores.filter(p=>p.activo).length+" activos";
