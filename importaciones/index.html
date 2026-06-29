@@ -242,7 +242,7 @@ td.r,th.r{text-align:right}
   <div class="sec"><h2>Stock por depósito (editable)</h2><div class="ln"></div><span class="cnt" id="stockCnt"></span></div>
   <div class="kg-note" id="stockNote"></div>
   <div class="tbl-wrap"><table>
-    <thead><tr><th>Origen</th><th class="r">Galpón</th><th class="r">Santa Fe</th><th class="r">Mendoza</th><th class="r">Depósito fiscal</th><th class="r">Total</th></tr></thead>
+    <thead><tr><th>Origen</th><th class="r">Galpón</th><th class="r">Santa Fe</th><th class="r">Mendoza</th><th class="r">Depósito fiscal</th><th class="r">Total físico</th><th class="r">En tránsito</th><th>Arribo est.</th></tr></thead>
     <tbody id="stockBody"></tbody>
   </table></div>
 
@@ -633,26 +633,36 @@ window.addEventListener('error', function(){
     function planVal(origen,campo){ const ov=planOv(), k=origen+'|'+campo; if(ov[k]!=null && ov[k]!=='') return +ov[k]; if(seed[k]!=null) return +seed[k]; return null; }
     function planInput(origen,campo){ const ov=planOv(), k=origen+'|'+campo, ed=(ov[k]!=null && ov[k]!==''), v=planVal(origen,campo);
       return `<input class="plan-in" data-k="${k}" value="${ed?ov[k]:''}" placeholder="${v!=null?kgf(v):'—'}" inputmode="decimal" style="width:78px;text-align:right;background:#0e0e11;border:1px solid ${ed?'var(--orange-line)':'var(--line2)'};border-radius:6px;color:${ed?'var(--orange)':'var(--text)'};font-family:var(--mono);font-size:12px;padding:4px 6px">`; }
+    function planDate(origen){ const ov=planOv(), k=origen+'|arribo', v=(ov[k]!=null?ov[k]:'');
+      return `<input class="plan-date" data-k="${k}" type="date" value="${v}" style="background:#0e0e11;border:1px solid var(--line2);border-radius:6px;color:var(--text);font-family:var(--mono);font-size:11px;padding:3px 6px">`; }
     function renderPlan(){
-      const tot={galpon:0,sf:0,mza:0,fiscal:0};
+      const tot={galpon:0,sf:0,mza:0,fiscal:0}; let totTr=0;
       document.getElementById('stockBody').innerHTML = D.stock.porOrigen.map(o=>{
         const vals=campos.map(c=>planVal(o.origen,c)); vals.forEach((v,i)=>{ tot[campos[i]]+=(v||0); });
         const rowTot=vals.reduce((s,v)=>s+(v||0),0);
+        const tr=planVal(o.origen,'transito')||0; totTr+=tr;
         const harmony = /harmony/i.test(o.modalidad||'') ? ' <span class="tag st" style="font-size:9px">Harmony</span>' : '';
         return `<tr><td><b>${o.origen}</b>${harmony}</td>`+
           campos.map(c=>`<td class="r">${planInput(o.origen,c)}</td>`).join('')+
-          `<td class="r dospuntos"><b>${kgf(rowTot)}</b></td></tr>`;
+          `<td class="r dospuntos"><b>${kgf(rowTot)}</b></td>`+
+          `<td class="r">${planInput(o.origen,'transito')}</td>`+
+          `<td class="r">${planDate(o.origen)}</td></tr>`;
       }).join('')+
-        `<tr class="tot"><td>TOTAL (kg)</td>`+campos.map(c=>`<td class="r dospuntos">${kgf(tot[c])}</td>`).join('')+`<td class="r dospuntos">${kgf(tot.galpon+tot.sf+tot.mza+tot.fiscal)}</td></tr>`;
-      document.getElementById('stockCnt').textContent = 'editable · '+kgf(tot.galpon+tot.sf+tot.mza+tot.fiscal)+' kg';
+        `<tr class="tot"><td>TOTAL (kg)</td>`+campos.map(c=>`<td class="r dospuntos">${kgf(tot[c])}</td>`).join('')+
+        `<td class="r dospuntos">${kgf(tot.galpon+tot.sf+tot.mza+tot.fiscal)}</td>`+
+        `<td class="r dospuntos" style="color:var(--blue)">${kgf(totTr)}</td><td></td></tr>`;
+      document.getElementById('stockCnt').textContent = kgf(tot.galpon+tot.sf+tot.mza+tot.fiscal)+' kg físico'+(totTr>0?' · '+kgf(totTr)+' en tránsito':'');
     }
     document.getElementById('stockBody').addEventListener('change', function(ev){
-      const inp=ev.target.closest && ev.target.closest('.plan-in'); if(!inp) return;
-      const k=inp.getAttribute('data-k'), ov=planOv(), v=inp.value.trim();
-      if(v===''||isNaN(parseFloat(v))){ delete ov[k]; } else { ov[k]=parseFloat(v); }
+      const inp=ev.target.closest && ev.target.closest('input'); if(!inp) return;
+      const k=inp.getAttribute('data-k'); if(!k) return;
+      const ov=planOv(), v=inp.value.trim();
+      if(v===''){ delete ov[k]; }
+      else if(inp.classList.contains('plan-date')){ ov[k]=v; }
+      else if(!isNaN(parseFloat(v))){ ov[k]=parseFloat(v); }
       planSet(ov); renderPlan();
     });
-    document.getElementById("stockNote").innerHTML = `Stock físico por depósito, <b>editable</b> (se guarda en este equipo, no toca data.js). <b>Galpón</b> = tu galpón · <b>Santa Fe / Mendoza</b> = locales · <b>Depósito fiscal</b> = grano que importa <b>Harmony</b> por vos y vas retirando/pagando (Colombia). Si un número ya está contabilizado en otro lado (ej. Honduras depósito fiscal), ponelo en 0. <a href="#" id="planClear" style="color:var(--muted)">limpiar ediciones</a>`;
+    document.getElementById("stockNote").innerHTML = `Stock físico por depósito, <b>editable</b> (se guarda en este equipo, no toca data.js). <b>Galpón</b> = tu galpón · <b>Santa Fe / Mendoza</b> = locales · <b>Depósito fiscal</b> = grano que importa <b>Harmony</b> por vos y vas retirando/pagando (Colombia) · <b style="color:var(--blue)">En tránsito</b> = lo que viene en camino con su <b>fecha de arribo estimada</b> (suma aparte, no es físico todavía). Si un número ya está contabilizado en otro lado (ej. Honduras depósito fiscal), ponelo en 0. <a href="#" id="planClear" style="color:var(--muted)">limpiar ediciones</a>`;
     var pc=document.getElementById('planClear'); if(pc) pc.addEventListener('click',function(ev){ ev.preventDefault(); if(confirm('¿Borrar tus ediciones de la planilla? (no toca data.js)')){ localStorage.removeItem(PLAN_KEY); renderPlan(); } });
     renderPlan();
   }
