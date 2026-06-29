@@ -200,7 +200,7 @@ td.r,th.r{text-align:right}
 
   <div class="kpis" id="kpis"></div>
 
-  <div class="sec"><h2>Alertas</h2><div class="ln"></div><a id="alToggle" href="#" style="font-size:11px;color:var(--muted);text-decoration:none;display:none"></a></div>
+  <div class="sec"><h2>Alertas</h2><div class="ln"></div><button id="alNueva" style="font-size:11px;border-radius:7px;padding:4px 10px;background:var(--panel2);border:1px solid var(--line2);color:var(--text);cursor:pointer;margin-right:8px">＋ nueva</button><a id="alToggle" href="#" style="font-size:11px;color:var(--muted);text-decoration:none;display:none"></a></div>
   <div class="alertas" id="alertas"></div>
 
   <div class="sec"><h2>Transferencias al exterior · en curso</h2><div class="ln"></div><span class="cnt" id="transfCnt"></span></div>
@@ -281,6 +281,39 @@ td.r,th.r{text-align:right}
   <div class="foot" id="foot"></div>
 </div>
 
+<!-- modal comentario / chat con Claude -->
+<div id="cmModal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.6)">
+  <div style="max-width:480px;margin:9vh auto;background:var(--panel);border:1px solid var(--line2);border-radius:14px;padding:18px">
+    <div id="cmHead" style="font-weight:700;font-size:14px;margin-bottom:3px"></div>
+    <div id="cmSub" style="font-size:11px;color:var(--muted2);margin-bottom:10px"></div>
+    <textarea id="cmTxt" rows="4" style="width:100%;box-sizing:border-box;background:#0e0e11;border:1px solid var(--line2);border-radius:8px;color:var(--text);padding:9px;font-size:13px;font-family:inherit" placeholder="Tu comentario o pregunta para Claude…"></textarea>
+    <div id="cmStatus" style="font-size:11px;color:var(--muted);min-height:15px;margin-top:6px"></div>
+    <div style="display:flex;gap:8px;margin-top:10px;align-items:center">
+      <button id="cmDel" style="font-size:11px;border-radius:7px;padding:6px 10px;background:transparent;border:1px solid var(--line2);color:var(--bad);cursor:pointer">borrar</button>
+      <span style="flex:1"></span>
+      <button id="cmClose" style="font-size:12px;border-radius:8px;padding:7px 12px;background:var(--panel2);border:1px solid var(--line2);color:var(--text);cursor:pointer">cerrar</button>
+      <button id="cmSave" style="font-size:12px;font-weight:700;border-radius:8px;padding:7px 13px;background:var(--orange);border:none;color:#fff;cursor:pointer">Guardar y mandar a Claude</button>
+    </div>
+  </div>
+</div>
+<!-- modal crear / editar alerta -->
+<div id="aeModal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.6)">
+  <div style="max-width:480px;margin:9vh auto;background:var(--panel);border:1px solid var(--line2);border-radius:14px;padding:18px">
+    <div id="aeHead" style="font-weight:700;font-size:14px;margin-bottom:12px">Nueva alerta</div>
+    <label style="font-size:11px;color:var(--muted)">Nivel</label>
+    <select id="aeNivel" style="width:100%;box-sizing:border-box;margin:3px 0 10px;background:#0e0e11;border:1px solid var(--line2);border-radius:7px;color:var(--text);padding:8px;font-size:13px"><option value="warn">⚠️ Advertencia</option><option value="danger">⛔ Crítica</option></select>
+    <label style="font-size:11px;color:var(--muted)">Título</label>
+    <input id="aeTitulo" style="width:100%;box-sizing:border-box;margin:3px 0 10px;background:#0e0e11;border:1px solid var(--line2);border-radius:7px;color:var(--text);padding:8px;font-size:13px">
+    <label style="font-size:11px;color:var(--muted)">Detalle</label>
+    <textarea id="aeDetalle" rows="3" style="width:100%;box-sizing:border-box;margin:3px 0 10px;background:#0e0e11;border:1px solid var(--line2);border-radius:7px;color:var(--text);padding:8px;font-size:13px;font-family:inherit"></textarea>
+    <label style="font-size:11px;color:var(--muted)">Acción (opcional)</label>
+    <input id="aeAccion" style="width:100%;box-sizing:border-box;margin:3px 0 4px;background:#0e0e11;border:1px solid var(--line2);border-radius:7px;color:var(--text);padding:8px;font-size:13px">
+    <div style="display:flex;gap:8px;margin-top:12px;justify-content:flex-end">
+      <button id="aeClose" style="font-size:12px;border-radius:8px;padding:7px 12px;background:var(--panel2);border:1px solid var(--line2);color:var(--text);cursor:pointer">cancelar</button>
+      <button id="aeSave" style="font-size:12px;font-weight:700;border-radius:8px;padding:7px 13px;background:var(--orange);border:none;color:#fff;cursor:pointer">Guardar</button>
+    </div>
+  </div>
+</div>
 <script src="data.enc.js"></script>
 <script src="stock-vivo.js"></script>
 <script>
@@ -364,34 +397,71 @@ window.addEventListener('error', function(){
   }
   renderKpis();
 
-  // alertas (con opción de resolver/descartar; se guarda en este equipo)
+  // ── alertas: base (data.js) + propias (editables) + comentario/chat con Claude por ítem ──
+  var SRV='http://127.0.0.1:8787';
+  var ICTRL='font-size:11px;background:transparent;border:1px solid var(--line2);color:var(--muted);border-radius:6px;padding:2px 7px;cursor:pointer';
+  function escA(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
+  var torreNotas={}; try{ torreNotas=JSON.parse(localStorage.getItem('finkap_torre_notas')||'{}'); }catch(e){}
+  function saveTorreNotas(){ try{ localStorage.setItem('finkap_torre_notas', JSON.stringify(torreNotas)); }catch(e){} }
+  function postTorreNotas(cb){ try{ fetch(SRV+'/guardar-notas',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({app:'torre',notas:torreNotas})}).then(function(r){return r.json();}).then(function(){cb&&cb(true);}).catch(function(){cb&&cb(false);}); }catch(e){ cb&&cb(false); } }
+  function cmBtn(key,head,sub){ var has=!!(torreNotas[key]&&String(torreNotas[key]).trim());
+    return '<button class="cm-btn" data-k="'+escA(key)+'" data-head="'+escA(head)+'" data-sub="'+escA(sub)+'" title="comentar / preguntar a Claude" style="'+ICTRL+(has?';color:var(--ok);border-color:rgba(70,211,154,.5)':'')+'">💬</button>'; }
+  var _cmKey=null;
+  function openCm(key,head,sub){ _cmKey=key; document.getElementById('cmHead').textContent='💬 '+(head||'Comentario'); document.getElementById('cmSub').textContent=sub||''; document.getElementById('cmTxt').value=torreNotas[key]||''; document.getElementById('cmStatus').textContent=''; document.getElementById('cmModal').style.display='block'; document.getElementById('cmTxt').focus(); }
+  function closeCm(){ document.getElementById('cmModal').style.display='none'; _cmKey=null; }
+  document.getElementById('cmClose').addEventListener('click', closeCm);
+  document.getElementById('cmModal').addEventListener('click', function(ev){ if(ev.target.id==='cmModal') closeCm(); });
+  document.getElementById('cmDel').addEventListener('click', function(){ if(_cmKey){ delete torreNotas[_cmKey]; saveTorreNotas(); postTorreNotas(); } closeCm(); renderAlertas(); if(typeof renderTransf==='function') renderTransf(); });
+  document.getElementById('cmSave').addEventListener('click', function(){ if(!_cmKey){ closeCm(); return; } var v=document.getElementById('cmTxt').value.trim(); if(v) torreNotas[_cmKey]=v; else delete torreNotas[_cmKey]; saveTorreNotas(); document.getElementById('cmStatus').textContent='Guardando…'; postTorreNotas(function(ok){ document.getElementById('cmStatus').textContent= ok?'✅ Claude lo va a leer (torre-notas.json).':'⚠️ Guardado local. Abrí "Servidor de saldos" para que me llegue.'; renderAlertas(); if(typeof renderTransf==='function') renderTransf(); setTimeout(closeCm, ok?800:1900); }); });
+  // alertas propias (crear/editar/borrar)
+  function auser(){ try{ return JSON.parse(localStorage.getItem('finkap_alertas_user')||'[]'); }catch(e){ return []; } }
+  function auserSet(a){ localStorage.setItem('finkap_alertas_user', JSON.stringify(a)); }
+  var _aeId=null;
+  function openAe(a){ _aeId=a?a.id:null; document.getElementById('aeHead').textContent=a?'Editar alerta':'Nueva alerta'; document.getElementById('aeNivel').value=a?a.nivel:'warn'; document.getElementById('aeTitulo').value=a?a.titulo:''; document.getElementById('aeDetalle').value=a?(a.detalle||''):''; document.getElementById('aeAccion').value=a?(a.accion||''):''; document.getElementById('aeModal').style.display='block'; document.getElementById('aeTitulo').focus(); }
+  function closeAe(){ document.getElementById('aeModal').style.display='none'; _aeId=null; }
+  document.getElementById('aeClose').addEventListener('click', closeAe);
+  document.getElementById('aeModal').addEventListener('click', function(ev){ if(ev.target.id==='aeModal') closeAe(); });
+  document.getElementById('alNueva').addEventListener('click', function(){ openAe(null); });
+  document.getElementById('aeSave').addEventListener('click', function(){
+    var tit=document.getElementById('aeTitulo').value.trim(); if(!tit){ document.getElementById('aeTitulo').focus(); return; }
+    var obj={ id:_aeId||('u'+Date.now()), nivel:document.getElementById('aeNivel').value, titulo:tit, detalle:document.getElementById('aeDetalle').value.trim(), accion:document.getElementById('aeAccion').value.trim() };
+    var list=auser(); var i=-1; list.forEach(function(x,ix){ if(x.id===obj.id) i=ix; }); if(i>=0) list[i]=obj; else list.push(obj);
+    auserSet(list); closeAe(); renderAlertas();
+  });
+  // render
   var alShowDismissed=false;
   function alKey(a){ var s=(a.titulo||'')+'|'+(a.detalle||''); var h=0; for(var i=0;i<s.length;i++){ h=(Math.imul(31,h)+s.charCodeAt(i))|0; } return (h>>>0).toString(36); }
   function alOcultas(){ try{ return JSON.parse(localStorage.getItem('finkap_alertas_ocultas')||'[]'); }catch(e){ return []; } }
   function alSet(arr){ localStorage.setItem('finkap_alertas_ocultas', JSON.stringify(arr)); }
   function renderAlertas(){
     var oc=alOcultas();
-    var activas=D.alertas.filter(function(a){ return oc.indexOf(alKey(a))<0; });
-    var desc=D.alertas.filter(function(a){ return oc.indexOf(alKey(a))>=0; });
+    var base=D.alertas.map(function(a){ return {nivel:a.nivel,titulo:a.titulo,detalle:a.detalle,accion:a.accion,_k:alKey(a),_user:false}; });
+    var us=auser().map(function(a){ return {nivel:a.nivel,titulo:a.titulo,detalle:a.detalle,accion:a.accion,_k:'u|'+a.id,id:a.id,_user:true}; });
+    var activas=base.filter(function(a){ return oc.indexOf(a._k)<0; }).concat(us);
+    var desc=base.filter(function(a){ return oc.indexOf(a._k)>=0; });
     var lista=alShowDismissed?desc:activas;
     var btnTxt=alShowDismissed?'↩ restaurar':'✓ resolver';
     var act=alShowDismissed?'restore':'dismiss';
-    document.getElementById("alertas").innerHTML = lista.length ? lista.map(function(a){ var k=alKey(a);
+    document.getElementById("alertas").innerHTML = lista.length ? lista.map(function(a){
+      var ctrl=a._user
+        ? '<button class="al-edit" data-id="'+a.id+'" title="editar" style="'+ICTRL+'">✏️</button> <button class="al-del" data-id="'+a.id+'" title="borrar" style="'+ICTRL+'">🗑️</button>'
+        : '<button class="al-x" data-k="'+a._k+'" data-act="'+act+'" style="'+ICTRL+'">'+btnTxt+'</button>';
       return '<div class="al '+a.nivel+'"><div class="t">'+(a.nivel==='danger'?'⛔':'⚠️')+' '+a.titulo+
-        ' <button class="al-x" data-k="'+k+'" data-act="'+act+'" style="float:right;font-size:10.5px;background:transparent;border:1px solid var(--line2);color:var(--muted);border-radius:6px;padding:2px 8px;cursor:pointer">'+btnTxt+'</button></div>'+
+        '<span style="float:right;display:inline-flex;gap:5px">'+cmBtn(a._k,a.titulo,'Alerta')+ctrl+'</span></div>'+
         '<div class="d">'+a.detalle+'</div>'+
         (a.accion?'<div class="a"><b>Acción →</b> '+a.accion+'</div>':'')+'</div>';
-    }).join("") : '<div class="note" style="margin:0">'+(alShowDismissed?'No hay alertas descartadas.':'No hay alertas activas. 🎉')+'</div>';
+    }).join("") : '<div class="note" style="margin:0">'+(alShowDismissed?'No hay alertas descartadas.':'No hay alertas. 🎉')+'</div>';
     var t=document.getElementById('alToggle');
     if(alShowDismissed){ t.textContent='← ver activas'; t.style.display='inline'; }
     else if(desc.length){ t.textContent='ver descartadas ('+desc.length+')'; t.style.display='inline'; }
     else { t.style.display='none'; }
   }
   document.getElementById("alertas").addEventListener('click', function(ev){
-    var b=ev.target.closest && ev.target.closest('.al-x'); if(!b) return;
-    var k=b.getAttribute('data-k'); var oc=alOcultas();
-    if(b.getAttribute('data-act')==='dismiss'){ if(oc.indexOf(k)<0) oc.push(k); } else { oc=oc.filter(function(x){ return x!==k; }); }
-    alSet(oc); renderAlertas();
+    var b=ev.target.closest && ev.target.closest('button'); if(!b) return;
+    if(b.classList.contains('al-x')){ var k=b.getAttribute('data-k'); var oc=alOcultas(); if(b.getAttribute('data-act')==='dismiss'){ if(oc.indexOf(k)<0)oc.push(k);} else {oc=oc.filter(function(x){return x!==k;});} alSet(oc); renderAlertas(); return; }
+    if(b.classList.contains('al-del')){ var id=b.getAttribute('data-id'); if(confirm('¿Borrar esta alerta?')){ auserSet(auser().filter(function(x){return x.id!==id;})); renderAlertas(); } return; }
+    if(b.classList.contains('al-edit')){ var id2=b.getAttribute('data-id'); var aa=auser().filter(function(x){return x.id===id2;})[0]; if(aa) openAe(aa); return; }
+    if(b.classList.contains('cm-btn')){ openCm(b.getAttribute('data-k'), b.getAttribute('data-head'), b.getAttribute('data-sub')); return; }
   });
   document.getElementById('alToggle').addEventListener('click', function(ev){ ev.preventDefault(); alShowDismissed=!alShowDismissed; renderAlertas(); });
   renderAlertas();
@@ -415,7 +485,7 @@ window.addEventListener('error', function(){
           (t.detalle?'<div class="det">'+t.detalle+'</div>':'')+
           '</div><div style="text-align:right"><div class="amt">$'+usd(t.monto)+'</div>'+
           '<div style="margin-top:5px">'+(trStTag[est]||'')+'</div>'+
-          btn+
+          btn+' '+cmBtn('transf|'+k, t.proveedor+' · '+(t.operacion||''), 'Transferencia')+
           '</div></div>'+
           '<ul>'+items+'</ul>'+
           (t.faltante?'<div class="miss"><b>Falta →</b> '+t.faltante+'</div>':'')+
@@ -423,7 +493,9 @@ window.addEventListener('error', function(){
       }).join("");
     }
     document.getElementById("transferencias").addEventListener('click', function(ev){
-      var b=ev.target; if(!b.classList || !b.classList.contains('transf-btn')) return;
+      var b=ev.target.closest && ev.target.closest('button'); if(!b) return;
+      if(b.classList.contains('cm-btn')){ openCm(b.getAttribute('data-k'), b.getAttribute('data-head'), b.getAttribute('data-sub')); return; }
+      if(!b.classList.contains('transf-btn')) return;
       var o=trOver(), k=b.getAttribute('data-k');
       if(b.getAttribute('data-girada')==='1'){ delete o[k]; } else { o[k]='girada'; }
       localStorage.setItem('finkap_transf_estado', JSON.stringify(o)); renderTransf();
