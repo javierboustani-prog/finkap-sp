@@ -234,8 +234,9 @@ td.r,th.r{text-align:right}
       <tbody id="svBodyBolsas"></tbody>
     </table></div>
     <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:10px">
+      <button id="svRefresh" style="font-size:12px;border-radius:8px;padding:7px 13px;background:rgba(124,196,255,.12);border:1px solid rgba(124,196,255,.45);color:var(--blue);cursor:pointer;font-weight:700">🔄 Actualizar desde admin2</button>
       <a id="svClear" href="#" style="font-size:11px;color:var(--muted)">limpiar correcciones (este equipo)</a>
-      <span style="font-size:11px;color:var(--muted2)">Stock real de admin2 — corré <code>bancos\correr-grano.ps1</code> para refrescar. Las correcciones se guardan en este equipo, no tocan admin2.</span>
+      <span style="font-size:11px;color:var(--muted2)" id="svRefHint">Trae el stock real de admin2 (~40s). Las correcciones se guardan en este equipo, no tocan admin2.</span>
     </div>
   </div>
 
@@ -619,6 +620,14 @@ window.addEventListener('error', function(){
       svCorrSet(o); renderSV();
     });
     document.getElementById('svClear').addEventListener('click', function(ev){ ev.preventDefault(); if(confirm('¿Borrar tus correcciones de stock? (no toca admin2)')){ localStorage.removeItem(SVCORR_KEY); renderSV(); } });
+    var svRef=document.getElementById('svRefresh');
+    if(svRef) svRef.addEventListener('click', function(){
+      var b=this, orig=b.textContent; b.disabled=true; b.textContent='⏳ Trayendo de admin2…';
+      fetch('http://127.0.0.1:8787/grano',{cache:'no-store'}).then(function(r){return r.json();}).then(function(j){
+        if(j && j.ok){ b.textContent='✓ Listo — recargando'; setTimeout(function(){ location.reload(); },700); }
+        else { b.textContent='⚠ Error (code '+(j&&j.code)+')'; b.disabled=false; setTimeout(function(){ b.textContent=orig; },3000); }
+      }).catch(function(){ b.textContent='⚠ Servidor local apagado'; b.disabled=false; var hh=document.getElementById('svRefHint'); if(hh) hh.innerHTML='Necesitás el <b>"Servidor de saldos.cmd"</b> abierto para que el botón funcione.'; setTimeout(function(){ b.textContent=orig; },3500); });
+    });
     document.getElementById('svNote').innerHTML = `<b>${SV.totalSkus}</b> SKUs de grano verde de admin2 · <b>${SV.conStock} con stock</b>. <b style="color:var(--ok)">Granel</b> = bolsas abiertas (en kg) · <b style="color:var(--blue)">Bolsas cerradas</b> = sin abrir (se cuentan en bolsas; su kg = bolsas × kg/bolsa). Los saldos por depósito SF/Mza los vemos después. <span style="color:var(--muted2)">Fuente: ${SV.fuente} · ${SV.generado||''}.</span>`;
     renderSV();
   }
