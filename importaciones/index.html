@@ -326,7 +326,7 @@ window.addEventListener('error', function(){
     '<a href="entrar.html" style="color:#ffb3b3;font-weight:700">Volver a descifrar →</a>';
   (document.body||document.documentElement).appendChild(d);
 });
-(function(){
+(async function(){
   // auto-actualización: si el paquete cifrado deployado cambió (nueva versión de datos),
   // la copia descifrada vieja guardada en este equipo queda obsoleta → la limpiamos y volvemos a pedir la clave.
   try{
@@ -345,6 +345,22 @@ window.addEventListener('error', function(){
   // defaults: que falten claves no rompa el render (antes tiraba TypeError mudo)
   D.embarques=D.embarques||[]; D.pagos=D.pagos||[]; D.proveedores=D.proveedores||[];
   D.alertas=D.alertas||[]; D.bancos=D.bancos||[]; D.meta=D.meta||{};
+  // ── Stock COMPARTIDO online (Supabase): tiene prioridad sobre stock-vivo.js local; si no responde, usa el local ──
+  async function loadStockSB(){
+    try{
+      var SB='https://hgwiccmqzfcvcyvbylkx.supabase.co', K='sb_publishable_XjtdOaGjHtpaeopBPWLtPw_vjiw5vZB';
+      var ctrl=new AbortController(), to=setTimeout(function(){ctrl.abort();},6000);
+      var rg=await fetch(SB+'/rest/v1/stock_grano?select=*&limit=2000',{headers:{apikey:K,Authorization:'Bearer '+K},signal:ctrl.signal});
+      clearTimeout(to);
+      if(!rg.ok) return;
+      var rows=await rg.json(); if(!rows || !rows.length) return;
+      var items=rows.map(function(r){ return { sku:r.sku, nombre:r.nombre, clase:r.clase, bolsaKg:+r.bolsa_kg||0, stock:+r.stock||0, stockSF:+r.stock_sf||0, stockMza:+r.stock_mza||0, origen:r.origen, activo:r.activo }; });
+      var conStock=items.filter(function(it){ return Math.abs(it.stock)>0.001||Math.abs(it.stockSF)>0.001||Math.abs(it.stockMza)>0.001; });
+      var gen=''; rows.forEach(function(r){ if(r.actualizado && r.actualizado>gen) gen=r.actualizado; });
+      window.STOCK_VIVO={ generado:(gen||'').replace('T',' ').slice(0,19), fuente:'admin2 → Supabase (online · compartido)', totalSkus:items.length, conStock:conStock.length, items:conStock, _online:true };
+    }catch(e){ /* sin red → usa el local */ }
+  }
+  await loadStockSB();
   // ── Pagos al exterior: overlay editable en este equipo (COMEX + marcas manuales), SIN re-cifrar ──
   D.pagos.forEach(p=>{ p._basePagado=(+p.pagado||0); p._baseEstado=p.estado; });
   const PAGMOV_KEY='finkap_pagos_mov';
