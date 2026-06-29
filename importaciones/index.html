@@ -701,6 +701,14 @@ window.addEventListener('error', function(){
           .concat(tuser().map(function(t){ var c=Object.assign({},t); c._user=true; return c; }))
           .filter(function(t){ return ocT.indexOf(trKey(t))<0; })
           .map(function(t){ var c=Object.assign({},t); c.estado=trEst(t); delete c._user; return c; });
+        // stock planilla por depósito (café en tránsito, Santa Fe/Mendoza/fiscal, fecha arribo)
+        if(D.stock && D.stock.porOrigen){
+          var planOv=(function(){ try{ return JSON.parse(localStorage.getItem('finkap_planilla_stock')||'{}'); }catch(e){ return {}; } })();
+          D.stock.porOrigen.forEach(function(o){
+            ['sf','mza','transito','fiscal'].forEach(function(c){ var v=planOv[o.origen+'|'+c]; if(v!=null && v!=='') o[c]=+v; });
+            var ar=planOv[o.origen+'|arribo']; if(ar!=null && ar!=='') o.arribo=ar;
+          });
+        }
         var enc=await finkapEncrypt(D, clave);
         btn.textContent='📤 Subiendo…'; msg('Subiendo a GitHub…');
         var resp=await fetch(SERVIDOR+'/publicar-torre',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({enc, dataObj:D})});
@@ -710,7 +718,7 @@ window.addEventListener('error', function(){
                var fp=(enc.salt||'')+'.'+(enc.iv||''); sessionStorage.setItem('finkap_impo_fp_v1', fp);
                if(localStorage.getItem('finkap_impo_persist_v1')){ localStorage.setItem('finkap_impo_persist_v1', JSON.stringify(D)); localStorage.setItem('finkap_impo_persist_fp_v1', fp); } }catch(e){}
           try{ localStorage.removeItem(PAGMOV_KEY); localStorage.setItem('finkap_comex_paquetes','[]');
-               ['finkap_alertas_ocultas','finkap_alertas_user','finkap_transf_estado','finkap_transf_user','finkap_transf_ocultas'].forEach(function(k){ localStorage.removeItem(k); }); }catch(e){}
+               ['finkap_alertas_ocultas','finkap_alertas_user','finkap_transf_estado','finkap_transf_user','finkap_transf_ocultas','finkap_planilla_stock'].forEach(function(k){ localStorage.removeItem(k); }); }catch(e){}
           btn.textContent='✓ Publicado'; msg('✓ Publicado (pagos + alertas + gestiones). La web se actualiza en ~1 min. Recargando…','#46d39a');
           setTimeout(function(){ location.reload(); }, 1800);
         } else { throw new Error('git push code '+(data&&data.code)); }
@@ -821,7 +829,9 @@ window.addEventListener('error', function(){
     // Galpón se SINCRONIZA con el stock vivo de admin2 (window.STOCK_VIVO), por origen
     function origenPlan(nom){ const n=(nom||'').toLowerCase(); if(/honduras/.test(n))return'Honduras'; if(/brasil|brazil/.test(n))return'Brasil'; if(/colombia/.test(n))return'Colombia'; if(/bolivia/.test(n))return'Bolivia'; if(/per[uú]/.test(n))return'Perú'; if(/vietnam|robusta/.test(n))return'Vietnam'; return null; }
     const a2={}; if(window.STOCK_VIVO && window.STOCK_VIVO.items){ window.STOCK_VIVO.items.forEach(it=>{ const o=origenPlan(it.nombre); if(!o) return; const mB=/bolsa\s*gv\s*([\d.]+)\s*kg/i.exec(it.nombre||''); a2[o]=(a2[o]||0)+(mB?(it.stock*(parseFloat(mB[1])||0)):it.stock); }); }
-    const seed={}; D.stock.porOrigen.forEach(o=>{ seed[o.origen+'|galpon']=(a2[o.origen]!=null?Math.round(a2[o.origen]):o.local); seed[o.origen+'|fiscal']=o.fiscal; });
+    const seed={}; D.stock.porOrigen.forEach(o=>{ seed[o.origen+'|galpon']=(a2[o.origen]!=null?Math.round(a2[o.origen]):o.local); seed[o.origen+'|fiscal']=o.fiscal;
+      // campos que pueden venir publicados desde la PC (planilla aplanada en data): Santa Fe / Mendoza / en tránsito / arribo
+      if(o.sf!=null) seed[o.origen+'|sf']=o.sf; if(o.mza!=null) seed[o.origen+'|mza']=o.mza; if(o.transito!=null) seed[o.origen+'|transito']=o.transito; if(o.arribo!=null && o.arribo!=='') seed[o.origen+'|arribo']=o.arribo; });
     function planVal(origen,campo){ const ov=planOv(), k=origen+'|'+campo; if(ov[k]!=null && ov[k]!=='') return +ov[k]; if(seed[k]!=null) return +seed[k]; return null; }
     function planInput(origen,campo){ const ov=planOv(), k=origen+'|'+campo, ed=(ov[k]!=null && ov[k]!==''), v=planVal(origen,campo);
       return `<input class="plan-in" data-k="${k}" value="${ed?ov[k]:''}" placeholder="${v!=null?kgf(v):'—'}" inputmode="decimal" style="width:78px;text-align:right;background:#0e0e11;border:1px solid ${ed?'var(--orange-line)':'var(--line2)'};border-radius:6px;color:${ed?'var(--orange)':'var(--text)'};font-family:var(--mono);font-size:12px;padding:4px 6px">`; }

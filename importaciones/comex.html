@@ -421,6 +421,13 @@ renderLista(); renderHist();
       const ocT=LS('finkap_transf_ocultas','[]'), trOv=LS('finkap_transf_estado','{}'), usT=LS('finkap_transf_user','[]');
       const transfEf=(D.transferencias||[]).map(t=>Object.assign({},t,{_user:false})).concat(usT.map(t=>Object.assign({},t,{_user:true}))).filter(t=>ocT.indexOf(trKey(t))<0).map(t=>{ const c=Object.assign({},t); c.estado=trOv[trKey(t)]||t.estado||'lista'; delete c._user; return c; });
       const Dnew = Object.assign({}, D, { pagos: pagosC, alertas: alertasEf, transferencias: transfEf });
+      // stock planilla por depósito (café en tránsito, etc.) — aplanar dentro del stock publicado
+      if(Dnew.stock && Dnew.stock.porOrigen){
+        const planOv=LS('finkap_planilla_stock','{}');
+        Dnew.stock=Object.assign({},Dnew.stock,{ porOrigen: Dnew.stock.porOrigen.map(o=>{ const c=Object.assign({},o);
+          ['sf','mza','transito','fiscal'].forEach(k=>{ const v=planOv[o.origen+'|'+k]; if(v!=null && v!=='') c[k]=+v; });
+          const ar=planOv[o.origen+'|arribo']; if(ar!=null && ar!=='') c.arribo=ar; return c; }) });
+      }
       const enc = await finkapEncrypt(Dnew, clave);
       btn.textContent='📤 Subiendo…'; msg('Subiendo a GitHub…');
       const resp = await fetch(SERVIDOR+'/publicar-torre', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ enc, dataObj: Dnew }) });
@@ -430,7 +437,7 @@ renderLista(); renderHist();
         try{ sessionStorage.setItem('finkap_impo_v1', JSON.stringify(Dnew));
              const fp=(enc.salt||'')+'.'+(enc.iv||''); sessionStorage.setItem('finkap_impo_fp_v1', fp);
              if(localStorage.getItem('finkap_impo_persist_v1')){ localStorage.setItem('finkap_impo_persist_v1', JSON.stringify(Dnew)); localStorage.setItem('finkap_impo_persist_fp_v1', fp); } }catch(e){}
-        try{ ARMADOS.length=0; ['finkap_comex_paquetes','finkap_pagos_mov','finkap_alertas_ocultas','finkap_alertas_user','finkap_transf_estado','finkap_transf_user','finkap_transf_ocultas'].forEach(k=>{ if(k==='finkap_comex_paquetes') localStorage.setItem(k,'[]'); else localStorage.removeItem(k); }); }catch(e){}
+        try{ ARMADOS.length=0; ['finkap_comex_paquetes','finkap_pagos_mov','finkap_alertas_ocultas','finkap_alertas_user','finkap_transf_estado','finkap_transf_user','finkap_transf_ocultas','finkap_planilla_stock'].forEach(k=>{ if(k==='finkap_comex_paquetes') localStorage.setItem(k,'[]'); else localStorage.removeItem(k); }); }catch(e){}
         btn.textContent='✓ Publicado';
         msg('✓ Publicado y bajado al saldo. La web se actualiza en ~1 min. Recargando…','#46d39a');
         setTimeout(()=>location.reload(), 1800);
