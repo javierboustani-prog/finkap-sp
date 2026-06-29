@@ -145,14 +145,17 @@ input:focus,select:focus{border-color:var(--orange)}
     <h2>↔ Sincronizar con la Torre</h2>
     <div class="mini" id="syncInfo" style="margin-bottom:10px"></div>
     <div class="actions" style="margin-top:0">
+      <button class="btn" id="pubWebBtn" style="display:none">📤 Publicar a la web (cifrado)</button>
       <button class="btn ghost" id="persistBtn">💾 Copiar pagos actualizados (para data.js)</button>
       <a id="clearPaid" href="#" class="mini" style="align-self:center;color:var(--muted)">limpiar registro de giros (esta PC)</a>
     </div>
-    <div class="note">Los giros que registrás acá <b>ya actualizan el saldo en la Torre</b> (en este equipo). Para que quede <b>permanente</b> y en otros dispositivos: tocá "Copiar pagos actualizados", pegalo reemplazando el array <code>pagos</code> en <code>importaciones/data.js</code>, cifrá con <code>encriptar-datos.html</code> y deployá. Después tocá "limpiar registro de giros".</div>
+    <div class="mini" id="pubWebMsg" style="margin-top:8px;min-height:16px;color:var(--muted)"></div>
+    <div class="note"><b>📤 Publicar a la web</b> (un click): baja estos giros al archivo cifrado, lo sube y queda visible para todos en ~1 min. Mantené abierto "Servidor de saldos.cmd".<br><span style="opacity:.8">Manual (alternativa): "Copiar pagos actualizados" → pegá en <code>importaciones/data.js</code> → cifrá con <code>encriptar-datos.html</code> → deployá.</span> Después tocá "limpiar registro de giros".</div>
     <div class="paquete" id="syncOut" style="display:none"></div>
   </div>
 </div>
 
+<script src="../finkap-cripto.js"></script>
 <script>
 const $=id=>document.getElementById(id);
 const D=(function(){ try{ const d=JSON.parse(sessionStorage.getItem('finkap_impo_v1')); if(d) return d; }catch(e){} location.replace('entrar.html'); return null; })();
@@ -384,6 +387,46 @@ $('persistBtn').addEventListener('click',()=>{
 });
 
 renderLista(); renderHist();
+
+/* ===== PUBLICAR A LA WEB (un click) =====
+   Baja los giros del COMEX (ARMADOS) al array `pagos`, re-cifra TODO el data de la
+   Torre con la clave del equipo y lo sube vía el servidor local. La web queda igual
+   que tu escritorio. Solo aparece en local (no en github.io). */
+(function(){
+  const esLocal = (location.protocol==='file:' || /^(127\.0\.0\.1|localhost)$/.test(location.hostname));
+  const btn=$('pubWebBtn'); if(!btn) return;
+  if(esLocal) btn.style.display='';
+  const SERVIDOR = (window.KM_SALDOS_API ? String(window.KM_SALDOS_API).replace(/\/[^\/]*$/,'') : 'http://127.0.0.1:8787');
+  function msg(t,col){ const m=$('pubWebMsg'); if(m){ m.textContent=t; m.style.color=col||'var(--muted)'; } }
+  btn.addEventListener('click', async ()=>{
+    if(typeof finkapEncrypt!=='function'){ msg('Falta finkap-cripto.js, no puedo cifrar.','#ef5350'); return; }
+    if(!confirm('Publicar a la web: baja '+ARMADOS.length+' giro(s) al saldo de la Torre y lo sube para todos. ¿Seguir?')) return;
+    let clave=''; try{ clave=localStorage.getItem('km_pub_clave')||''; }catch(e){}
+    if(!clave){ clave=window.prompt('Clave del equipo para cifrar la Torre\n(la MISMA que usan para entrar):'); if(!clave) return; try{ localStorage.setItem('km_pub_clave',clave); }catch(e){} }
+    const orig=btn.textContent; btn.disabled=true; btn.textContent='🔐 Cifrando…'; msg('Cifrando…');
+    try{
+      const Dnew = Object.assign({}, D, { pagos: pagosActualizados() });   // giros aplicados al saldo
+      const enc = await finkapEncrypt(Dnew, clave);
+      btn.textContent='📤 Subiendo…'; msg('Subiendo a GitHub…');
+      const resp = await fetch(SERVIDOR+'/publicar-torre', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ enc, dataObj: Dnew }) });
+      const data = await resp.json();
+      if(data && data.ok){
+        // dejar el escritorio consistente: nueva data en sesión, registro de giros limpio
+        try{ sessionStorage.setItem('finkap_impo_v1', JSON.stringify(Dnew));
+             const fp=(enc.salt||'')+'.'+(enc.iv||''); sessionStorage.setItem('finkap_impo_fp_v1', fp);
+             if(localStorage.getItem('finkap_impo_persist_v1')){ localStorage.setItem('finkap_impo_persist_v1', JSON.stringify(Dnew)); localStorage.setItem('finkap_impo_persist_fp_v1', fp); } }catch(e){}
+        try{ ARMADOS.length=0; localStorage.setItem('finkap_comex_paquetes','[]'); }catch(e){}
+        btn.textContent='✓ Publicado';
+        msg('✓ Publicado y bajado al saldo. La web se actualiza en ~1 min. Recargando…','#46d39a');
+        setTimeout(()=>location.reload(), 1800);
+      } else { throw new Error('git push code '+(data&&data.code)); }
+    }catch(e){
+      btn.textContent='⚠ Error'; btn.disabled=false;
+      msg('No se pudo publicar (¿Servidor de saldos.cmd abierto? '+(e&&e.message||e)+').','#ef5350');
+      setTimeout(()=>{ btn.textContent=orig; }, 2600);
+    }
+  });
+})();
 </script>
 </body>
 </html>
