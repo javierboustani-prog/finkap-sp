@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Kapselmaker · Disponibilidades</title>
+<meta name="robots" content="noindex,nofollow">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0d0d0f; --panel:#17171b; --panel2:#1d1d22; --panel3:#222228;
+  --line:#2c2c33; --line2:#3a3a43; --text:#f5f5f7; --muted:#9b9ba6; --muted2:#6f6f7a;
+  --accent:#F97316; --ok:#46d39a; --bad:#ef5350; --warn:#e0a44e; --blue:#7cc4ff; --violet:#b58bff;
+  --radius:16px; --mono:"JetBrains Mono",ui-monospace,Consolas,monospace; --sans:"Inter",system-ui,sans-serif;
+}
+*{box-sizing:border-box} html,body{margin:0;padding:0}
+body{background:radial-gradient(1200px 600px at 85% -10%, rgba(249,115,22,.10), transparent 60%),var(--bg);color:var(--text);font-family:var(--sans);font-size:14px;-webkit-font-smoothing:antialiased;letter-spacing:-.01em;min-height:100vh}
+.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.shell{max-width:1100px;margin:0 auto;padding:26px 20px 80px}
+.head{display:flex;align-items:center;gap:11px;margin-bottom:8px}
+.brand{display:flex;align-items:center;gap:9px;font-weight:800;font-size:19px;letter-spacing:-.02em;text-decoration:none;color:inherit}
+.brand .dot{width:28px;height:28px;border-radius:50%;border:2.5px solid var(--accent);display:grid;place-items:center;color:var(--accent);font-weight:900;font-size:15px}
+.clock{margin-left:auto;font-size:12px;color:var(--muted);font-family:var(--mono)}
+h1{font-size:clamp(20px,3vw,27px);font-weight:800;letter-spacing:-.03em;margin:8px 0 2px}
+h1 .ac{color:var(--accent)}
+.sub{color:var(--muted);margin:0 0 16px}
+.tot{display:grid;grid-template-columns:repeat(auto-fit,minmax(185px,1fr));gap:12px;margin:14px 0 20px}
+.tcard{background:linear-gradient(160deg,var(--panel2),var(--panel));border:1px solid var(--line);border-radius:var(--radius);padding:16px 18px}
+.tcard .k{font-size:10px;text-transform:uppercase;letter-spacing:.7px;color:var(--muted2)}
+.tcard .v{font-family:var(--mono);font-size:27px;font-weight:800;margin-top:5px;line-height:1.05}
+.tcard.disp{border-color:rgba(70,211,154,.4)} .tcard.disp .v{color:var(--ok)}
+.tcard.acred{border-color:rgba(124,196,255,.4)} .tcard.acred .v{color:var(--blue)}
+.tcard.descub{border-color:rgba(181,139,255,.4)} .tcard.descub .v{color:var(--violet)}
+.tcard.total{border-color:var(--accent)} .tcard.total .v{color:var(--accent)}
+.tcard .s{font-size:11px;color:var(--muted);margin-top:3px}
+.fxbar{font-size:11px;color:var(--muted2);margin:-8px 0 14px;font-family:var(--mono)}
+.fxbar b{color:var(--muted)}
+.tbl-wrap{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);overflow:auto}
+table{width:100%;border-collapse:collapse;font-size:13px;min-width:640px}
+thead th{position:sticky;top:0;background:var(--panel3);text-align:right;font-size:9.5px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);font-weight:700;padding:10px 13px;white-space:nowrap;border-bottom:1px solid var(--line2)}
+thead th:first-child{text-align:left}
+td{padding:9px 13px;text-align:right;border-top:1px solid var(--line);white-space:nowrap}
+td.name{text-align:left;font-weight:600}
+tbody tr:hover{background:var(--panel2)}
+.grp td{background:var(--panel2);font-size:10px;text-transform:uppercase;letter-spacing:.7px;color:var(--muted2);font-weight:700;text-align:left;padding:8px 13px;border-top:1px solid var(--line2)}
+.sub-row td{font-weight:700;border-top:1px solid var(--line2);background:rgba(255,255,255,.02)}
+.zero{color:var(--muted2)}
+.neg{color:var(--bad)}
+.tag{font-size:9px;text-transform:uppercase;letter-spacing:.4px;font-weight:700;padding:1px 7px;border-radius:99px;margin-left:7px}
+.tag.live{color:var(--ok);background:rgba(70,211,154,.12);border:1px solid rgba(70,211,154,.35)}
+.tag.old{color:var(--warn);background:rgba(224,164,78,.1);border:1px solid rgba(224,164,78,.3)}
+.fecha{font-size:11px;color:var(--muted2)}
+.foot{margin-top:18px;font-size:11px;color:var(--muted2);line-height:1.7;max-width:820px}
+.foot b{color:var(--muted)}
+.stamp{font-size:11px;color:var(--muted2);margin:0 0 10px;font-family:var(--mono)}
+.salir{font-size:11px;color:var(--muted);text-decoration:none;border:1px solid var(--line2);border-radius:99px;padding:3px 10px;margin-left:8px}
+</style>
+</head>
+<body>
+<div class="shell">
+  <div class="head">
+    <a href="../inicio.html" class="brand"><span class="dot">k</span> Kapselmaker</a>
+    <span class="clock" id="clock">—</span>
+  </div>
+  <h1>Disponibilidades <span class="ac">a la fecha</span></h1>
+  <p class="sub">Dinero disponible y por acreditarse, por banco y billetera. <b style="color:var(--muted)">Vista del equipo</b> · se actualiza cuando se publica desde la PC.</p>
+
+  <div class="stamp" id="stamp">—<a href="#" class="salir" id="salir">cerrar sesión</a></div>
+  <div class="fxbar" id="fxbar">Dólar oficial: <b>—</b></div>
+
+  <div class="tot">
+    <div class="tcard disp"><div class="k">Disponible</div><div class="v" id="tDisp">—</div><div class="s">saldo real (sin descubierto)</div></div>
+    <div class="tcard acred"><div class="k">Por acreditarse</div><div class="v" id="tAcred">—</div><div class="s">cheques + futuros ingresos</div></div>
+    <div class="tcard descub"><div class="k">Descubierto</div><div class="v" id="tDescub">—</div><div class="s">acuerdo disponible (colchón)</div></div>
+    <div class="tcard total"><div class="k">Margen operativo</div><div class="v" id="tTotal">—</div><div class="s" id="tTotalS">disponible + acreditarse + descubierto</div></div>
+  </div>
+
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr>
+        <th>Cuenta</th><th>Disponible</th><th>Por acreditarse</th><th>Descubierto</th><th>Actualizado</th>
+      </tr></thead>
+      <tbody id="tbody"></tbody>
+    </table>
+  </div>
+
+  <div class="foot">
+    <b style="color:var(--ok)">En vivo</b> = leído del banco en el último barrido. <b style="color:var(--warn)">Planilla</b> = valor manual pendiente de actualizar.<br>
+    <b>USD:</b> las cuentas en dólares ya están convertidas a pesos al oficial usado en la PC al publicar.
+  </div>
+</div>
+<script>
+const $ = id => document.getElementById(id);
+const fmt = (v) => (v==null||isNaN(v)) ? '—' : (+v).toLocaleString('es-AR',{minimumFractionDigits:2,maximumFractionDigits:2});
+const ars = (v) => '$ ' + fmt(v);
+function cell(v, cls){
+  if(!v){ return `<td class="mono zero">$ —</td>`; }
+  const neg = v<0;
+  return `<td class="mono ${neg?'neg':''} ${cls||''}">${neg?'-':''}$ ${fmt(Math.abs(v))}</td>`;
+}
+function tick(){ const d=new Date(); $('clock').textContent = d.toLocaleDateString('es-AR',{weekday:'short',day:'2-digit',month:'short'})+' · '+d.toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'}); }
+tick(); setInterval(tick,30000);
+
+// --- leer la foto descifrada (la dejó entrar.html en sessionStorage) ---
+let SNAP=null;
+try{ SNAP = JSON.parse(sessionStorage.getItem('finkap_saldos_v1')); }catch(e){}
+if(!SNAP || !Array.isArray(SNAP.cuentas)){ location.replace('entrar.html'); }
+
+function render(){
+  // las cuentas ya vienen con disponible/acreditarse en ARS (convertido en la PC)
+  const grupos = [...new Set(SNAP.cuentas.map(r=>r.grupo))];
+  let html=''; let gD=0,gA=0,gC=0;
+  grupos.forEach(g=>{
+    const rows = SNAP.cuentas.filter(r=>r.grupo===g);
+    html += `<tr class="grp"><td colspan="5">${g}</td></tr>`;
+    let sD=0,sA=0,sC=0;
+    rows.forEach(r=>{
+      const d=+r.disponible||0, a=+r.por_acreditarse||0, c=+r.descubierto||0;
+      sD+=d; sA+=a; sC+=c;
+      const usd = (r.moneda==='USD') ? ` <span class="fecha">(USD)</span>` : '';
+      html += `<tr>
+        <td class="name">${r.cuenta}${usd}<span class="tag ${r.en_vivo?'live':'old'}">${r.en_vivo?'en vivo':'planilla'}</span></td>
+        ${cell(d)}${cell(a)}${cell(c)}
+        <td><span class="fecha">${r.actualizado||''}</span></td>
+      </tr>`;
+    });
+    html += `<tr class="sub-row"><td class="name">Subtotal ${g}</td>${cell(sD)}${cell(sA)}${cell(sC)}<td></td></tr>`;
+    gD+=sD; gA+=sA; gC+=sC;
+  });
+  $('tbody').innerHTML = html;
+  const T = SNAP.totales || {disponible:gD,por_acreditarse:gA,descubierto:gC};
+  $('tDisp').textContent   = ars(T.disponible);
+  $('tAcred').textContent  = ars(T.por_acreditarse);
+  $('tDescub').textContent = ars(T.descubierto);
+  $('tTotal').textContent  = ars((T.disponible||0)+(T.por_acreditarse||0)+(T.descubierto||0));
+  $('tTotalS').textContent = 'plata real $' + fmt((T.disponible||0)+(T.por_acreditarse||0)) + ' + descubierto';
+  if(SNAP.tc_oficial) $('fxbar').innerHTML = 'Dólar oficial usado: <b>$'+fmt(SNAP.tc_oficial)+'</b>';
+  // sello de cuándo se publicó
+  let f=null; try{ f = SNAP.leido ? new Date(SNAP.leido) : null; }catch(e){}
+  const cuando = f ? (f.toLocaleDateString('es-AR',{day:'2-digit',month:'short'})+' '+f.toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'})) : (SNAP.fecha||'—');
+  $('stamp').innerHTML = 'Publicado: '+cuando+'<a href="#" class="salir" id="salir">cerrar sesión</a>';
+  document.getElementById('salir').addEventListener('click', e=>{ e.preventDefault();
+    try{ ['finkap_saldos_v1','finkap_saldos_fp_v1'].forEach(k=>sessionStorage.removeItem(k));
+         ['finkap_saldos_persist_v1','finkap_saldos_persist_fp_v1'].forEach(k=>localStorage.removeItem(k)); }catch(_){}
+    location.replace('entrar.html'); });
+}
+if(SNAP && Array.isArray(SNAP.cuentas)) render();
+</script>
+</body>
+</html>

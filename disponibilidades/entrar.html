@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Disponibilidades — acceso</title>
+<meta name="robots" content="noindex,nofollow">
+<style>
+body{margin:0;background:#0d0d0f;color:#f5f5f7;font-family:Inter,system-ui,-apple-system,sans-serif;min-height:100vh;display:grid;place-items:center;padding:20px}
+.card{width:320px;max-width:90vw;text-align:center}
+.dot{width:46px;height:46px;border-radius:50%;border:2.5px solid #F97316;display:grid;place-items:center;color:#F97316;font-weight:900;font-size:22px;margin:0 auto 16px}
+h1{font-weight:800;font-size:18px;margin:0 0 4px}
+p{color:#9b9ba6;font-size:12px;margin:0 0 16px;line-height:1.5}
+input{width:100%;padding:11px 12px;border-radius:10px;border:1px solid #3a3a43;background:#222228;color:#f5f5f7;font-size:14px;outline:none;font-family:inherit;margin-bottom:8px}
+input:focus{border-color:rgba(249,115,22,.45)}
+.err{color:#ef5350;font-size:12px;min-height:16px;margin-bottom:8px}
+button{width:100%;padding:11px;border-radius:10px;border:none;background:#F97316;color:#fff;font-weight:700;font-size:14px;cursor:pointer;font-family:inherit}
+button:disabled{opacity:.5}
+.back{display:inline-block;margin-top:14px;color:#9b9ba6;font-size:12px;text-decoration:none}
+.lock{font-size:9px;text-transform:uppercase;letter-spacing:.6px;color:#46d39a;margin-top:12px}
+</style>
+</head>
+<body>
+  <div class="card">
+    <div class="dot">k</div>
+    <h1>Disponibilidades</h1>
+    <p>Saldos cifrados. Ingresá la clave del equipo para ver el tablero.</p>
+    <input id="pw" type="password" autocomplete="current-password" placeholder="Clave">
+    <div class="err" id="err"></div>
+    <button id="go">Entrar</button>
+    <label for="rm" style="display:flex;align-items:center;justify-content:center;gap:7px;margin-top:12px;color:#9b9ba6;font-size:12px;cursor:pointer;user-select:none">
+      <input id="rm" type="checkbox" checked style="width:15px;height:15px;accent-color:#F97316;cursor:pointer">Recordar en este equipo</label>
+    <div class="lock">🔒 Cifrado AES — sin la clave, ilegible</div>
+    <a class="back" href="../inicio.html">← Volver al inicio</a>
+  </div>
+<script src="saldos.enc.js"></script>
+<script src="../finkap-cripto.js"></script>
+<script>
+const $=id=>document.getElementById(id);
+const KEY='finkap_saldos_v1';          // datos descifrados de esta sesión
+const PKEY='finkap_saldos_persist_v1'; // equipo recordado
+const FKEY='finkap_saldos_fp_v1';      // huella de versión (sesión)
+const PFKEY='finkap_saldos_persist_fp_v1';
+const FP = window.SALDOS_ENC ? ((window.SALDOS_ENC.salt||'')+'.'+(window.SALDOS_ENC.iv||'')) : '';
+try{ if(JSON.parse(sessionStorage.getItem(KEY)) && sessionStorage.getItem(FKEY)===FP) location.replace('panel.html');
+     else { sessionStorage.removeItem(KEY); sessionStorage.removeItem(FKEY); } }catch(e){}
+try{ const saved=localStorage.getItem(PKEY);
+     if(saved && JSON.parse(saved) && localStorage.getItem(PFKEY)===FP){ sessionStorage.setItem(KEY, saved); sessionStorage.setItem(FKEY, FP); location.replace('panel.html'); }
+     else if(saved && localStorage.getItem(PFKEY)!==FP){ localStorage.removeItem(PKEY); localStorage.removeItem(PFKEY); } }catch(e){}
+
+async function go(){
+  $('err').textContent=''; $('go').disabled=true; $('go').textContent='Descifrando…';
+  try{
+    if(!window.SALDOS_ENC) throw new Error('Faltan los datos cifrados (saldos.enc.js).');
+    const data = await finkapDecrypt(window.SALDOS_ENC, $('pw').value);
+    const blob = JSON.stringify(data);
+    sessionStorage.setItem(KEY, blob); sessionStorage.setItem(FKEY, FP);
+    try{ if($('rm').checked){ localStorage.setItem(PKEY, blob); localStorage.setItem(PFKEY, FP); } else { localStorage.removeItem(PKEY); localStorage.removeItem(PFKEY); } }catch(e){}
+    location.replace('panel.html');
+  }catch(e){
+    $('err').textContent = 'Clave incorrecta.';
+    $('go').disabled=false; $('go').textContent='Entrar'; $('pw').value=''; $('pw').focus();
+  }
+}
+$('go').addEventListener('click', go);
+$('pw').addEventListener('keydown', e=>{ if(e.key==='Enter') go(); });
+$('pw').focus();
+</script>
+</body>
+</html>
