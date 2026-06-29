@@ -256,9 +256,10 @@ td.r,th.r{text-align:right}
     <tbody id="pagBody"></tbody>
   </table></div>
   <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:10px">
+    <button id="pagPubWeb" style="display:none;font-size:11.5px;font-weight:700;border-radius:7px;padding:6px 12px;background:var(--orange,#F97316);border:1px solid var(--orange,#F97316);color:#fff;cursor:pointer">📤 Publicar a la web</button>
     <button id="pagExport" style="font-size:11.5px;border-radius:7px;padding:6px 11px;background:var(--panel2);border:1px solid var(--line2);color:var(--text);cursor:pointer">💾 Copiar pagos para data.js</button>
     <a id="pagClear" href="#" style="font-size:11px;color:var(--muted)">limpiar marcas (este equipo)</a>
-    <span style="font-size:11px;color:var(--muted2)">Los pagos que marcás se guardan en este equipo y actualizan saldos al instante — para dejarlo permanente, copiá y pegalo en data.js.</span>
+    <span id="pagPubMsg" style="font-size:11px;color:var(--muted2)">Los pagos que marcás se guardan en este equipo y actualizan saldos al instante. <b>📤 Publicar a la web</b> los baja al archivo cifrado y los sube para todos (~1 min).</span>
   </div>
   <textarea id="pagOut" readonly style="display:none;width:100%;height:120px;margin-top:8px;background:#0b0b0d;border:1px solid var(--line);border-radius:8px;color:#7ee0a0;font-family:var(--mono);font-size:11px;padding:10px"></textarea>
 
@@ -336,6 +337,7 @@ td.r,th.r{text-align:right}
 </div>
 <script src="data.enc.js"></script>
 <script src="stock-vivo.js"></script>
+<script src="../finkap-cripto.js"></script>
 <script>
 // red de seguridad: si algo del render falla, mostrar un cartel en vez de quedar a medio pintar (crash mudo)
 window.addEventListener('error', function(){
@@ -673,6 +675,41 @@ window.addEventListener('error', function(){
     out.style.display='block'; out.select(); try{ navigator.clipboard.writeText(out.value); }catch(e){}
   });
   document.getElementById("pagClear").addEventListener('click', function(ev){ ev.preventDefault(); if(confirm('¿Borrar las marcas de pago de este equipo? (no toca data.js ni los giros de COMEX)')){ localStorage.removeItem(PAGMOV_KEY); renderPagos(); } });
+
+  /* ===== PUBLICAR A LA WEB (un click) — baja COMEX + pagos manuales al cifrado y lo sube ===== */
+  (function(){
+    var btn=document.getElementById('pagPubWeb'); if(!btn) return;
+    var esLocal=(location.protocol==='file:' || /^(127\.0\.0\.1|localhost)$/.test(location.hostname));
+    if(esLocal) btn.style.display='';
+    var SERVIDOR=(window.KM_SALDOS_API?String(window.KM_SALDOS_API).replace(/\/[^\/]*$/,''):'http://127.0.0.1:8787');
+    function msg(t,c){ var m=document.getElementById('pagPubMsg'); if(m){ m.innerHTML=t; m.style.color=c||'var(--muted2)'; } }
+    btn.addEventListener('click', async function(){
+      if(typeof finkapEncrypt!=='function'){ msg('Falta finkap-cripto.js, no puedo cifrar.','#ef5350'); return; }
+      if(!confirm('Publicar a la web: baja los pagos/giros que marcaste al saldo de la Torre y lo sube para todos. ¿Seguir?')) return;
+      var clave=''; try{ clave=localStorage.getItem('km_pub_clave')||''; }catch(e){}
+      if(!clave){ clave=window.prompt('Clave del equipo para cifrar la Torre\n(la MISMA que usan para entrar):'); if(!clave) return; try{ localStorage.setItem('km_pub_clave',clave); }catch(e){} }
+      var orig=btn.textContent; btn.disabled=true; btn.textContent='🔐 Cifrando…'; msg('Cifrando…');
+      try{
+        applyPagos();  // asegura que D.pagos tenga COMEX + manuales bajados
+        var enc=await finkapEncrypt(D, clave);
+        btn.textContent='📤 Subiendo…'; msg('Subiendo a GitHub…');
+        var resp=await fetch(SERVIDOR+'/publicar-torre',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({enc, dataObj:D})});
+        var data=await resp.json();
+        if(data && data.ok){
+          try{ sessionStorage.setItem('finkap_impo_v1', JSON.stringify(D));
+               var fp=(enc.salt||'')+'.'+(enc.iv||''); sessionStorage.setItem('finkap_impo_fp_v1', fp);
+               if(localStorage.getItem('finkap_impo_persist_v1')){ localStorage.setItem('finkap_impo_persist_v1', JSON.stringify(D)); localStorage.setItem('finkap_impo_persist_fp_v1', fp); } }catch(e){}
+          try{ localStorage.removeItem(PAGMOV_KEY); localStorage.setItem('finkap_comex_paquetes','[]'); }catch(e){}
+          btn.textContent='✓ Publicado'; msg('✓ Publicado. La web se actualiza en ~1 min. Recargando…','#46d39a');
+          setTimeout(function(){ location.reload(); }, 1800);
+        } else { throw new Error('git push code '+(data&&data.code)); }
+      }catch(e){
+        btn.textContent='⚠ Error'; btn.disabled=false;
+        msg('No se pudo publicar (¿Servidor de saldos.cmd abierto? '+((e&&e.message)||e)+').','#ef5350');
+        setTimeout(function(){ btn.textContent=orig; }, 2600);
+      }
+    });
+  })();
   renderPagos();
 
   // bancos

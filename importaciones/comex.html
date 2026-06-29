@@ -405,7 +405,11 @@ renderLista(); renderHist();
     if(!clave){ clave=window.prompt('Clave del equipo para cifrar la Torre\n(la MISMA que usan para entrar):'); if(!clave) return; try{ localStorage.setItem('km_pub_clave',clave); }catch(e){} }
     const orig=btn.textContent; btn.disabled=true; btn.textContent='🔐 Cifrando…'; msg('Cifrando…');
     try{
-      const Dnew = Object.assign({}, D, { pagos: pagosActualizados() });   // giros aplicados al saldo
+      // bajar AMBOS overlays al saldo: giros del COMEX + pagos manuales (finkap_pagos_mov, por id de pago)
+      const pagosC = pagosActualizados();
+      const movC = (function(){ try{ return JSON.parse(localStorage.getItem('finkap_pagos_mov')||'{}'); }catch(e){ return {}; } })();
+      pagosC.forEach(pg=>{ const ms=(movC[pg.id]||[]).reduce((s,m)=>s+(+m.monto||0),0); if(ms>0){ pg.pagado=(+pg.pagado||0)+ms; pg.saldo=Math.max(0,(+pg.facturaTotal||0)-pg.pagado); pg.estado=pg.saldo<=0.5?'cancelado':(pg.pagado>0?'parcial':pg.estado); } });
+      const Dnew = Object.assign({}, D, { pagos: pagosC });
       const enc = await finkapEncrypt(Dnew, clave);
       btn.textContent='📤 Subiendo…'; msg('Subiendo a GitHub…');
       const resp = await fetch(SERVIDOR+'/publicar-torre', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ enc, dataObj: Dnew }) });
@@ -415,7 +419,7 @@ renderLista(); renderHist();
         try{ sessionStorage.setItem('finkap_impo_v1', JSON.stringify(Dnew));
              const fp=(enc.salt||'')+'.'+(enc.iv||''); sessionStorage.setItem('finkap_impo_fp_v1', fp);
              if(localStorage.getItem('finkap_impo_persist_v1')){ localStorage.setItem('finkap_impo_persist_v1', JSON.stringify(Dnew)); localStorage.setItem('finkap_impo_persist_fp_v1', fp); } }catch(e){}
-        try{ ARMADOS.length=0; localStorage.setItem('finkap_comex_paquetes','[]'); }catch(e){}
+        try{ ARMADOS.length=0; localStorage.setItem('finkap_comex_paquetes','[]'); localStorage.removeItem('finkap_pagos_mov'); }catch(e){}
         btn.textContent='✓ Publicado';
         msg('✓ Publicado y bajado al saldo. La web se actualiza en ~1 min. Recargando…','#46d39a');
         setTimeout(()=>location.reload(), 1800);
