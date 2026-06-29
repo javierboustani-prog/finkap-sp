@@ -239,10 +239,10 @@ td.r,th.r{text-align:right}
     </div>
   </div>
 
-  <div class="sec"><h2>Stock físico (planilla del equipo · referencia)</h2><div class="ln"></div><span class="cnt" id="stockCnt"></span></div>
+  <div class="sec"><h2>Stock por depósito (editable)</h2><div class="ln"></div><span class="cnt" id="stockCnt"></span></div>
   <div class="kg-note" id="stockNote"></div>
   <div class="tbl-wrap"><table>
-    <thead><tr><th>Origen</th><th class="r">Galpón (local)</th><th class="r">Depósito fiscal</th><th class="r">En depósito (aduana)</th><th>Cruce / modalidad</th></tr></thead>
+    <thead><tr><th>Origen</th><th class="r">Galpón</th><th class="r">Santa Fe</th><th class="r">Mendoza</th><th class="r">Depósito fiscal</th><th class="r">Total</th></tr></thead>
     <tbody id="stockBody"></tbody>
   </table></div>
 
@@ -623,31 +623,63 @@ window.addEventListener('error', function(){
     renderSV();
   }
 
-  // stock físico (planilla del equipo) + cruce con aduana
+  // stock físico por depósito (editable en este equipo)
   if(D.stock){
-    const enDepTab = {};
-    D.embarques.forEach(e=>{ const pais=(provById(e.proveedorId)||{}).pais; if(!pais) return; enDepTab[pais]=(enDepTab[pais]||0)+(e.tipo==='IDA4'?(e.kg||0):-(e.kg||0)); });
-    document.getElementById("stockCnt").textContent = "fuente: planilla del equipo";
-    const desf=[];
-    document.getElementById("stockBody").innerHTML = D.stock.porOrigen.map(o=>{
-      const tab = enDepTab[o.origen];
-      let cruce;
-      if(tab==null) cruce = `<span class="tag st">${o.modalidad||'— no importado directo'}</span>`;
-      else if(Math.abs(tab-o.fiscal)<1) cruce = `<span class="tag ok">✓ coincide</span>`;
-      else { const d=Math.abs(tab-o.fiscal); desf.push(o.origen); cruce = `<span class="tag pend">⚠ desfasaje ${kgf(d)} kg</span>`; }
-      return `<tr><td><b>${o.origen}</b></td>`+
-        `<td class="r dospuntos">${kgf(o.local)}</td>`+
-        `<td class="r dospuntos">${o.fiscal==null?'<span style="color:var(--muted2)">—</span>':kgf(o.fiscal)}</td>`+
-        `<td class="r dospuntos">${tab==null?'—':kgf(tab)}</td>`+
-        `<td>${cruce}</td></tr>`;
-    }).join("");
-    const tl=D.stock.porOrigen.reduce((s,o)=>s+(o.local||0),0), tf=D.stock.porOrigen.reduce((s,o)=>s+(o.fiscal||0),0);
-    document.getElementById("stockNote").innerHTML = `<b>Conecta con la importación:</b> el café nacionalizado entra al galpón; lo que el tablero marca "en depósito" debe coincidir con el "depósito fiscal" de la planilla. `+
-      (desf.length ? `⚠ <b style="color:var(--warn)">Desfasaje en ${desf.join(', ')}</b> — ej. Honduras: ya nacionalizado en SRD (10/06) pero la planilla lo tiene aún en depósito fiscal (sin retirar físico).` : `✓ Todo cuadra.`)+
-      ` <span style="color:var(--muted2)">Total: galpón ${kgf(tl)} kg · depósito fiscal ${kgf(tf)} kg · leída ${fecha(D.stock.leida)}.</span>`;
+    const PLAN_KEY='finkap_planilla_stock';
+    const campos=['galpon','sf','mza','fiscal'];
+    function planOv(){ try{ return JSON.parse(localStorage.getItem(PLAN_KEY)||'{}'); }catch(e){ return {}; } }
+    function planSet(o){ localStorage.setItem(PLAN_KEY, JSON.stringify(o)); }
+    const seed={}; D.stock.porOrigen.forEach(o=>{ seed[o.origen+'|galpon']=o.local; seed[o.origen+'|fiscal']=o.fiscal; });
+    function planVal(origen,campo){ const ov=planOv(), k=origen+'|'+campo; if(ov[k]!=null && ov[k]!=='') return +ov[k]; if(seed[k]!=null) return +seed[k]; return null; }
+    function planInput(origen,campo){ const ov=planOv(), k=origen+'|'+campo, ed=(ov[k]!=null && ov[k]!==''), v=planVal(origen,campo);
+      return `<input class="plan-in" data-k="${k}" value="${ed?ov[k]:''}" placeholder="${v!=null?kgf(v):'—'}" inputmode="decimal" style="width:78px;text-align:right;background:#0e0e11;border:1px solid ${ed?'var(--orange-line)':'var(--line2)'};border-radius:6px;color:${ed?'var(--orange)':'var(--text)'};font-family:var(--mono);font-size:12px;padding:4px 6px">`; }
+    function renderPlan(){
+      const tot={galpon:0,sf:0,mza:0,fiscal:0};
+      document.getElementById('stockBody').innerHTML = D.stock.porOrigen.map(o=>{
+        const vals=campos.map(c=>planVal(o.origen,c)); vals.forEach((v,i)=>{ tot[campos[i]]+=(v||0); });
+        const rowTot=vals.reduce((s,v)=>s+(v||0),0);
+        const harmony = /harmony/i.test(o.modalidad||'') ? ' <span class="tag st" style="font-size:9px">Harmony</span>' : '';
+        return `<tr><td><b>${o.origen}</b>${harmony}</td>`+
+          campos.map(c=>`<td class="r">${planInput(o.origen,c)}</td>`).join('')+
+          `<td class="r dospuntos"><b>${kgf(rowTot)}</b></td></tr>`;
+      }).join('')+
+        `<tr class="tot"><td>TOTAL (kg)</td>`+campos.map(c=>`<td class="r dospuntos">${kgf(tot[c])}</td>`).join('')+`<td class="r dospuntos">${kgf(tot.galpon+tot.sf+tot.mza+tot.fiscal)}</td></tr>`;
+      document.getElementById('stockCnt').textContent = 'editable · '+kgf(tot.galpon+tot.sf+tot.mza+tot.fiscal)+' kg';
+    }
+    document.getElementById('stockBody').addEventListener('change', function(ev){
+      const inp=ev.target.closest && ev.target.closest('.plan-in'); if(!inp) return;
+      const k=inp.getAttribute('data-k'), ov=planOv(), v=inp.value.trim();
+      if(v===''||isNaN(parseFloat(v))){ delete ov[k]; } else { ov[k]=parseFloat(v); }
+      planSet(ov); renderPlan();
+    });
+    document.getElementById("stockNote").innerHTML = `Stock físico por depósito, <b>editable</b> (se guarda en este equipo, no toca data.js). <b>Galpón</b> = tu galpón · <b>Santa Fe / Mendoza</b> = locales · <b>Depósito fiscal</b> = grano que importa <b>Harmony</b> por vos y vas retirando/pagando (Colombia). Si un número ya está contabilizado en otro lado (ej. Honduras depósito fiscal), ponelo en 0. <a href="#" id="planClear" style="color:var(--muted)">limpiar ediciones</a>`;
+    var pc=document.getElementById('planClear'); if(pc) pc.addEventListener('click',function(ev){ ev.preventDefault(); if(confirm('¿Borrar tus ediciones de la planilla? (no toca data.js)')){ localStorage.removeItem(PLAN_KEY); renderPlan(); } });
+    renderPlan();
   }
 
   document.getElementById("foot").textContent = D.meta.nota;
+
+  // ── secciones colapsables (minimizar; se guarda en este equipo) ──
+  (function(){
+    const CK='finkap_torre_collapsed';
+    function gc(){ try{ return JSON.parse(localStorage.getItem(CK)||'null'); }catch(e){ return null; } }
+    function sc(a){ localStorage.setItem(CK, JSON.stringify(a)); }
+    let estado=gc();
+    if(estado==null){ estado=['☕ Granel — bolsas abiertas (en kg)','📦 Bolsas cerradas (sin abrir)']; sc(estado); } // 1ra vez: colapsar tablas largas
+    [...document.querySelectorAll('.sec')].forEach(function(sec){
+      const h2=sec.querySelector('h2'); if(!h2) return;
+      const title=h2.textContent.trim();
+      const content=[]; let n=sec.nextElementSibling;
+      while(n && !n.classList.contains('sec')){ content.push(n); n=n.nextElementSibling; }
+      if(!content.length) return;
+      const caret=document.createElement('span'); caret.style.cssText='cursor:pointer;margin-right:7px;color:var(--muted);font-size:12px;user-select:none';
+      h2.style.cursor='pointer';
+      function apply(c){ content.forEach(function(x){ x.style.display=c?'none':''; }); caret.textContent=c?'▸':'▾'; }
+      apply(gc().indexOf(title)>=0);
+      h2.insertBefore(caret, h2.firstChild);
+      h2.addEventListener('click',function(){ let c=gc()||[]; const i=c.indexOf(title); if(i>=0)c.splice(i,1); else c.push(title); sc(c); apply(c.indexOf(title)>=0); });
+    });
+  })();
 })();
 </script>
 </body>
