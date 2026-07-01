@@ -366,10 +366,10 @@ select.fld{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns
       <a href="inicio.html" title="Acceso del equipo" aria-label="Acceso equipo" style="opacity:.5">· equipo</a>
     </nav>
     <div class="tc">
-      <div class="tc-box"><span class="lbl">Dólar BNA · Compra</span><span class="num" id="tcCompra">—</span></div>
+      <div class="tc-box"><span class="lbl">Banco Nación · Compra</span><span class="num" id="tcCompra">—</span></div>
       <div class="tc-box">
-        <span class="lbl">Venta (TC)</span>
-        <input class="tc-edit num" id="tcVenta" inputmode="decimal" value="1430">
+        <span class="lbl">Venta BNA (TC)</span>
+        <input class="tc-edit num" id="tcVenta" inputmode="decimal" value="1510">
       </div>
       <span class="tc-src" id="tcSrc">cargando cotización…</span>
     </div>
@@ -555,8 +555,8 @@ const CONFIG = {
   SHEET_NAME: "Catalogo",
   WHATSAPP: "5491133345576",       // número destino del pedido
   TC_API: "https://dolarapi.com/v1/dolares/oficial", // dólar oficial (BNA)
-  TC_FALLBACK_COMPRA: 1380,
-  TC_FALLBACK_VENTA: 1430,
+  TC_FALLBACK_COMPRA: 1460,
+  TC_FALLBACK_VENTA: 1510,
   KC_FALLBACK: 265.0,   // Arábica Coffee C (¢/lb) si no hay conexión
   RC_FALLBACK: 4200,    // Robusta (USD/tonelada) — editable
   CAT_ORDER: ["Regional","Especialidad","Exótico","Robusta"]
@@ -1099,18 +1099,29 @@ async function sendPedido(){
    TC BNA
    ============================================================ */
 async function loadTC(){
+  // TC = la VENTA más cara del Banco Nación. Tomamos BNA puntual (criptoya) y el
+  // oficial (dolarapi) y nos quedamos con el MÁS CARO de los dos, para no facturar
+  // por debajo. Si ninguna fuente responde, cae al fallback (editable a mano).
+  let venta=0, compra=0, fuente="";
+  try{
+    const r=await fetchT("https://criptoya.com/api/bancostodos");
+    if(r.ok){ const j=await r.json(); const bna=j.bna||j.nacion;
+      if(bna && +bna.ask>0){ venta=+bna.ask; compra=+bna.bid||0; fuente="Banco Nación"; } }
+  }catch(e){}
   try{
     const r=await fetchT(CONFIG.TC_API);
-    if(!r.ok) throw 0;
-    const j=await r.json();
-    const venta=+j.venta, compra=+j.compra;
-    if(venta>0){ TC=venta; $("tcVenta").value=venta; }
-    $("tcCompra").textContent = compra>0?fmtN(compra):fmtN(CONFIG.TC_FALLBACK_COMPRA);
-    $("tcSrc").innerHTML = "fuente: <b>"+(j.fuente||"BNA")+"</b>";
-  }catch(e){
+    if(r.ok){ const j=await r.json();
+      if(+j.venta>venta){ venta=+j.venta; fuente=fuente?"BNA (oficial, más caro)":"BNA oficial"; }
+      if(!(compra>0) && +j.compra>0) compra=+j.compra; }
+  }catch(e){}
+  if(venta>0){
+    TC=venta; $("tcVenta").value=venta;
+    $("tcCompra").textContent = fmtN(compra>0?compra:CONFIG.TC_FALLBACK_COMPRA);
+    $("tcSrc").innerHTML = "fuente: <b>"+fuente+"</b> · venta más alta";
+  }else{
     TC=CONFIG.TC_FALLBACK_VENTA; $("tcVenta").value=TC;
     $("tcCompra").textContent=fmtN(CONFIG.TC_FALLBACK_COMPRA);
-    $("tcSrc").textContent="cotización manual";
+    $("tcSrc").textContent="sin conexión · cotización manual (editá el TC)";
   }
   recalc();
 }
