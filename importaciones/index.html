@@ -219,7 +219,7 @@ td.r,th.r{text-align:right}
     <tbody id="embBody"></tbody>
   </table></div>
 
-  <div class="sec"><h2>📦 Stock de grano verde — EN VIVO (admin2)</h2><div class="ln"></div><span class="cnt" id="svCnt"></span></div>
+  <div class="sec"><h2>📦 Stock de grano verde — EN VIVO (admin2)</h2><div class="ln"></div><span class="cnt" id="svCnt"></span><button id="svRefreshTop" style="margin-left:10px;font-size:12px;border-radius:8px;padding:7px 13px;background:rgba(124,196,255,.12);border:1px solid rgba(124,196,255,.45);color:var(--blue);cursor:pointer;font-weight:700;white-space:nowrap">🔄 Actualizar desde admin2</button></div>
   <div id="svWrap" style="display:none">
     <div class="kg-note" id="svNote"></div>
     <div class="kpis" id="svResumen" style="margin-bottom:14px"></div>
@@ -751,6 +751,24 @@ window.addEventListener('error', function(){
 
   // ── Stock de grano verde EN VIVO desde admin2 (overlay local stock-vivo.js) + correcciones ──
   const SV = window.STOCK_VIVO;
+  // refresh admin2 — botón del encabezado SIEMPRE disponible (ande o no el stock cargado)
+  (function(){
+    function pedirGrano(btn){ var orig=btn.textContent; btn.disabled=true; btn.textContent='⏳ Trayendo de admin2… (~40s)';
+      fetch('http://127.0.0.1:8787/grano',{cache:'no-store'}).then(function(r){return r.json();}).then(function(j){
+        if(j && j.ok){ btn.textContent='✓ Listo — recargando'; setTimeout(function(){ location.reload(); },700); }
+        else { btn.textContent='⚠ Error (code '+(j&&j.code)+')'; btn.disabled=false; setTimeout(function(){ btn.textContent=orig; },3000); }
+      }).catch(function(){ btn.textContent='⚠ ¿"Servidor de saldos.cmd" abierto?'; btn.disabled=false; setTimeout(function(){ btn.textContent=orig; },3500); });
+    }
+    var esLocal=(location.protocol==='file:' || /^(127\.0\.0\.1|localhost)$/.test(location.hostname));
+    var top=document.getElementById('svRefreshTop');
+    if(top){ if(esLocal){ top.addEventListener('click', function(){ pedirGrano(this); }); } else { top.style.display='none'; } }
+    // si NO hay stock en pantalla, mostrar igual la sección con un aviso (para no quedar sin botón/dato)
+    if(!(SV && SV.items && SV.items.length)){
+      var w=document.getElementById('svWrap'); if(w) w.style.display='block';
+      var rs=document.getElementById('svResumen'); if(rs) rs.innerHTML='<div class="kg-note" style="color:var(--warn)">No hay stock cargado en pantalla. Tocá <b>🔄 Actualizar desde admin2</b> (arriba) para traerlo (~40s). Requiere "Servidor de saldos.cmd" abierto.</div>';
+      var inner=document.getElementById('svRefresh'); if(inner) inner.addEventListener('click', function(){ pedirGrano(this); });
+    }
+  })();
   if(SV && SV.items && SV.items.length){
     document.getElementById('svWrap').style.display='block';
     const SVCORR_KEY='finkap_stock_correc';

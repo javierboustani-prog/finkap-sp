@@ -1,19 +1,19 @@
 window.STOCK_VIVO = {
- "generado": "2026-06-29 14:20:26",
+ "generado": "2026-07-01 15:51:01",
  "fuente": "admin2 /productos.md?tipos=Grano Verde · stock en vivo",
  "totalSkus": 352,
- "conStock": 121,
- "totalStock": 2204.1,
- "granelKg": 1682,
- "bolsasCount": 522,
- "bolsasKg": 24955,
+ "conStock": 120,
+ "totalStock": 2418.53,
+ "granelKg": 1938,
+ "bolsasCount": 481,
+ "bolsasKg": 23015,
  "items": [
   {
    "sku": "GRVMOKAESPECIAL",
    "nombre": "Grano Verde Brasil Moka Especial",
    "categoria": "",
-   "stock": 259.01,
-   "stockSF": 174.37,
+   "stock": 319.01,
+   "stockSF": 234.37,
    "stockMza": 85.56,
    "origen": "B2B",
    "activo": true,
@@ -21,36 +21,12 @@ window.STOCK_VIVO = {
    "bolsaKg": 0
   },
   {
-   "sku": "GRVBOLIILLAM",
-   "nombre": "Grano Verde Bolivia Illampu Ruh",
+   "sku": "GRVPERUCHIR",
+   "nombre": "Grano Verde Perú Regional Chirinos",
    "categoria": "",
-   "stock": 200.22,
-   "stockSF": 210.19,
-   "stockMza": 0.15,
-   "origen": "B2B",
-   "activo": true,
-   "clase": "granel",
-   "bolsaKg": 0
-  },
-  {
-   "sku": "GRVCCASTIGAITANATUR",
-   "nombre": "Grano Verde Colombia Castillo Gaitana Natural",
-   "categoria": "Cafe verde",
-   "stock": 155.47,
-   "stockSF": 252.76,
-   "stockMza": -96,
-   "origen": "B2B",
-   "activo": true,
-   "clase": "granel",
-   "bolsaKg": 0
-  },
-  {
-   "sku": "GRVHONELOCO",
-   "nombre": "Grano Verde Honduras El Ocotillo 85",
-   "categoria": "",
-   "stock": 147.32,
-   "stockSF": 104.32,
-   "stockMza": 43,
+   "stock": 192.83,
+   "stockSF": 164.31,
+   "stockMza": 28.52,
    "origen": "B2B",
    "activo": true,
    "clase": "granel",
@@ -60,9 +36,33 @@ window.STOCK_VIVO = {
    "sku": "GRVCSUPREMOHE",
    "nombre": "Grano Verde Colombia Supremo Herrera",
    "categoria": "Cafe verde",
-   "stock": 135.63,
-   "stockSF": 27.34,
+   "stock": 184.43,
+   "stockSF": 76.14,
    "stockMza": 108.29,
+   "origen": "B2B",
+   "activo": true,
+   "clase": "granel",
+   "bolsaKg": 0
+  },
+  {
+   "sku": "GRVBOLIILLAM",
+   "nombre": "Grano Verde Bolivia Illampu Ruh",
+   "categoria": "",
+   "stock": 181.99,
+   "stockSF": 194.96,
+   "stockMza": -2.85,
+   "origen": "B2B",
+   "activo": true,
+   "clase": "granel",
+   "bolsaKg": 0
+  },
+  {
+   "sku": "GRVHONELOCO",
+   "nombre": "Grano Verde Honduras El Ocotillo 85",
+   "categoria": "",
+   "stock": 140.41,
+   "stockSF": 97.41,
+   "stockMza": 43,
    "origen": "B2B",
    "activo": true,
    "clase": "granel",
@@ -93,24 +93,12 @@ window.STOCK_VIVO = {
    "bolsaKg": 0
   },
   {
-   "sku": "GRVHONSARCO",
-   "nombre": "Grano Verde Honduras El Sarco",
-   "categoria": "",
-   "stock": 119.53,
-   "stockSF": 131.73,
-   "stockMza": 0.86,
-   "origen": "B2B",
-   "activo": true,
-   "clase": "granel",
-   "bolsaKg": 0
-  },
-  {
-   "sku": "GRVBRAREGIOCONTINEN",
-   "nombre": "Grano Verde Brasil Regional Continental",
-   "categoria": "",
-   "stock": 92.57,
-   "stockSF": 116.73,
-   "stockMza": -24.16,
+   "sku": "GRVCCASTIGAITANATUR",
+   "nombre": "Grano Verde Colombia Castillo Gaitana Natural",
+   "categoria": "Cafe verde",
+   "stock": 87.07,
+   "stockSF": 187.36,
+   "stockMza": -99,
    "origen": "B2B",
    "activo": true,
    "clase": "granel",
@@ -141,12 +129,36 @@ window.STOCK_VIVO = {
    "bolsaKg": 0
   },
   {
-   "sku": "GRVCA023",
-   "nombre": "Grano Verde Brasil 023",
+   "sku": "GRVCBLENDFIN",
+   "nombre": "Grano Verde Colombia Blend Finkap",
+   "categoria": "Cafe verde",
+   "stock": 56.08,
+   "stockSF": 35.44,
+   "stockMza": 27.15,
+   "origen": "B2B",
+   "activo": true,
+   "clase": "granel",
+   "bolsaKg": 0
+  },
+  {
+   "sku": "GRVVIETROBUSR1S16",
+   "nombre": "Grano Verde Robusta Vietnam Robusta R1 S16",
    "categoria": "",
-   "stock": 58.46,
-   "stockSF": 58.46,
+   "stock": 55.79,
+   "stockSF": 55.79,
    "stockMza": 0,
+   "origen": "B2B",
+   "activo": true,
+   "clase": "granel",
+   "bolsaKg": 0
+  },
+  {
+   "sku": "GRVHONSARCO",
+   "nombre": "Grano Verde Honduras El Sarco",
+   "categoria": "",
+   "stock": 52.68,
+   "stockSF": 64.88,
+   "stockMza": 0.86,
    "origen": "B2B",
    "activo": true,
    "clase": "granel",
@@ -156,8 +168,8 @@ window.STOCK_VIVO = {
    "sku": "GRVCAREGIOESPE",
    "nombre": "Bolsa Gv 60kg Brasil Regional Especial",
    "categoria": "Cafe verde",
-   "stock": 50,
-   "stockSF": 50,
+   "stock": 49,
+   "stockSF": 49,
    "stockMza": 0,
    "origen": "B2B",
    "activo": true,
@@ -168,8 +180,8 @@ window.STOCK_VIVO = {
    "sku": "GRVCAREGIOCONTI",
    "nombre": "Bolsa Gv 60kg Brasil Regional Continental",
    "categoria": "Cafe verde",
-   "stock": 49,
-   "stockSF": 46,
+   "stock": 48,
+   "stockSF": 45,
    "stockMza": 3,
    "origen": "B2B",
    "activo": true,
@@ -180,25 +192,25 @@ window.STOCK_VIVO = {
    "sku": "GRVCOLBLENDNACI",
    "nombre": "Grano Verde Colombia Blend Nacional",
    "categoria": "",
-   "stock": 48.78,
+   "stock": 47.88,
    "stockSF": -10.43,
-   "stockMza": 59.85,
+   "stockMza": 58.95,
    "origen": "B2B",
    "activo": true,
    "clase": "granel",
    "bolsaKg": 0
   },
   {
-   "sku": "GRVCUCDFBOLSAPESELV",
-   "nombre": "Bolsa Gv 30kg Peru Regional Selva",
-   "categoria": "Cafe verde",
-   "stock": 44,
-   "stockSF": 38,
-   "stockMza": 6,
+   "sku": "GRVVIETNROBUSTR1S18",
+   "nombre": "Grano Verde Robusta Vietnam Robusta R1 S18",
+   "categoria": "",
+   "stock": 45.6,
+   "stockSF": 69.95,
+   "stockMza": -24.35,
    "origen": "B2B",
    "activo": true,
-   "clase": "bolsa",
-   "bolsaKg": 30
+   "clase": "granel",
+   "bolsaKg": 0
   },
   {
    "sku": "GRVBRAREGIOESPECI",
@@ -225,6 +237,30 @@ window.STOCK_VIVO = {
    "bolsaKg": 0
   },
   {
+   "sku": "GRVCA023",
+   "nombre": "Grano Verde Brasil 023",
+   "categoria": "",
+   "stock": 40.67,
+   "stockSF": 40.67,
+   "stockMza": 0,
+   "origen": "B2B",
+   "activo": true,
+   "clase": "granel",
+   "bolsaKg": 0
+  },
+  {
+   "sku": "GRVVIETROBUSR2S13",
+   "nombre": "Grano Verde Robusta Vietnam Robusta R2 S13",
+   "categoria": "",
+   "stock": 37.77,
+   "stockSF": 37.77,
+   "stockMza": 0,
+   "origen": "B2B",
+   "activo": true,
+   "clase": "granel",
+   "bolsaKg": 0
+  },
+  {
    "sku": "GRVCOLCOULTURIFRUTILLAHONEY",
    "nombre": "Grano Verde Colombia Coulturing Frutilla Honey",
    "categoria": "",
@@ -237,16 +273,16 @@ window.STOCK_VIVO = {
    "bolsaKg": 0
   },
   {
-   "sku": "GRVCOLPEACHH",
-   "nombre": "Grano Verde Colombia Peach Honey",
-   "categoria": "",
-   "stock": 33.64,
-   "stockSF": 15.33,
-   "stockMza": 22.54,
+   "sku": "GRVCUCDFBOLSAPESELV",
+   "nombre": "Bolsa Gv 30kg Peru Regional Selva",
+   "categoria": "Cafe verde",
+   "stock": 36,
+   "stockSF": 30,
+   "stockMza": 6,
    "origen": "B2B",
    "activo": true,
-   "clase": "granel",
-   "bolsaKg": 0
+   "clase": "bolsa",
+   "bolsaKg": 30
   },
   {
    "sku": "GRVHONELOCOBOLSA",
@@ -259,6 +295,18 @@ window.STOCK_VIVO = {
    "activo": true,
    "clase": "bolsa",
    "bolsaKg": 46
+  },
+  {
+   "sku": "GRVCOLPEACHH",
+   "nombre": "Grano Verde Colombia Peach Honey",
+   "categoria": "",
+   "stock": 32.71,
+   "stockSF": 14.4,
+   "stockMza": 22.54,
+   "origen": "B2B",
+   "activo": true,
+   "clase": "granel",
+   "bolsaKg": 0
   },
   {
    "sku": "GRVCOLBOURBOROSALAV",
@@ -285,18 +333,6 @@ window.STOCK_VIVO = {
    "bolsaKg": 0
   },
   {
-   "sku": "GRVVIETROBUSR1S16",
-   "nombre": "Grano Verde Robusta Vietnam Robusta R1 S16",
-   "categoria": "",
-   "stock": 29.81,
-   "stockSF": 29.81,
-   "stockMza": 0,
-   "origen": "B2B",
-   "activo": true,
-   "clase": "granel",
-   "bolsaKg": 0
-  },
-  {
    "sku": "GRVHONELNARAN",
    "nombre": "Grano Verde Honduras El Naranjo 84",
    "categoria": "",
@@ -312,8 +348,8 @@ window.STOCK_VIVO = {
    "sku": "GRVCAMOKAESPE",
    "nombre": "Bolsa Gv 60kg Brasil Moka Especial",
    "categoria": "Cafe verde",
-   "stock": 28,
-   "stockSF": 28,
+   "stock": 27,
+   "stockSF": 27,
    "stockMza": 0,
    "origen": "B2B",
    "activo": true,
@@ -327,18 +363,6 @@ window.STOCK_VIVO = {
    "stock": 24,
    "stockSF": 24,
    "stockMza": 0,
-   "origen": "B2B",
-   "activo": true,
-   "clase": "bolsa",
-   "bolsaKg": 46
-  },
-  {
-   "sku": "GRVHONELOLIBOLSA",
-   "nombre": "Bolsa Gv 46kg Honduras Oliva",
-   "categoria": "Cafe verde",
-   "stock": 21,
-   "stockSF": 17,
-   "stockMza": 4,
    "origen": "B2B",
    "activo": true,
    "clase": "bolsa",
@@ -393,24 +417,12 @@ window.STOCK_VIVO = {
    "bolsaKg": 0
   },
   {
-   "sku": "GRVCBLENDFIN",
-   "nombre": "Grano Verde Colombia Blend Finkap",
-   "categoria": "Cafe verde",
-   "stock": 19.8,
-   "stockSF": -3.84,
-   "stockMza": 30.15,
-   "origen": "B2B",
-   "activo": true,
-   "clase": "granel",
-   "bolsaKg": 0
-  },
-  {
    "sku": "GRVHONLOSLAU",
    "nombre": "Grano Verde Honduras Los Laureles 86.5",
    "categoria": "",
-   "stock": 19.61,
+   "stock": 19.01,
    "stockSF": 8.34,
-   "stockMza": 21.71,
+   "stockMza": 21.11,
    "origen": "B2B",
    "activo": true,
    "clase": "granel",
@@ -453,40 +465,28 @@ window.STOCK_VIVO = {
    "bolsaKg": 0
   },
   {
-   "sku": "GRVVIETNROBUSR2S13",
-   "nombre": "Bolsa Gv 50kg Vietnam Robusta R2 S13",
+   "sku": "GRVHONELOLIBOLSA",
+   "nombre": "Bolsa Gv 46kg Honduras Oliva",
    "categoria": "Cafe verde",
    "stock": 18,
-   "stockSF": 18,
-   "stockMza": 0,
-   "origen": "B2B",
-   "activo": true,
-   "clase": "bolsa",
-   "bolsaKg": 50
-  },
-  {
-   "sku": "GRVVIETNROBUSR1S16",
-   "nombre": "Bolsa Gv 50kg Vietnam Robusta R1 S16",
-   "categoria": "Cafe verde",
-   "stock": 18,
-   "stockSF": 18,
-   "stockMza": 0,
-   "origen": "B2B",
-   "activo": true,
-   "clase": "bolsa",
-   "bolsaKg": 50
-  },
-  {
-   "sku": "GRVCUCDFBOLSABOLILLAMPUTREI",
-   "nombre": "Bolsa Gv 30kg Bolivia Illampú",
-   "categoria": "Cafe verde",
-   "stock": 17,
-   "stockSF": 13,
+   "stockSF": 14,
    "stockMza": 4,
    "origen": "B2B",
    "activo": true,
    "clase": "bolsa",
-   "bolsaKg": 30
+   "bolsaKg": 46
+  },
+  {
+   "sku": "GRVVIETNROBUSR2S13",
+   "nombre": "Bolsa Gv 50kg Vietnam Robusta R2 S13",
+   "categoria": "Cafe verde",
+   "stock": 17,
+   "stockSF": 17,
+   "stockMza": 0,
+   "origen": "B2B",
+   "activo": true,
+   "clase": "bolsa",
+   "bolsaKg": 50
   },
   {
    "sku": "GRVHONELCEDR",
@@ -501,16 +501,16 @@ window.STOCK_VIVO = {
    "bolsaKg": 0
   },
   {
-   "sku": "GRVCCASTIGAITALAV",
-   "nombre": "Bolsa Gv 70kg Colombia Gaitana Lavado",
+   "sku": "GRVVIETNROBUSR1S16",
+   "nombre": "Bolsa Gv 50kg Vietnam Robusta R1 S16",
    "categoria": "Cafe verde",
-   "stock": 15.6,
-   "stockSF": 15,
-   "stockMza": 3,
+   "stock": 16,
+   "stockSF": 16,
+   "stockMza": 0,
    "origen": "B2B",
    "activo": true,
    "clase": "bolsa",
-   "bolsaKg": 70
+   "bolsaKg": 50
   },
   {
    "sku": "GRVHONLATORMEN",
@@ -525,28 +525,16 @@ window.STOCK_VIVO = {
    "bolsaKg": 46
   },
   {
-   "sku": "GRVCSUPREMHERR",
-   "nombre": "Bolsa Gv 70kg Colombia Supremo Herrera",
+   "sku": "GRVCCASTIGAITALAV",
+   "nombre": "Bolsa Gv 70kg Colombia Gaitana Lavado",
    "categoria": "Cafe verde",
-   "stock": 15,
-   "stockSF": 14,
-   "stockMza": 1,
+   "stock": 13.6,
+   "stockSF": 13,
+   "stockMza": 3,
    "origen": "B2B",
    "activo": true,
    "clase": "bolsa",
    "bolsaKg": 70
-  },
-  {
-   "sku": "GRVHONLASARCO",
-   "nombre": "Bolsa Gv 46kg Honduras El Sarco",
-   "categoria": "Cafe verde",
-   "stock": 14,
-   "stockSF": 10,
-   "stockMza": 4,
-   "origen": "B2B",
-   "activo": true,
-   "clase": "bolsa",
-   "bolsaKg": 46
   },
   {
    "sku": "GRVHONLAULT",
@@ -561,28 +549,28 @@ window.STOCK_VIVO = {
    "bolsaKg": 0
   },
   {
-   "sku": "GRVPERUCHIR",
-   "nombre": "Grano Verde Perú Regional Chirinos",
-   "categoria": "",
-   "stock": 12.06,
-   "stockSF": -19.46,
-   "stockMza": 31.52,
-   "origen": "B2B",
-   "activo": true,
-   "clase": "granel",
-   "bolsaKg": 0
-  },
-  {
-   "sku": "GRVVIETNROBUSR1S18",
-   "nombre": "Bolsa Gv 50kg Vietnam Robusta R1 S18",
+   "sku": "GRVCSUPREMHERR",
+   "nombre": "Bolsa Gv 70kg Colombia Supremo Herrera",
    "categoria": "Cafe verde",
-   "stock": 12,
+   "stock": 13,
    "stockSF": 12,
-   "stockMza": 0,
+   "stockMza": 1,
    "origen": "B2B",
    "activo": true,
    "clase": "bolsa",
-   "bolsaKg": 50
+   "bolsaKg": 70
+  },
+  {
+   "sku": "GRVCUCDFBOLSABOLILLAMPUTREI",
+   "nombre": "Bolsa Gv 30kg Bolivia Illampú",
+   "categoria": "Cafe verde",
+   "stock": 12,
+   "stockSF": 8,
+   "stockMza": 4,
+   "origen": "B2B",
+   "activo": true,
+   "clase": "bolsa",
+   "bolsaKg": 30
   },
   {
    "sku": "GRVCLAVAGEISHASANAN",
@@ -621,16 +609,16 @@ window.STOCK_VIVO = {
    "bolsaKg": 46
   },
   {
-   "sku": "GRVCUCDFBOLSABOLILLAMPUSES",
-   "nombre": "Bolsa Gv 60kg Bolivia Illampú",
+   "sku": "GRVVIETNROBUSR1S18",
+   "nombre": "Bolsa Gv 50kg Vietnam Robusta R1 S18",
    "categoria": "Cafe verde",
-   "stock": 11,
-   "stockSF": 9,
-   "stockMza": 2,
+   "stock": 10,
+   "stockSF": 10,
+   "stockMza": 0,
    "origen": "B2B",
    "activo": true,
    "clase": "bolsa",
-   "bolsaKg": 60
+   "bolsaKg": 50
   },
   {
    "sku": "GRVCUCDFBOLSAPELUZMARIT",
@@ -655,6 +643,30 @@ window.STOCK_VIVO = {
    "activo": true,
    "clase": "bolsa",
    "bolsaKg": 30
+  },
+  {
+   "sku": "GRVBRAREGIOCONTINEN",
+   "nombre": "Grano Verde Brasil Regional Continental",
+   "categoria": "",
+   "stock": 8.46,
+   "stockSF": 37.12,
+   "stockMza": -28.66,
+   "origen": "B2B",
+   "activo": true,
+   "clase": "granel",
+   "bolsaKg": 0
+  },
+  {
+   "sku": "GRVHONLASARCO",
+   "nombre": "Bolsa Gv 46kg Honduras El Sarco",
+   "categoria": "Cafe verde",
+   "stock": 8,
+   "stockSF": 4,
+   "stockMza": 4,
+   "origen": "B2B",
+   "activo": true,
+   "clase": "bolsa",
+   "bolsaKg": 46
   },
   {
    "sku": "GRVCUCDFBOLSAPERUFAELI",
@@ -693,18 +705,6 @@ window.STOCK_VIVO = {
    "bolsaKg": 30
   },
   {
-   "sku": "GRVCBLENDFINKAP",
-   "nombre": "Bolsa Gv 70kg Colombia Blend Finkap",
-   "categoria": "Cafe verde",
-   "stock": 8,
-   "stockSF": 7,
-   "stockMza": 1,
-   "origen": "B2B",
-   "activo": true,
-   "clase": "bolsa",
-   "bolsaKg": 70
-  },
-  {
    "sku": "GRVHONDOSHERMANOS",
    "nombre": "Bolsa Gv 46kg Honduras Dos Hermanos",
    "categoria": "Cafe verde",
@@ -717,6 +717,18 @@ window.STOCK_VIVO = {
    "bolsaKg": 46
   },
   {
+   "sku": "GRVCUCDFBOLSABOLILLAMPUSES",
+   "nombre": "Bolsa Gv 60kg Bolivia Illampú",
+   "categoria": "Cafe verde",
+   "stock": 7,
+   "stockSF": 5,
+   "stockMza": 2,
+   "origen": "B2B",
+   "activo": true,
+   "clase": "bolsa",
+   "bolsaKg": 60
+  },
+  {
    "sku": "GRVCCMAN",
    "nombre": "Grano Verde Colombia Coulturing Mango",
    "categoria": "",
@@ -727,6 +739,18 @@ window.STOCK_VIVO = {
    "activo": true,
    "clase": "granel",
    "bolsaKg": 0
+  },
+  {
+   "sku": "GRVCBLENDFINKAP",
+   "nombre": "Bolsa Gv 70kg Colombia Blend Finkap",
+   "categoria": "Cafe verde",
+   "stock": 6,
+   "stockSF": 5,
+   "stockMza": 1,
+   "origen": "B2B",
+   "activo": true,
+   "clase": "bolsa",
+   "bolsaKg": 70
   },
   {
    "sku": "GRVCA005",
@@ -837,30 +861,6 @@ window.STOCK_VIVO = {
    "bolsaKg": 46
   },
   {
-   "sku": "GRVHONCASCADAS",
-   "nombre": "Bolsa Gv 46kg Honduras Cascadas",
-   "categoria": "Cafe verde",
-   "stock": 4,
-   "stockSF": 4,
-   "stockMza": 0,
-   "origen": "B2B",
-   "activo": true,
-   "clase": "bolsa",
-   "bolsaKg": 46
-  },
-  {
-   "sku": "GRVCOLGEISHALAVADO",
-   "nombre": "Grano Verde Colombia Geisha Lavado",
-   "categoria": "",
-   "stock": 3.9,
-   "stockSF": -4.2,
-   "stockMza": 8.1,
-   "origen": "B2B",
-   "activo": true,
-   "clase": "granel",
-   "bolsaKg": 0
-  },
-  {
    "sku": "GRVCOLTYPIHONEY",
    "nombre": "Grano Verde Colombia Typica Honey",
    "categoria": "",
@@ -871,6 +871,18 @@ window.STOCK_VIVO = {
    "activo": true,
    "clase": "granel",
    "bolsaKg": 0
+  },
+  {
+   "sku": "GRVHONCASCADAS",
+   "nombre": "Bolsa Gv 46kg Honduras Cascadas",
+   "categoria": "Cafe verde",
+   "stock": 3,
+   "stockSF": 3,
+   "stockMza": 0,
+   "origen": "B2B",
+   "activo": true,
+   "clase": "bolsa",
+   "bolsaKg": 46
   },
   {
    "sku": "GRVCBOURBONXTRE",
@@ -1089,18 +1101,6 @@ window.STOCK_VIVO = {
    "bolsaKg": 60
   },
   {
-   "sku": "GRVVIETROBUSR2S13",
-   "nombre": "Grano Verde Robusta Vietnam Robusta R2 S13",
-   "categoria": "",
-   "stock": 0.95,
-   "stockSF": 0.95,
-   "stockMza": 0,
-   "origen": "B2B",
-   "activo": true,
-   "clase": "granel",
-   "bolsaKg": 0
-  },
-  {
    "sku": "GRVCOLBOURROHOTO",
    "nombre": "Grano Verde Colombia Bourbon Rosado Honey Tolima",
    "categoria": "",
@@ -1221,18 +1221,6 @@ window.STOCK_VIVO = {
    "bolsaKg": 0
   },
   {
-   "sku": "GRVVIETNROBUSTR1S18",
-   "nombre": "Grano Verde Robusta Vietnam Robusta R1 S18",
-   "categoria": "",
-   "stock": -1.4,
-   "stockSF": 19.95,
-   "stockMza": -21.35,
-   "origen": "B2B",
-   "activo": true,
-   "clase": "granel",
-   "bolsaKg": 0
-  },
-  {
    "sku": "GVCMAL08",
    "nombre": "Grano Verde Campos Altos 08",
    "categoria": "",
@@ -1341,12 +1329,12 @@ window.STOCK_VIVO = {
    "bolsaKg": 0
   },
   {
-   "sku": "GVROPERUSELVA",
-   "nombre": "Grano Verde Peru Selva",
+   "sku": "GRVCOLGEISHALAVADO",
+   "nombre": "Grano Verde Colombia Geisha Lavado",
    "categoria": "",
-   "stock": -11,
-   "stockSF": -11,
-   "stockMza": 0,
+   "stock": -9.6,
+   "stockSF": -17.7,
+   "stockMza": 8.1,
    "origen": "B2B",
    "activo": true,
    "clase": "granel",
@@ -1413,18 +1401,6 @@ window.STOCK_VIVO = {
    "bolsaKg": 0
   },
   {
-   "sku": "GRVCUVIETNROBUSTR1S18CL",
-   "nombre": "Grano Verde Robusta Vietnam Robusta R1 S18 Clean",
-   "categoria": "",
-   "stock": -40.63,
-   "stockSF": -122.63,
-   "stockMza": 82,
-   "origen": "B2B",
-   "activo": true,
-   "clase": "granel",
-   "bolsaKg": 0
-  },
-  {
    "sku": "GRVCAZAFPRIMITIV",
    "nombre": "Grano Verde Colombia Azafran Primitivo",
    "categoria": "Cafe verde",
@@ -1437,24 +1413,36 @@ window.STOCK_VIVO = {
    "bolsaKg": 0
   },
   {
-   "sku": "GRVBOMJESUS",
-   "nombre": "Grano Verde Brasil Bom Jesus Fermentado",
-   "categoria": "Cafe verde",
-   "stock": -75.25,
-   "stockSF": -4.78,
-   "stockMza": -70.47,
+   "sku": "GRVHONDUOLIVA",
+   "nombre": "Grano Verde Honduras Oliva",
+   "categoria": "",
+   "stock": -54.19,
+   "stockSF": -30.19,
+   "stockMza": -24,
    "origen": "B2B",
    "activo": true,
    "clase": "granel",
    "bolsaKg": 0
   },
   {
-   "sku": "GRVHONDUOLIVA",
-   "nombre": "Grano Verde Honduras Oliva",
+   "sku": "GRVCUVIETNROBUSTR1S18CL",
+   "nombre": "Grano Verde Robusta Vietnam Robusta R1 S18 Clean",
    "categoria": "",
-   "stock": -168.19,
-   "stockSF": -144.19,
-   "stockMza": -24,
+   "stock": -61.63,
+   "stockSF": -143.63,
+   "stockMza": 82,
+   "origen": "B2B",
+   "activo": true,
+   "clase": "granel",
+   "bolsaKg": 0
+  },
+  {
+   "sku": "GRVBOMJESUS",
+   "nombre": "Grano Verde Brasil Bom Jesus Fermentado",
+   "categoria": "Cafe verde",
+   "stock": -81.25,
+   "stockSF": -10.78,
+   "stockMza": -70.47,
    "origen": "B2B",
    "activo": true,
    "clase": "granel",
