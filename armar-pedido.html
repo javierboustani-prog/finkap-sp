@@ -1013,33 +1013,66 @@ function recalcPay(neto, gross, kgTot){
 }
 
 let lastTotals=null;
+function fmtFecha(dt){ return dt.toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'}); }
+function fechaEnDias(dias){ const d=new Date(); d.setDate(d.getDate()+dias); return fmtFecha(d); }
+
 function buildSummary(o){
   lastTotals=o;
-  const L=["FINKAP — Solicitud de cotización",""];
-  L.push("Variedades:");
-  order.forEach(it=>{ const kg=it.q*it.b,d=effDisc(it,kg);
-    L.push(`• ${it.n} — ${it.q} bolsa(s) × ${fmtN(it.b)}kg = ${fmtN(kg)}kg @ USD ${it.p.toFixed(2)}/kg (desc ${d.toFixed(2)}%)`);
-  });
-  L.push("");
-  const payTxt={trf:"Contado/Transferencia anticipado (−2,5%)",ch30:"Cheque ≤30d (0%)",ch60:"Cheque 60d (+2,75%)",ch90:"Cheque 90d (+5,50%)",ch120:"Cheque 120d (+8,25%)",ch150:"Cheque 150d (+11,00%)",ch180:"Cheque 180d (+13,75%)",mix:"Plazos combinados"}[o.pay];
-  L.push("Forma de pago: "+payTxt);
-  if(o.pay==="mix" && o.mixDetalle && o.mixDetalle.length){
-    L.push("Cheques: "+o.mixDetalle.map(c=>c.d+"d").join(", ")+` (${o.mixDetalle.length} de ${fmtUSD(o.mixDetalle[0].cuota)} c/u)`);
-  }
-  L.push(`Neto: ${fmtUSD(o.neto)} | Aj. fin: ${(o.ajustePct>=0?"+":"")+o.ajustePct.toFixed(2)}% (${fmtUSD(o.ajusteMonto)})`);
+  const hoy=new Date();
   const kgTot=order.reduce((s,it)=>s+it.q*it.b,0);
-  if(kgTot>0) L.push(`Precio efectivo: ${fmtUSD((o.neto+o.ajusteMonto)/kgTot)}/kg (sin IVA)`);
-  L.push("IVA 21%: "+fmtUSD(o.iva));
-  L.push(`TOTAL: ${fmtUSD(o.totalUsd)} (${fmtARS(o.totalArs)} @ TC ${fmtN(TC)})`);
+  const L=[];
+  L.push("🟠 *FINKAP · Pedido de café verde*");
+  L.push("📅 Fecha del pedido: "+fmtFecha(hoy));
+  L.push("");
+  L.push("☕ *Tu selección*");
+  order.forEach(it=>{ const kg=it.q*it.b,d=effDisc(it,kg);
+    L.push(`• ${it.n} — ${it.q} bolsa(s) × ${fmtN(it.b)}kg = *${fmtN(kg)} kg* · USD ${it.p.toFixed(2)}/kg${d>0?` _(−${d.toFixed(1)}%)_`:""}`);
+  });
+  if(kgTot>0) L.push(`📦 Total: *${fmtN(kgTot)} kg*`);
+  L.push("");
+  L.push("💵 *Cuenta (sin IVA)*");
+  L.push(`Subtotal con descuento: ${fmtUSD(o.neto)}`);
+  L.push(`Ajuste forma de pago (${(o.ajustePct>=0?"+":"")+o.ajustePct.toFixed(2)}%): ${o.ajusteMonto<0?"− ":o.ajusteMonto>0?"+ ":""}${fmtUSD(Math.abs(o.ajusteMonto))}`);
+  L.push(`IVA 21%: ${fmtUSD(o.iva)}`);
+  L.push("");
+  L.push(`✅ *TOTAL: ${fmtUSD(o.totalUsd)}*`);
+  L.push(`💱 *= ${fmtARS(o.totalArs)}*  _(TC Banco Nación $${fmtN(TC)} · ${fmtFecha(hoy)})_`);
+  L.push("");
+
+  // Forma de pago — con montos en PESOS (IVA incl.) y FECHAS reales de los cheques
+  if(o.pay==="trf"){
+    L.push("💳 *Pago: Transferencia / contado anticipado* _(−2,5%)_");
+    L.push(`💸 A transferir: *${fmtARS(o.totalArs)}* _(IVA incluido)_`);
+  } else if(o.pay==="mix" && o.mixDetalle && o.mixDetalle.length){
+    L.push("💳 *Pago: cheques combinados*");
+    L.push("🧾 Cheques *en pesos, con IVA incluido*:");
+    let suma=0;
+    o.mixDetalle.forEach((c,i)=>{ const ars=(c.cuota+c.rec)*1.21*TC; suma+=ars;
+      L.push(`   ${i+1}) a ${c.d} días → 📆 *${fechaEnDias(c.d)}* · 💰 *${fmtARS(ars)}*`);
+    });
+    L.push(`Σ Total en cheques: *${fmtARS(suma)}*`);
+  } else if(/^ch/.test(o.pay)){
+    const dias=parseInt(o.pay.replace(/\D/g,""),10)||30;
+    const pctTxt={ch30:"0%",ch60:"+2,75%",ch90:"+5,50%",ch120:"+8,25%",ch150:"+11%",ch180:"+13,75%"}[o.pay]||"";
+    L.push(`💳 *Pago: Cheque a ${dias} días* _(${pctTxt})_`);
+    L.push("🧾 Cheque *en pesos, con IVA incluido*:");
+    L.push(`   💰 *${fmtARS(o.totalArs)}*`);
+    L.push(`   📆 Fecha de pago: *${fechaEnDias(dias)}* _(hoy + ${dias} días)_`);
+  }
+  L.push("");
+
   const c={nom:$("cNom").value,emp:$("cEmp").value,cuit:$("cCuit").value,tel:$("cTel").value,mail:$("cMail").value};
   if(c.nom||c.emp||c.cuit||c.tel||c.mail){
-    L.push("","Comprador:");
-    if(c.nom)L.push("Nombre: "+c.nom);
-    if(c.emp)L.push("Empresa: "+c.emp);
-    if(c.cuit)L.push("CUIT: "+c.cuit);
-    if(c.tel)L.push("Tel: "+c.tel);
-    if(c.mail)L.push("Email: "+c.mail);
+    L.push("👤 *Tus datos*");
+    if(c.nom)L.push("• Nombre: "+c.nom);
+    if(c.emp)L.push("• Empresa: "+c.emp);
+    if(c.cuit)L.push("• CUIT: "+c.cuit);
+    if(c.tel)L.push("• Tel: "+c.tel);
+    if(c.mail)L.push("• Email: "+c.mail);
+    L.push("");
   }
+  L.push("🙌 ¡Gracias! Te contactamos para confirmar y pasarte los datos.");
+
   $("summary").textContent=L.join("\n");
 }
 
