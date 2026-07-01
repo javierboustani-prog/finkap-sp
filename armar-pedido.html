@@ -1037,6 +1037,7 @@ function buildSummary(o){
   L.push("");
   L.push(`✅ *TOTAL: ${fmtUSD(o.totalUsd)}*`);
   L.push(`💱 *= ${fmtARS(o.totalArs)}*  _(TC Banco Nación $${fmtN(TC)} · ${fmtFecha(hoy)})_`);
+  if(kgTot>0) L.push(`⚖️ Precio final por kg: *USD ${(o.totalUsd/kgTot).toFixed(2)}/kg* _(= ${fmtARS(o.totalArs/kgTot)}/kg, con IVA)_`);
   L.push("");
 
   // Forma de pago — con montos en PESOS (IVA incl.) y FECHAS reales de los cheques
@@ -1071,6 +1072,8 @@ function buildSummary(o){
     if(c.mail)L.push("• Email: "+c.mail);
     L.push("");
   }
+  L.push("⚠️ _Los valores están sujetos a la fecha de ejecución de la operación y se actualizan según el tipo de cambio del día._");
+  L.push("");
   L.push("🙌 ¡Gracias! Te contactamos para confirmar y pasarte los datos.");
 
   $("summary").textContent=L.join("\n");
